@@ -1,0 +1,48 @@
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Flask/SQLite runtime data
+impactapp_backend/instance/
+impactapp_backend/*.db
+impactapp_backend/data/
+impactapp_backend/uploads/*
+!impactapp_backend/uploads/.gitkeep
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+.pub-cache/
+**/build/
+coverage/
+
+# IDE and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Tool caches and logs
+*.log
+*.tmp

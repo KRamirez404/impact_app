@@ -1,0 +1,30 @@
+version: '3.9'
+services:
+  backend:
+    build:
+      context: ./impactapp_backend
+      dockerfile: Dockerfile
+    container_name: impactapp_backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./impactapp_backend:/app
+      - db_data:/app/data
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - DATABASE_URL=sqlite:////app/data/impactapp.db
+    networks:
+      - impactapp_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+volumes:
+  db_data:
+networks:
+  impactapp_network:
+    driver: bridge
