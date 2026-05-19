@@ -3,6 +3,7 @@ abstract class AppRoutes {
   static const login = '/login';
   static const register = '/register';
   static const home = '/home';
+  static const explore = '/explore';
   static const campaignDetail = '/campaign';
   static const createCampaign = '/create-campaign';
   static const donate = '/donate';
@@ -11,4 +12,3 @@ abstract class AppRoutes {
   static const rate = '/rate';
   static const profile = '/profile';
 }
-

@@ -11,6 +11,11 @@ class CampaignEntity {
   final String fechaFin;
   final String estado;
   final double porcentajeAvance;
+  final String ciudadNombre;
+  final String categoriaNombre;
+  final int donantesCount;
+  final int puntosCount;
+  final int vistasCount;
   final List<Map<String, dynamic>> valoraciones;
   final List<Map<String, dynamic>> soportes;
   final List<Map<String, dynamic>> puntosRecoleccion;
@@ -28,6 +33,11 @@ class CampaignEntity {
     required this.fechaFin,
     required this.estado,
     required this.porcentajeAvance,
+    this.ciudadNombre = '',
+    this.categoriaNombre = '',
+    this.donantesCount = 0,
+    this.puntosCount = 0,
+    this.vistasCount = 0,
     this.valoraciones = const [],
     this.soportes = const [],
     this.puntosRecoleccion = const [],

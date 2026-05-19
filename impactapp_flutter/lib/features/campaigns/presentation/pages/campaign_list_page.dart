@@ -27,7 +27,7 @@ class CampaignListPage extends StatelessWidget {
       ),
       body: Obx(
         () {
-          if (controller.isLoading.value) {
+          if (controller.isLoading.value && controller.campaigns.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
           if (controller.campaigns.isEmpty) {
@@ -40,12 +40,12 @@ class CampaignListPage extends StatelessWidget {
               itemCount: controller.campaigns.length,
               itemBuilder: (_, index) {
                 final item = controller.campaigns[index];
-                return CampaignCard(
-                  title: item.titulo,
-                  description: item.descripcion,
-                  progress: item.porcentajeAvance,
-                  status: item.estado,
-                  onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${item.idCampania}'),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: CampaignCard(
+                    campaign: item,
+                    onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${item.idCampania}'),
+                  ),
                 );
               },
             ),
@@ -56,4 +56,3 @@ class CampaignListPage extends StatelessWidget {
     );
   }
 }
-

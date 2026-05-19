@@ -6,7 +6,8 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/campaigns/presentation/bindings/campaign_binding.dart';
 import '../../features/campaigns/presentation/pages/campaign_detail_page.dart';
-import '../../features/campaigns/presentation/pages/campaign_list_page.dart';
+import '../../features/campaigns/presentation/pages/explore_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/campaigns/presentation/pages/create_campaign_page.dart';
 import '../../features/campaigns/presentation/pages/donate_page.dart';
 import '../../features/collection_points/presentation/bindings/collection_point_binding.dart';
@@ -39,7 +40,12 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.home,
-      page: () => CampaignListPage(),
+      page: () => HomePage(),
+      bindings: [AuthBinding(), CampaignBinding()],
+    ),
+    GetPage(
+      name: AppRoutes.explore,
+      page: () => ExplorePage(),
       bindings: [AuthBinding(), CampaignBinding()],
     ),
     GetPage(
@@ -50,7 +56,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.createCampaign,
       page: () => CreateCampaignPage(),
-      bindings: [CampaignBinding()],
+      bindings: [CampaignBinding(), CollectionPointBinding()],
     ),
     GetPage(
       name: '${AppRoutes.donate}/:id',
@@ -84,4 +90,3 @@ class AppPages {
     ),
   ];
 }
-

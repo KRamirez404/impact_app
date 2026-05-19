@@ -7,6 +7,16 @@ import '../models/donation_model.dart';
 class CampaignRemoteDataSource {
   final Dio _dio = DioClient.instance.dio;
 
+  Future<List<Map<String, dynamic>>> getCities() async {
+    final response = await _dio.get(ApiConstants.cities);
+    return (response.data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> getCategories() async {
+    final response = await _dio.get(ApiConstants.categories);
+    return (response.data as List).cast<Map<String, dynamic>>();
+  }
+
   Future<List<CampaignModel>> getCampaigns({
     int? ciudad,
     int? categoria,
@@ -38,4 +48,3 @@ class CampaignRemoteDataSource {
     return DonationModel.fromJson(response.data as Map<String, dynamic>);
   }
 }
-

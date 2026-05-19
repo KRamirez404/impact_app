@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from sqlalchemy import text
 
 from config import Config
 from models import (
@@ -21,6 +22,14 @@ from services.auth_service import hash_password
 
 
 def seed_database():
+    # Normalize legacy campaign state values to avoid enum deserialization errors.
+    legacy_state_fix = db.session.execute(
+        text('UPDATE "CAMPAÑA" SET estado = :new_state WHERE estado = :old_state'),
+        {"new_state": "activa", "old_state": "activo"},
+    )
+    if legacy_state_fix.rowcount:
+        db.session.commit()
+
     if CIUDAD.query.count() == 0:
         ciudades = [
             ("Bogotá", "Cundinamarca"),
@@ -146,4 +155,3 @@ app = create_app()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-

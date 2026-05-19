@@ -14,12 +14,20 @@ class CampaignModel extends CampaignEntity {
     required super.fechaFin,
     required super.estado,
     required super.porcentajeAvance,
+    super.ciudadNombre = '',
+    super.categoriaNombre = '',
+    super.donantesCount = 0,
+    super.puntosCount = 0,
+    super.vistasCount = 0,
     super.valoraciones = const [],
     super.soportes = const [],
     super.puntosRecoleccion = const [],
   });
 
   factory CampaignModel.fromJson(Map<String, dynamic> json) {
+    final ciudad = json['ciudad'] as Map<String, dynamic>?;
+    final categoria = json['categoria'] as Map<String, dynamic>?;
+
     return CampaignModel(
       idCampania: json['id_campania'] ?? 0,
       titulo: json['titulo'] ?? '',
@@ -33,6 +41,11 @@ class CampaignModel extends CampaignEntity {
       fechaFin: json['fecha_fin'] ?? '',
       estado: json['estado'] ?? '',
       porcentajeAvance: (json['porcentaje_avance'] as num?)?.toDouble() ?? 0,
+      ciudadNombre: ciudad?['nombre'] ?? '',
+      categoriaNombre: categoria?['nombre'] ?? '',
+      donantesCount: json['donantes_count'] ?? (json['donaciones'] as List? ?? []).length,
+      puntosCount: (json['puntos_recoleccion'] as List? ?? []).length,
+      vistasCount: json['vistas_count'] ?? 0,
       valoraciones: (json['valoraciones'] as List<dynamic>? ?? [])
           .map((e) => (e as Map<String, dynamic>))
           .toList(),
