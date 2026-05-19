@@ -3,6 +3,8 @@ import '../../domain/usecases/create_campaign_usecase.dart';
 import '../../domain/usecases/donate_usecase.dart';
 import '../../domain/usecases/get_campaign_detail_usecase.dart';
 import '../../domain/usecases/get_campaigns_usecase.dart';
+import '../../domain/usecases/get_my_campaigns_usecase.dart';
+import '../../domain/usecases/get_my_donations_usecase.dart';
 import '../../infrastructure/datasources/campaign_remote_datasource.dart';
 import '../../infrastructure/repositories/campaign_repository_impl.dart';
 import '../controllers/campaign_detail_controller.dart';
@@ -25,6 +27,12 @@ class CampaignBinding extends Bindings {
       () => GetCampaignDetailUseCase(Get.find<CampaignRepositoryImpl>()),
     );
     Get.lazyPut<DonateUseCase>(() => DonateUseCase(Get.find<CampaignRepositoryImpl>()));
+    Get.lazyPut<GetMyCampaignsUseCase>(
+      () => GetMyCampaignsUseCase(Get.find<CampaignRepositoryImpl>()),
+    );
+    Get.lazyPut<GetMyDonationsUseCase>(
+      () => GetMyDonationsUseCase(Get.find<CampaignRepositoryImpl>()),
+    );
 
     Get.lazyPut<CampaignListController>(
       () => CampaignListController(
@@ -42,4 +50,3 @@ class CampaignBinding extends Bindings {
     );
   }
 }
-

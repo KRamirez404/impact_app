@@ -45,3 +45,25 @@ def get_campaign_donations(campaign_id: int):
     donations = DONACION.query.filter_by(id_campania=campaign_id).all()
     return jsonify([donation.to_dict() for donation in donations]), 200
 
+
+@donation_bp.get("/mine")
+@jwt_required()
+def get_my_donations():
+    current_user_id = int(get_jwt_identity())
+    donations = (
+        DONACION.query.filter_by(id_donante=current_user_id)
+        .order_by(DONACION.fecha_donacion.desc())
+        .all()
+    )
+    payload = []
+    for donation in donations:
+        data = donation.to_dict()
+        campaign = donation.campania
+        data["campania"] = {
+            "id_campania": donation.id_campania,
+            "titulo": campaign.titulo if campaign else "",
+            "estado": campaign.estado if campaign else "",
+            "fecha_fin": campaign.fecha_fin.isoformat() if campaign else "",
+        }
+        payload.append(data)
+    return jsonify(payload), 200

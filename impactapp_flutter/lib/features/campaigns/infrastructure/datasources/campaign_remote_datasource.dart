@@ -3,6 +3,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/campaign_model.dart';
 import '../models/donation_model.dart';
+import '../models/donation_with_campaign_model.dart';
 
 class CampaignRemoteDataSource {
   final Dio _dio = DioClient.instance.dio;
@@ -33,6 +34,11 @@ class CampaignRemoteDataSource {
     return (response.data as List).map((e) => CampaignModel.fromJson(e)).toList();
   }
 
+  Future<List<CampaignModel>> getMyCampaigns() async {
+    final response = await _dio.get(ApiConstants.myCampaigns);
+    return (response.data as List).map((e) => CampaignModel.fromJson(e)).toList();
+  }
+
   Future<CampaignModel> getCampaignDetail(int id) async {
     final response = await _dio.get('${ApiConstants.campaigns}/$id');
     return CampaignModel.fromJson(response.data as Map<String, dynamic>);
@@ -46,5 +52,10 @@ class CampaignRemoteDataSource {
   Future<DonationModel> donate(Map<String, dynamic> payload) async {
     final response = await _dio.post(ApiConstants.donations, data: payload);
     return DonationModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<DonationWithCampaignModel>> getMyDonations() async {
+    final response = await _dio.get(ApiConstants.myDonations);
+    return (response.data as List).map((e) => DonationWithCampaignModel.fromJson(e)).toList();
   }
 }

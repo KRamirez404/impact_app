@@ -19,7 +19,7 @@ class VALORACION(db.Model):
     usuario = db.relationship("USUARIO", backref="valoraciones")
 
     def to_dict(self):
-        return {
+        data = {
             "id_valoracion": self.id_valoracion,
             "id_campania": self.id_campania,
             "id_usuario": self.id_usuario,
@@ -28,4 +28,10 @@ class VALORACION(db.Model):
             "fecha_valoracion": self.fecha_valoracion.isoformat(),
             "visible": self.visible,
         }
+        if self.usuario:
+            data["usuario"] = {
+                "nombre": self.usuario.nombre,
+                "apellido": self.usuario.apellido,
+            }
+        return data
 

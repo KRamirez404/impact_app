@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../features/auth/presentation/bindings/auth_binding.dart';
+import '../../features/auth/presentation/bindings/profile_binding.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -51,7 +52,7 @@ class AppPages {
     GetPage(
       name: '${AppRoutes.campaignDetail}/:id',
       page: () => CampaignDetailPage(),
-      bindings: [CampaignBinding()],
+      bindings: [AuthBinding(), CampaignBinding()],
     ),
     GetPage(
       name: AppRoutes.createCampaign,
@@ -86,7 +87,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.profile,
       page: () => ProfilePage(),
-      bindings: [AuthBinding()],
+      bindings: [AuthBinding(), CampaignBinding(), ProfileBinding()],
     ),
   ];
 }

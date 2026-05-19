@@ -92,6 +92,14 @@ class CampaignListController extends GetxController {
     }
   }
 
+  void updateCampaign(CampaignEntity updatedCampaign) {
+    final index = campaigns.indexWhere((campaign) => campaign.idCampania == updatedCampaign.idCampania);
+    if (index == -1) return;
+
+    campaigns[index] = updatedCampaign;
+    campaigns.refresh();
+  }
+
   Future<CampaignEntity?> createCampaign(Map<String, dynamic> payload) async {
     try {
       isLoading.value = true;

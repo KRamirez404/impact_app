@@ -41,6 +41,18 @@ def list_campaigns():
     return jsonify([campaign.to_dict(include_relations=True) for campaign in campaigns]), 200
 
 
+@campaign_bp.get("/campaigns/mine")
+@jwt_required()
+def list_my_campaigns():
+    current_user_id = int(get_jwt_identity())
+    campaigns = (
+        CAMPAÑA.query.filter(CAMPAÑA.id_creador == current_user_id)
+        .order_by(CAMPAÑA.id_campania.desc())
+        .all()
+    )
+    return jsonify([campaign.to_dict(include_relations=True) for campaign in campaigns]), 200
+
+
 @campaign_bp.post("/campaigns")
 @jwt_required()
 def create_campaign():
@@ -123,4 +135,3 @@ def delete_campaign(campaign_id: int):
     db.session.delete(campaign)
     db.session.commit()
     return jsonify({"message": "Campaña eliminada"}), 200
-
