@@ -112,7 +112,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                   ),
                   const SizedBox(height: 20),
                   _buildQuickActions(
+                    likesCount: campaign.likesCount,
+                    isLiked: campaign.likedByMe,
+                    isLikeLoading: controller.isLiking.value,
                     commentsCount: comments.length,
+                    onLike: () => controller.toggleLike(id),
                     onComments: () => _tabController.animateTo(1),
                     onRate: () => _showRateCampaignDialog(id),
                   ),
@@ -966,16 +970,23 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
   }
 
   Widget _buildQuickActions({
+    required int likesCount,
+    required bool isLiked,
+    required bool isLikeLoading,
     required int commentsCount,
+    required VoidCallback onLike,
     required VoidCallback onComments,
     required VoidCallback onRate,
   }) {
     return Row(
       children: [
         _QuickActionButton(
-          icon: Icons.favorite_border,
-          label: '0',
-          onTap: () {},
+          icon: isLiked ? Icons.favorite : Icons.favorite_border,
+          label: likesCount.toString(),
+          onTap: onLike,
+          isDisabled: isLikeLoading,
+          iconColor: isLiked ? const Color(0xFFE53935) : const Color(0xFF0A0A0A),
+          labelColor: isLiked ? const Color(0xFFE53935) : const Color(0xFF0A0A0A),
         ),
         const SizedBox(width: 8),
         _QuickActionButton(
@@ -1515,19 +1526,25 @@ class _QuickActionButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.iconColor,
+    this.labelColor,
+    this.isDisabled = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color? iconColor;
+  final Color? labelColor;
+  final bool isDisabled;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: OutlinedButton(
-        onPressed: onTap,
+        onPressed: isDisabled ? null : onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF0A0A0A),
+          foregroundColor: labelColor ?? const Color(0xFF0A0A0A),
           side: BorderSide(
             color: Colors.black.withValues(alpha: 0.1),
             width: 0.8,
@@ -1540,14 +1557,15 @@ class _QuickActionButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18, color: const Color(0xFF0A0A0A)),
+            Icon(icon, size: 18, color: iconColor ?? const Color(0xFF0A0A0A)),
             const SizedBox(height: 6),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontFamily: 'Segoe UI Emoji',
                 fontWeight: FontWeight.w500,
+                color: labelColor ?? const Color(0xFF0A0A0A),
               ),
             ),
           ],

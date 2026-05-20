@@ -394,7 +394,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
             const SizedBox(height: 4),
             TextFormField(
               controller: _cuentaCtrl,
-              decoration: _inputDecoration('Ej: @upa123'),
+              decoration: _inputDecoration('Ej: @tucuenta123'),
               maxLines: 1,
             ),
             const SizedBox(height: 12),

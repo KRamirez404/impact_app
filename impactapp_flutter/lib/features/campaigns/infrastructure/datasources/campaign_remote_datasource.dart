@@ -4,6 +4,7 @@ import '../../../../core/network/dio_client.dart';
 import '../models/campaign_model.dart';
 import '../models/donation_model.dart';
 import '../models/donation_with_campaign_model.dart';
+import '../models/like_status_model.dart';
 
 class CampaignRemoteDataSource {
   final Dio _dio = DioClient.instance.dio;
@@ -57,5 +58,13 @@ class CampaignRemoteDataSource {
   Future<List<DonationWithCampaignModel>> getMyDonations() async {
     final response = await _dio.get(ApiConstants.myDonations);
     return (response.data as List).map((e) => DonationWithCampaignModel.fromJson(e)).toList();
+  }
+
+  Future<LikeStatusModel> toggleLike(int campaignId) async {
+    final response = await _dio.post(
+      '${ApiConstants.likes}/toggle',
+      data: {'id_campania': campaignId},
+    );
+    return LikeStatusModel.fromJson(response.data as Map<String, dynamic>);
   }
 }

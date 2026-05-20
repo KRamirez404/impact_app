@@ -16,5 +16,6 @@ class ApiConstants {
   static const String tracking = '$baseUrl/tracking';
   static const String collectionPoints = '$baseUrl/collection-points';
   static const String ratings = '$baseUrl/ratings';
+  static const String likes = '$baseUrl/likes';
   static const String health = '$baseUrl/health';
 }

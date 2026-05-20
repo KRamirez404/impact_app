@@ -50,6 +50,7 @@ class CAMPAÑA(db.Model):
     soportes = db.relationship("SOPORTE", backref="campania", lazy=True)
     seguimientos = db.relationship("SEGUIMIENTO", backref="campania", lazy=True)
     puntos_recoleccion = db.relationship("PUNTO_RECOLECCION", backref="campania", lazy=True)
+    reacciones = db.relationship("REACCION", backref="campania", lazy=True)
 
     def to_dict(self, include_relations=False):
         data = {
@@ -71,4 +72,3 @@ class CAMPAÑA(db.Model):
             data["categoria"] = self.categoria.to_dict() if self.categoria else None
             data["creador"] = self.creador.to_dict() if self.creador else None
         return data
-

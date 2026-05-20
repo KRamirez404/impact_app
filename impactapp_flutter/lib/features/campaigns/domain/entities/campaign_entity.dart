@@ -20,6 +20,8 @@ class CampaignEntity {
   final int donantesCount;
   final int puntosCount;
   final int vistasCount;
+  final int likesCount;
+  final bool likedByMe;
   final List<Map<String, dynamic>> valoraciones;
   final List<Map<String, dynamic>> soportes;
   final List<Map<String, dynamic>> puntosRecoleccion;
@@ -47,6 +49,8 @@ class CampaignEntity {
     this.donantesCount = 0,
     this.puntosCount = 0,
     this.vistasCount = 0,
+    this.likesCount = 0,
+    this.likedByMe = false,
     this.valoraciones = const [],
     this.soportes = const [],
     this.puntosRecoleccion = const [],
@@ -75,6 +79,8 @@ class CampaignEntity {
     int? donantesCount,
     int? puntosCount,
     int? vistasCount,
+    int? likesCount,
+    bool? likedByMe,
     List<Map<String, dynamic>>? valoraciones,
     List<Map<String, dynamic>>? soportes,
     List<Map<String, dynamic>>? puntosRecoleccion,
@@ -102,6 +108,8 @@ class CampaignEntity {
       donantesCount: donantesCount ?? this.donantesCount,
       puntosCount: puntosCount ?? this.puntosCount,
       vistasCount: vistasCount ?? this.vistasCount,
+      likesCount: likesCount ?? this.likesCount,
+      likedByMe: likedByMe ?? this.likedByMe,
       valoraciones: valoraciones ?? this.valoraciones,
       soportes: soportes ?? this.soportes,
       puntosRecoleccion: puntosRecoleccion ?? this.puntosRecoleccion,

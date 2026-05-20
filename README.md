@@ -172,6 +172,7 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | `POST` | `/api/ratings` | JWT | Crear valoración |
 | `GET` | `/api/collection-points/:campaign_id` | — | Puntos de recolección |
 | `POST` | `/api/collection-points` | JWT | Crear punto de recolección |
+| `POST` | `/api/likes/toggle` | JWT | Dar o quitar like |
 
 ---
 

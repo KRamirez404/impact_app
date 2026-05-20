@@ -23,6 +23,8 @@ class CampaignModel extends CampaignEntity {
     super.donantesCount = 0,
     super.puntosCount = 0,
     super.vistasCount = 0,
+    super.likesCount = 0,
+    super.likedByMe = false,
     super.valoraciones = const [],
     super.soportes = const [],
     super.puntosRecoleccion = const [],
@@ -56,6 +58,8 @@ class CampaignModel extends CampaignEntity {
       donantesCount: json['donantes_count'] ?? (json['donaciones'] as List? ?? []).length,
       puntosCount: (json['puntos_recoleccion'] as List? ?? []).length,
       vistasCount: json['vistas_count'] ?? 0,
+      likesCount: json['likes_count'] ?? 0,
+      likedByMe: json['liked_by_me'] ?? false,
       valoraciones: (json['valoraciones'] as List<dynamic>? ?? [])
           .map((e) => (e as Map<String, dynamic>))
           .toList(),

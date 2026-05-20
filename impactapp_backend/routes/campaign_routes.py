@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from models import CAMPAÑA, CATEGORIA, CIUDAD, db
+from models import CAMPAÑA, CATEGORIA, CIUDAD, REACCION, db
 
 campaign_bp = Blueprint("campaign_bp", __name__, url_prefix="/api")
 
@@ -88,14 +88,28 @@ def create_campaign():
 
 
 @campaign_bp.get("/campaigns/<int:campaign_id>")
+@jwt_required(optional=True)
 def get_campaign(campaign_id: int):
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
+    current_user_id = get_jwt_identity()
     payload = campaign.to_dict(include_relations=True)
     payload["valoraciones"] = [r.to_dict() for r in campaign.valoraciones if r.visible]
     payload["soportes"] = [s.to_dict() for s in campaign.soportes]
     payload["seguimientos"] = [s.to_dict() for s in campaign.seguimientos]
     payload["puntos_recoleccion"] = [p.to_dict() for p in campaign.puntos_recoleccion]
     payload["donaciones"] = [d.to_dict() for d in campaign.donaciones]
+    payload["likes_count"] = REACCION.query.filter_by(
+        id_campania=campaign.id_campania
+    ).count()
+    payload["liked_by_me"] = (
+        REACCION.query.filter_by(
+            id_campania=campaign.id_campania,
+            id_usuario=int(current_user_id),
+        ).first()
+        is not None
+        if current_user_id
+        else False
+    )
     return jsonify(payload), 200
 
 

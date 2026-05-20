@@ -1,6 +1,7 @@
 import '../../domain/entities/campaign_entity.dart';
 import '../../domain/entities/donation_entity.dart';
 import '../../domain/entities/donation_with_campaign_entity.dart';
+import '../../domain/entities/like_status_entity.dart';
 import '../../domain/repositories/campaign_repository.dart';
 import '../datasources/campaign_remote_datasource.dart';
 
@@ -21,6 +22,11 @@ class CampaignRepositoryImpl implements CampaignRepository {
   @override
   Future<List<DonationWithCampaignEntity>> getMyDonations() {
     return dataSource.getMyDonations();
+  }
+
+  @override
+  Future<LikeStatusEntity> toggleLike(int campaignId) {
+    return dataSource.toggleLike(campaignId);
   }
 
   @override
