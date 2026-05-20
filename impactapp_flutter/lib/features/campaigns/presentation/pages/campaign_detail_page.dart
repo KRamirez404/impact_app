@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import '../../../../shared/widgets/progress_bar.dart';
-import '../../../auth/presentation/controllers/auth_controller.dart';
+import 'package:dio/dio.dart';
 import '../../../ratings/infrastructure/datasources/rating_remote_datasource.dart';
 import '../../../ratings/infrastructure/repositories/rating_repository_impl.dart';
 import '../controllers/campaign_detail_controller.dart';
+import '../widgets/tabs/info_tab.dart';
+import '../widgets/tabs/comments_tab.dart';
+import '../widgets/tabs/tracking_tab.dart';
+import '../widgets/tabs/docs_tab.dart';
 
 class CampaignDetailPage extends StatefulWidget {
   const CampaignDetailPage({super.key});
@@ -14,11 +16,11 @@ class CampaignDetailPage extends StatefulWidget {
   State<CampaignDetailPage> createState() => _CampaignDetailPageState();
 }
 
-class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProviderStateMixin {
-  final CampaignDetailController controller = Get.find<CampaignDetailController>();
+class _CampaignDetailPageState extends State<CampaignDetailPage>
+    with TickerProviderStateMixin {
+  final CampaignDetailController controller =
+      Get.find<CampaignDetailController>();
   late final TabController _tabController;
-  final TextEditingController _commentController = TextEditingController();
-  var _isPublishingComment = false;
 
   @override
   void initState() {
@@ -31,11 +33,12 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
   @override
   void dispose() {
     _tabController.dispose();
-    _commentController.dispose();
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _commentItems(List<Map<String, dynamic>> valoraciones) {
+  List<Map<String, dynamic>> _commentItems(
+    List<Map<String, dynamic>> valoraciones,
+  ) {
     return valoraciones.where((item) {
       final text = (item['comentario'] ?? '').toString().trim();
       return text.isNotEmpty;
@@ -46,85 +49,137 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
   Widget build(BuildContext context) {
     final id = int.parse(Get.parameters['id'] ?? '0');
     return Scaffold(
-      body: Obx(
-        () {
-          final campaign = controller.campaign.value;
-          if (controller.isLoading.value || campaign == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final isVerified = campaign.estado == 'activa' || campaign.estado == 'finalizada';
-          final badges = <Widget>[
-            _CategoryBadge(label: campaign.categoriaNombre),
-            if (isVerified) const _VerifiedBadge(),
-          ];
-          final comments = _commentItems(campaign.valoraciones);
-          return Column(
-            children: [
-              _buildHeader(
-                campaign.titulo,
-                badges,
-                onBack: Get.back,
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  children: [
-                    Text(
-                      campaign.titulo,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+      body: Obx(() {
+        final campaign = controller.campaign.value;
+        if (controller.isLoading.value || campaign == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final isVerified =
+            campaign.estado == 'activa' || campaign.estado == 'finalizada';
+        final badges = <Widget>[
+          _CategoryBadge(label: campaign.categoriaNombre),
+          if (isVerified) const _VerifiedBadge(),
+        ];
+        final comments = _commentItems(campaign.valoraciones);
+        final collected =
+            (campaign.porcentajeAvance / 100) * campaign.metaMonetaria;
+        final daysRemaining = _calculateDaysRemaining(campaign.fechaFin);
+
+        return Column(
+          children: [
+            _buildHeader(
+              campaign.titulo,
+              badges,
+              onBack: Get.back,
+              imageUrl: campaign.soportes.isNotEmpty
+                  ? campaign.soportes.first['url_o_ruta']
+                  : null,
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  Text(
+                    campaign.titulo,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
+                      height: 1.4,
                     ),
-                    const SizedBox(height: 8),
-                    Text(campaign.descripcion, style: const TextStyle(fontSize: 14, color: Color(0xFF717182))),
-                    const SizedBox(height: 16),
-                    ProgressBar(progress: campaign.porcentajeAvance),
-                    const SizedBox(height: 12),
-                    _buildQuickActions(
-                      commentsCount: comments.length,
-                      onComments: () => _tabController.animateTo(1),
-                      onRate: () => _showRateCampaignDialog(id),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDonationButtons(
-                      onDonateMoney: () => _showMoneyDonationDialog(id),
-                      onDonatePhysical: () => _showPhysicalDonationDialog(id, campaign.puntosRecoleccion),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTabsHeader(comments.length),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 520,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildInfoTab(campaign),
-                          _buildCommentsTab(id, comments),
-                          _buildTrackingTab(campaign.seguimientos),
-                          _buildDocsTab(campaign.soportes),
-                        ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _IconText(
+                        icon: Icons.location_on_outlined,
+                        text: campaign.ciudadNombre.isNotEmpty
+                            ? campaign.ciudadNombre
+                            : 'Sin ubicación',
                       ),
+                      const SizedBox(width: 16),
+                      _IconText(
+                        icon: Icons.people_outline,
+                        text: '${campaign.donantesCount} donantes',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildProgressSection(
+                    collected: collected,
+                    goal: campaign.metaMonetaria,
+                    percentage: campaign.porcentajeAvance,
+                    daysRemaining: daysRemaining,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildQuickActions(
+                    commentsCount: comments.length,
+                    onComments: () => _tabController.animateTo(1),
+                    onRate: () => _showRateCampaignDialog(id),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDonationButtons(
+                    onDonateMoney: () => _showMoneyDonationDialog(id),
+                    onDonatePhysical: () => _showPhysicalDonationDialog(
+                      id,
+                      campaign.puntosRecoleccion,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTabsHeader(comments.length),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 520,
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        InfoTab(campaign: campaign),
+                        CommentsTab(
+                          campaignId: id,
+                          comments: comments,
+                          onCommentPublished: () => controller.loadCampaign(id),
+                        ),
+                        TrackingTab(
+                          tracking: campaign.seguimientos,
+                          formatDate: _formatDate,
+                        ),
+                        DocsTab(supports: campaign.soportes),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
-  Widget _buildHeader(String title, List<Widget> badges, {required VoidCallback onBack}) {
+  Widget _buildHeader(
+    String title,
+    List<Widget> badges, {
+    required VoidCallback onBack,
+    String? imageUrl,
+  }) {
     return Stack(
       children: [
         Container(
           height: 256,
           width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1D4ED8), Color(0xFF38BDF8)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+          decoration: BoxDecoration(
+            gradient: imageUrl == null
+                ? const LinearGradient(
+                    colors: [Color(0xFF1D4ED8), Color(0xFF38BDF8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            image: imageUrl != null
+                ? DecorationImage(
+                    image: NetworkImage(imageUrl),
+                    fit: BoxFit.cover,
+                  )
+                : null,
           ),
         ),
         Container(
@@ -151,10 +206,14 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
+                      color: Colors.black.withOpacity(0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
                 Row(children: badges),
@@ -181,7 +240,9 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
               backgroundColor: const Color(0xFF1976D2),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
         ),
@@ -193,9 +254,14 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
             label: const Text('Donar físico'),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF0A0A0A),
-              side: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
+              side: BorderSide(
+                color: Colors.black.withOpacity(0.1),
+                width: 0.8,
+              ),
               padding: const EdgeInsets.symmetric(vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
         ),
@@ -211,17 +277,30 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Container(
                 width: 384,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 1.2),
+                  border: Border.all(
+                    color: Colors.black.withOpacity(0.1),
+                    width: 1.2,
+                  ),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 15, offset: Offset(0, 10)),
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 4)),
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 15,
+                      offset: Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -233,12 +312,19 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           child: Text(
                             'Realizar Donación',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         IconButton(
                           onPressed: () => Navigator.of(dialogContext).pop(),
-                          icon: const Icon(Icons.close, size: 16, color: Color(0xFF0A0A0A)),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xFF0A0A0A),
+                          ),
                         ),
                       ],
                     ),
@@ -252,7 +338,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Monto (COP)',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withOpacity(0.9),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -264,24 +354,46 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                         fillColor: const Color(0xFFF3F3F5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
+                          borderSide: BorderSide(
+                            color: Colors.black.withOpacity(0.1),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
+                          borderSide: BorderSide(
+                            color: Colors.black.withOpacity(0.1),
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
-                      style: const TextStyle(fontSize: 16, color: Color(0xFF717182)),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF717182),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        _AmountChip(label: '\$20.000', onTap: () => setState(() => amountController.text = '20000')),
+                        _AmountChip(
+                          label: '\$20.000',
+                          onTap: () =>
+                              setState(() => amountController.text = '20000'),
+                        ),
                         const SizedBox(width: 8),
-                        _AmountChip(label: '\$50.000', onTap: () => setState(() => amountController.text = '50000')),
+                        _AmountChip(
+                          label: '\$50.000',
+                          onTap: () =>
+                              setState(() => amountController.text = '50000'),
+                        ),
                         const SizedBox(width: 8),
-                        _AmountChip(label: '\$100.000', onTap: () => setState(() => amountController.text = '100000')),
+                        _AmountChip(
+                          label: '\$100.000',
+                          onTap: () =>
+                              setState(() => amountController.text = '100000'),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -289,7 +401,13 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          final amount = double.tryParse(amountController.text.replaceAll('.', '').trim()) ?? 0;
+                          final amount =
+                              double.tryParse(
+                                amountController.text
+                                    .replaceAll('.', '')
+                                    .trim(),
+                              ) ??
+                              0;
                           if (amount <= 0) {
                             Get.snackbar(
                               'Monto inválido',
@@ -306,9 +424,17 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           backgroundColor: const Color(0xFF1976D2),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        child: const Text('Confirmar Donación', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                        child: const Text(
+                          'Confirmar Donación',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -331,17 +457,30 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Container(
                 width: 382,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 1.2),
+                  border: Border.all(
+                    color: Colors.black.withOpacity(0.1),
+                    width: 1.2,
+                  ),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 15, offset: Offset(0, 10)),
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 4)),
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 15,
+                      offset: Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -349,24 +488,38 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.credit_card, color: Color(0xFF1976D2), size: 20),
+                        const Icon(
+                          Icons.credit_card,
+                          color: Color(0xFF1976D2),
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
                             'Realizar Donación',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         IconButton(
                           onPressed: () => Navigator.of(dialogContext).pop(),
-                          icon: const Icon(Icons.close, size: 16, color: Color(0xFF0A0A0A)),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xFF0A0A0A),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0x0D1976D2),
                         borderRadius: BorderRadius.circular(10),
@@ -375,11 +528,21 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Monto a donar', style: TextStyle(fontSize: 14, color: Color(0xFF717182))),
+                          const Text(
+                            'Monto a donar',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF717182),
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             _formatCurrency(amount),
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF1976D2)),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1976D2),
+                            ),
                           ),
                         ],
                       ),
@@ -389,13 +552,20 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Método de pago',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withOpacity(0.9),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0x0D1976D2),
                         borderRadius: BorderRadius.circular(10),
@@ -410,36 +580,67 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                               color: const Color(0x1A1976D2),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Icon(Icons.account_balance_wallet, color: Color(0xFF1976D2), size: 20),
+                            child: const Icon(
+                              Icons.account_balance_wallet,
+                              color: Color(0xFF1976D2),
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Llave Bre-B', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                Text(
+                                  'Llave Bre-B',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                                 SizedBox(height: 2),
-                                Text('300 1234567', style: TextStyle(fontSize: 12, color: Color(0xFF717182))),
+                                Text(
+                                  '300 1234567',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF717182),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          const Icon(Icons.qr_code, color: Color(0xFF1976D2), size: 20),
+                          const Icon(
+                            Icons.qr_code,
+                            color: Color(0xFF1976D2),
+                            size: 20,
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0x0D2196F3),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.1),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Comprobante de Transferencia', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                          const Text(
+                            'Comprobante de Transferencia',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           Container(
                             height: 90,
@@ -447,14 +648,26 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+                              border: Border.all(
+                                color: Colors.black.withOpacity(0.1),
+                              ),
                             ),
                             child: const Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.upload, color: Color(0xFF717182), size: 28),
+                                Icon(
+                                  Icons.upload,
+                                  color: Color(0xFF717182),
+                                  size: 28,
+                                ),
                                 SizedBox(height: 6),
-                                Text('Subir comprobante', style: TextStyle(fontSize: 12, color: Color(0xFF717182))),
+                                Text(
+                                  'Subir comprobante',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF717182),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -469,13 +682,18 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           value: acceptTerms,
                           onChanged: isSaving
                               ? null
-                              : (value) => setState(() => acceptTerms = value ?? false),
+                              : (value) => setState(
+                                  () => acceptTerms = value ?? false,
+                                ),
                           activeColor: const Color(0xFF1976D2),
                         ),
                         const Expanded(
                           child: Text(
                             'Acepto los términos y condiciones y autorizo el débito correspondiente.',
-                            style: TextStyle(fontSize: 14, color: Color(0xFF717182)),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF717182),
+                            ),
                           ),
                         ),
                       ],
@@ -483,7 +701,10 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF0FDF4),
                         borderRadius: BorderRadius.circular(10),
@@ -491,12 +712,19 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.lock_outline, size: 18, color: Color(0xFF00A63E)),
+                          Icon(
+                            Icons.lock_outline,
+                            size: 18,
+                            color: Color(0xFF00A63E),
+                          ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Tu información está protegida con encriptación de 256 bits.',
-                              style: TextStyle(fontSize: 12, color: Color(0xFF016630)),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF016630),
+                              ),
                             ),
                           ),
                         ],
@@ -524,23 +752,42 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           backgroundColor: const Color(0xFF1976D2),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: isSaving
                             ? const SizedBox(
                                 height: 18,
                                 width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
-                            : const Text('Guardar Donación', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                            : const Text(
+                                'Guardar Donación',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
                       child: TextButton(
-                        onPressed: isSaving ? null : () => Navigator.of(dialogContext).pop(),
-                        child: const Text('Volver', style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A))),
+                        onPressed: isSaving
+                            ? null
+                            : () => Navigator.of(dialogContext).pop(),
+                        child: const Text(
+                          'Volver',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF0A0A0A),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -591,264 +838,88 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
     );
   }
 
-  Widget _buildInfoTab(dynamic campaign) {
-    final organizer = [
-      campaign.creadorNombre,
-      campaign.creadorApellido,
-    ].where((e) => e.toString().isNotEmpty).join(' ');
-    return ListView(
-      children: [
-        _SectionBlock(
-          title: 'Descripción',
-          child: Text(
-            campaign.descripcion,
-            style: const TextStyle(fontSize: 16, height: 1.6, color: Color(0xFF717182)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _SectionBlock(
-          title: 'Organizador',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildProgressSection({
+    required double collected,
+    required double goal,
+    required double percentage,
+    required int daysRemaining,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE3F2FD).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                organizer.isNotEmpty ? organizer : 'Sin datos',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                campaign.creadorCorreo.isNotEmpty ? campaign.creadorCorreo : 'Sin correo',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF717182)),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _SectionBlock(
-          title: 'Puntos de Recolección',
-          child: campaign.puntosRecoleccion.isEmpty
-              ? const Text('No hay puntos registrados', style: TextStyle(color: Color(0xFF717182)))
-              : Column(
-                  children: campaign.puntosRecoleccion.map<Widget>((point) {
-                    final horario = point['horario'] ?? '';
-                    final direccion = point['direccion'] ?? '';
-                    final ciudad = point['ciudad']?['nombre'] ?? '';
-                    final contacto = point['contacto'] ?? '';
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            (point['nombre'] ?? '').toString(),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 8),
-                          _InfoRow(icon: Icons.location_on_outlined, text: '$direccion ${ciudad.toString().isEmpty ? '' : '- $ciudad'}'),
-                          if (horario.toString().isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            _InfoRow(icon: Icons.schedule, text: horario.toString()),
-                          ],
-                          if (contacto.toString().isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            _InfoRow(icon: Icons.phone_outlined, text: contacto.toString()),
-                          ],
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                _formatCurrencyDetailed(collected),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1976D2),
                 ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCommentsTab(int campaignId, List<Map<String, dynamic>> comments) {
-    final authUser = Get.isRegistered<AuthController>() ? Get.find<AuthController>().user.value : null;
-    final userInitials = authUser != null
-        ? '${authUser.nombre.isNotEmpty ? authUser.nombre[0] : ''}${authUser.apellido.isNotEmpty ? authUser.apellido[0] : ''}'
-            .toUpperCase()
-        : '?';
-
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFF1976D2),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  userInitials.isEmpty ? '?' : userInitials,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _commentController,
-                      maxLines: 3,
-                      minLines: 2,
-                      enabled: !_isPublishingComment,
-                      decoration: InputDecoration(
-                        hintText: 'Escribe un comentario...',
-                        hintStyle: const TextStyle(fontSize: 16, color: Color(0xFF717182)),
-                        filled: true,
-                        fillColor: const Color(0xFFF3F3F5),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: _isPublishingComment ? null : () => _publishComment(campaignId),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1976D2),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(75, 32),
-                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 4),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: _isPublishingComment
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Publicar', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                  'de ${_formatCurrencyDetailed(goal)}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF717182),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-        if (comments.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 32),
-            child: Column(
-              children: [
-                Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey.shade500),
-                const SizedBox(height: 8),
-                const Text(
-                  'No hay comentarios aún',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Color(0xFF717182)),
-                ),
-              ],
+          const SizedBox(height: 12),
+          Container(
+            height: 8,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1976D2).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(100),
             ),
-          )
-        else
-          ...comments.map((comment) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _CommentCard(comment: comment),
-              )),
-      ],
-    );
-  }
-
-  Future<void> _publishComment(int campaignId) async {
-    final text = _commentController.text.trim();
-    if (text.isEmpty) {
-      Get.snackbar(
-        'Comentario vacío',
-        'Escribe algo antes de publicar',
-        backgroundColor: const Color(0xFFD32F2F),
-        colorText: Colors.white,
-      );
-      return;
-    }
-
-    if (!Get.isRegistered<AuthController>() || Get.find<AuthController>().user.value == null) {
-      Get.snackbar(
-        'Inicia sesión',
-        'Debes iniciar sesión para comentar',
-        backgroundColor: const Color(0xFFD32F2F),
-        colorText: Colors.white,
-      );
-      return;
-    }
-
-    setState(() => _isPublishingComment = true);
-    final repository = RatingRepositoryImpl(RatingRemoteDataSource());
-    try {
-      await repository.rateCampaign(
-        idCampania: campaignId,
-        calificacion: 5,
-        comentario: text,
-      );
-      _commentController.clear();
-      await controller.loadCampaign(campaignId);
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      final message = data is Map<String, dynamic> ? data['error']?.toString() : null;
-      if (!mounted) return;
-      Get.snackbar(
-        'Error',
-        message ?? 'No se pudo publicar el comentario',
-        backgroundColor: const Color(0xFFD32F2F),
-        colorText: Colors.white,
-      );
-    } finally {
-      if (mounted) setState(() => _isPublishingComment = false);
-    }
-  }
-
-  Widget _buildTrackingTab(List<Map<String, dynamic>> tracking) {
-    if (tracking.isEmpty) {
-      return const Center(child: Text('Sin avances registrados'));
-    }
-    return ListView.separated(
-      itemCount: tracking.length,
-      separatorBuilder: (_, index) => const SizedBox(height: 12),
-      itemBuilder: (_, index) {
-        final item = tracking[index];
-        final fecha = item['fecha_registro'] ?? '';
-        final descripcion = item['descripcion'] ?? '';
-        final avance = item['porcentaje_avance'] ?? '';
-        return _SimpleCard(
-          title: '${_formatDate(fecha.toString())} • $avance%',
-          subtitle: descripcion.toString(),
-        );
-      },
-    );
-  }
-
-  Widget _buildDocsTab(List<Map<String, dynamic>> supports) {
-    if (supports.isEmpty) {
-      return const Center(child: Text('Sin documentos'));
-    }
-    return ListView.separated(
-      itemCount: supports.length,
-      separatorBuilder: (_, index) => const SizedBox(height: 12),
-      itemBuilder: (_, index) {
-        final support = supports[index];
-        return _SimpleCard(
-          title: (support['tipo'] ?? 'Documento').toString(),
-          subtitle: (support['descripcion'] ?? support['url_o_ruta'] ?? '').toString(),
-        );
-      },
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: ((percentage / 100).clamp(0.0, 1.0)).toDouble(),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1976D2),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${percentage.toStringAsFixed(0)}% alcanzado',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF717182),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '$daysRemaining días restantes',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF717182),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -871,6 +942,27 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
       return '\$$miles.000';
     }
     return '\$${amount.toStringAsFixed(0)}';
+  }
+
+  String _formatCurrencyDetailed(double amount) {
+    final formatted = amount
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
+    return '\$ $formatted';
+  }
+
+  int _calculateDaysRemaining(String fechaFinIso) {
+    try {
+      final end = DateTime.parse(fechaFinIso);
+      final now = DateTime.now();
+      final difference = end.difference(now).inDays;
+      return difference > 0 ? difference : 0;
+    } catch (_) {
+      return 0;
+    }
   }
 
   Widget _buildQuickActions({
@@ -930,17 +1022,30 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Container(
                 width: 384,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 1.2),
+                  border: Border.all(
+                    color: Colors.black.withOpacity(0.1),
+                    width: 1.2,
+                  ),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 15, offset: Offset(0, 10)),
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 4)),
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 15,
+                      offset: Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -952,12 +1057,19 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           child: Text(
                             'Realizar Donación Físico',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         IconButton(
                           onPressed: () => Navigator.of(dialogContext).pop(),
-                          icon: const Icon(Icons.close, size: 16, color: Color(0xFF0A0A0A)),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xFF0A0A0A),
+                          ),
                         ),
                       ],
                     ),
@@ -971,7 +1083,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Selecciona Punto Físico',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withOpacity(0.9),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -980,7 +1096,9 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3F3F5),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.1),
+                        ),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
@@ -990,11 +1108,14 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                               .map(
                                 (point) => DropdownMenuItem<int>(
                                   value: point['id_punto'] as int?,
-                                  child: Text((point['nombre'] ?? '').toString()),
+                                  child: Text(
+                                    (point['nombre'] ?? '').toString(),
+                                  ),
                                 ),
                               )
                               .toList(),
-                          onChanged: (value) => setState(() => selectedPointId = value),
+                          onChanged: (value) =>
+                              setState(() => selectedPointId = value),
                         ),
                       ),
                     ),
@@ -1003,7 +1124,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Qué Donó',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withOpacity(0.9),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1012,7 +1137,9 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3F3F5),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.1),
+                        ),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
@@ -1022,11 +1149,16 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                               .map(
                                 (item) => DropdownMenuItem<String>(
                                   value: item['value']!,
-                                  child: Text(item['label']!, style: const TextStyle(fontSize: 14)),
+                                  child: Text(
+                                    item['label']!,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
                                 ),
                               )
                               .toList(),
-                          onChanged: (value) => setState(() => selectedType = value ?? selectedType),
+                          onChanged: (value) => setState(
+                            () => selectedType = value ?? selectedType,
+                          ),
                         ),
                       ),
                     ),
@@ -1035,7 +1167,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Añade un Comentario (opcional)',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withOpacity(0.9),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1047,13 +1183,20 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                         fillColor: const Color(0xFFF3F3F5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
+                          borderSide: BorderSide(
+                            color: Colors.black.withOpacity(0.1),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
+                          borderSide: BorderSide(
+                            color: Colors.black.withOpacity(0.1),
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1061,7 +1204,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Compártenos una imagen',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withValues(alpha: 0.9),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1075,9 +1222,18 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.photo_camera_outlined, color: Color(0xFF2A343D)),
+                          Icon(
+                            Icons.photo_camera_outlined,
+                            color: Color(0xFF2A343D),
+                          ),
                           SizedBox(height: 4),
-                          Text('Tomar Foto', style: TextStyle(fontSize: 14, color: Color(0xFF717182))),
+                          Text(
+                            'Tomar Foto',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF717182),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -1110,9 +1266,17 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           backgroundColor: const Color(0xFF1976D2),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        child: const Text('Confirmar Donación', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                        child: const Text(
+                          'Confirmar Donación',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -1136,17 +1300,30 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Container(
                 width: 277,
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    width: 0.8,
+                  ),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 15, offset: Offset(0, 10)),
-                    BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 4)),
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 15,
+                      offset: Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -1158,12 +1335,19 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           child: Text(
                             'Calificar Campaña',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         IconButton(
                           onPressed: () => Navigator.of(dialogContext).pop(),
-                          icon: const Icon(Icons.close, size: 16, color: Color(0xFF0A0A0A)),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Color(0xFF0A0A0A),
+                          ),
                         ),
                       ],
                     ),
@@ -1179,9 +1363,13 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                         final starIndex = index + 1;
                         return IconButton(
                           iconSize: 20,
-                          onPressed: isSaving ? null : () => setState(() => ratingValue = starIndex),
+                          onPressed: isSaving
+                              ? null
+                              : () => setState(() => ratingValue = starIndex),
                           icon: Icon(
-                            starIndex <= ratingValue ? Icons.star : Icons.star_border,
+                            starIndex <= ratingValue
+                                ? Icons.star
+                                : Icons.star_border,
                             color: const Color(0xFF0A0A0A),
                           ),
                         );
@@ -1192,7 +1380,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Comentario (opcional)',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black.withValues(alpha: 0.9)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withValues(alpha: 0.9),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1207,7 +1399,10 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -1219,7 +1414,9 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                             : () async {
                                 final navigator = Navigator.of(dialogContext);
                                 setState(() => isSaving = true);
-                                final repository = RatingRepositoryImpl(RatingRemoteDataSource());
+                                final repository = RatingRepositoryImpl(
+                                  RatingRemoteDataSource(),
+                                );
                                 try {
                                   await repository.rateCampaign(
                                     idCampania: campaignId,
@@ -1229,12 +1426,15 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                                   await controller.loadCampaign(campaignId);
                                 } on DioException catch (e) {
                                   final data = e.response?.data;
-                                  final message = data is Map<String, dynamic> ? data['error']?.toString() : null;
+                                  final message = data is Map<String, dynamic>
+                                      ? data['error']?.toString()
+                                      : null;
                                   if (!mounted) return;
                                   setState(() => isSaving = false);
                                   Get.snackbar(
                                     'Error',
-                                    message ?? 'No se pudo registrar la valoración',
+                                    message ??
+                                        'No se pudo registrar la valoración',
                                     backgroundColor: const Color(0xFFD32F2F),
                                     colorText: Colors.white,
                                   );
@@ -1247,15 +1447,26 @@ class _CampaignDetailPageState extends State<CampaignDetailPage> with TickerProv
                           backgroundColor: const Color(0xFF1976D2),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: isSaving
                             ? const SizedBox(
                                 height: 18,
                                 width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
-                            : const Text('Enviar Calificación', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                            : const Text(
+                                'Enviar Calificación',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -1283,11 +1494,17 @@ class _AmountChip extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF0A0A0A),
-          side: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 1.2),
+          side: BorderSide(
+            color: Colors.black.withValues(alpha: 0.1),
+            width: 1.2,
+          ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           padding: const EdgeInsets.symmetric(vertical: 6),
         ),
-        child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
       ),
     );
   }
@@ -1311,16 +1528,28 @@ class _QuickActionButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF0A0A0A),
-          side: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
+          side: BorderSide(
+            color: Colors.black.withValues(alpha: 0.1),
+            width: 0.8,
+          ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          backgroundColor: Colors.white,
+          elevation: 0,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 18, color: const Color(0xFF0A0A0A)),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontFamily: 'Segoe UI Emoji',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -1366,34 +1595,18 @@ class _VerifiedBadge extends StatelessWidget {
         children: [
           Icon(Icons.check_circle, size: 12, color: Colors.white),
           SizedBox(width: 4),
-          Text('Verificada', style: TextStyle(color: Colors.white, fontSize: 12)),
+          Text(
+            'Verificada',
+            style: TextStyle(color: Colors.white, fontSize: 12),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SectionBlock extends StatelessWidget {
-  const _SectionBlock({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 8),
-        child,
-      ],
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.text});
+class _IconText extends StatelessWidget {
+  const _IconText({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -1401,124 +1614,19 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 16, color: const Color(0xFF717182)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(text, style: const TextStyle(fontSize: 14, color: Color(0xFF717182))),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF717182),
+            fontFamily: 'Segoe UI Emoji',
+          ),
         ),
       ],
-    );
-  }
-}
-
-class _SimpleCard extends StatelessWidget {
-  const _SimpleCard({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text(subtitle, style: const TextStyle(fontSize: 14, color: Color(0xFF717182))),
-        ],
-      ),
-    );
-  }
-}
-
-class _CommentCard extends StatelessWidget {
-  const _CommentCard({required this.comment});
-
-  final Map<String, dynamic> comment;
-
-  String _formatDate(String isoDate) {
-    try {
-      final parsed = DateTime.parse(isoDate);
-      return '${parsed.day}/${parsed.month}/${parsed.year}';
-    } catch (_) {
-      return isoDate;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final usuario = comment['usuario'] as Map<String, dynamic>?;
-    final nombre = usuario != null
-        ? '${usuario['nombre'] ?? ''} ${usuario['apellido'] ?? ''}'.trim()
-        : 'Usuario';
-    final initials = nombre.isNotEmpty
-        ? nombre.split(' ').where((p) => p.isNotEmpty).take(2).map((p) => p[0]).join().toUpperCase()
-        : 'U';
-    final body = (comment['comentario'] ?? '').toString();
-    final fecha = _formatDate((comment['fecha_valoracion'] ?? '').toString());
-    final calificacion = (comment['calificacion'] as num?)?.toInt() ?? 0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: const Color(0xFFECECF0),
-            child: Text(
-              initials,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0A0A0A)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        nombre.isEmpty ? 'Usuario' : nombre,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    Text(fecha, style: const TextStyle(fontSize: 12, color: Color(0xFF717182))),
-                  ],
-                ),
-                if (calificacion > 0) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: List.generate(
-                      5,
-                      (index) => Icon(
-                        index < calificacion ? Icons.star : Icons.star_border,
-                        size: 14,
-                        color: const Color(0xFF0A0A0A),
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 6),
-                Text(body, style: const TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF717182))),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

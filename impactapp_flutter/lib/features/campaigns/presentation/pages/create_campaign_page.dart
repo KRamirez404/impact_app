@@ -27,7 +27,8 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
 
   final _picker = ImagePicker();
   final CampaignListController controller = Get.find<CampaignListController>();
-  final CampaignRemoteDataSource _remoteDataSource = Get.find<CampaignRemoteDataSource>();
+  final CampaignRemoteDataSource _remoteDataSource =
+      Get.find<CampaignRemoteDataSource>();
   final CreateCollectionPointUseCase _createCollectionPointUseCase =
       Get.find<CreateCollectionPointUseCase>();
 
@@ -89,7 +90,10 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
   List<Map<String, dynamic>> get _availableCities {
     if (_selectedDepartment == null) return const [];
     return _cities
-        .where((city) => (city['departamento'] ?? '').toString() == _selectedDepartment)
+        .where(
+          (city) =>
+              (city['departamento'] ?? '').toString() == _selectedDepartment,
+        )
         .toList();
   }
 
@@ -133,7 +137,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
       height: height,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
+        border: Border.all(color: Colors.black.withOpacity(0.1), width: 0.8),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -167,7 +171,10 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
               ],
             ),
           ),
-          if (contentPadding != null) Padding(padding: contentPadding, child: child) else child,
+          if (contentPadding != null)
+            Padding(padding: contentPadding, child: child)
+          else
+            child,
         ],
       ),
     );
@@ -250,9 +257,13 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
             const SizedBox(height: 4),
             TextFormField(
               controller: _tituloCtrl,
-              decoration: _inputDecoration('Ej: Ayuda para reconstrucción de escuela'),
+              decoration: _inputDecoration(
+                'Ej: Ayuda para reconstrucción de escuela',
+              ),
               maxLines: 1,
-              validator: (v) => v == null || v.trim().isEmpty ? 'Título es obligatorio' : null,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? 'Título es obligatorio'
+                  : null,
             ),
             const SizedBox(height: 12),
             _label('Descripción detallada *'),
@@ -260,14 +271,20 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
             TextFormField(
               controller: _descripcionCtrl,
               maxLines: 3,
-              decoration: _inputDecoration('Describe la situación, qué ayuda necesitas...'),
-              validator: (v) => v == null || v.trim().isEmpty ? 'Descripción es obligatoria' : null,
+              decoration: _inputDecoration(
+                'Describe la situación, qué ayuda necesitas...',
+              ),
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? 'Descripción es obligatoria'
+                  : null,
             ),
             const SizedBox(height: 12),
             _label('Categoría *'),
             const SizedBox(height: 4),
             DropdownButtonFormField<String>(
-              initialValue: _selectedCategoryId == null ? null : '$_selectedCategoryId',
+              initialValue: _selectedCategoryId == null
+                  ? null
+                  : '$_selectedCategoryId',
               isExpanded: true,
               items: categoryItems,
               onChanged: (value) {
@@ -276,7 +293,9 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                 });
               },
               decoration: _inputDecoration('Selecciona una categoría'),
-              validator: (value) => value == null || value.isEmpty ? 'Categoría es obligatoria' : null,
+              validator: (value) => value == null || value.isEmpty
+                  ? 'Categoría es obligatoria'
+                  : null,
             ),
             const SizedBox(height: 12),
             _label('Departamento *'),
@@ -292,7 +311,9 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                 });
               },
               decoration: _inputDecoration('Departamento'),
-              validator: (value) => value == null || value.isEmpty ? 'Departamento es obligatorio' : null,
+              validator: (value) => value == null || value.isEmpty
+                  ? 'Departamento es obligatorio'
+                  : null,
             ),
             const SizedBox(height: 12),
             _label('Ciudad *'),
@@ -307,7 +328,9 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                 });
               },
               decoration: _inputDecoration('Selecciona una ciudad'),
-              validator: (value) => value == null || value.isEmpty ? 'Ciudad es obligatoria' : null,
+              validator: (value) => value == null || value.isEmpty
+                  ? 'Ciudad es obligatoria'
+                  : null,
             ),
             const SizedBox(height: 12),
             _label('Tipo de ayuda *'),
@@ -319,10 +342,14 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                 DropdownMenuItem(value: 'economica', child: Text('Económica')),
                 DropdownMenuItem(value: 'alimentos', child: Text('Alimentos')),
                 DropdownMenuItem(value: 'ropa', child: Text('Ropa')),
-                DropdownMenuItem(value: 'medicamentos', child: Text('Medicamentos')),
+                DropdownMenuItem(
+                  value: 'medicamentos',
+                  child: Text('Medicamentos'),
+                ),
                 DropdownMenuItem(value: 'mixta', child: Text('Mixta')),
               ],
-              onChanged: (value) => setState(() => _selectedHelpType = value ?? 'economica'),
+              onChanged: (value) =>
+                  setState(() => _selectedHelpType = value ?? 'economica'),
               decoration: _inputDecoration('Tipo de ayuda'),
             ),
             const SizedBox(height: 12),
@@ -333,7 +360,8 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
               keyboardType: TextInputType.number,
               decoration: _inputDecoration('Ej: 50000000'),
               maxLines: 1,
-              validator: (v) => v == null || v.trim().isEmpty ? 'Meta es obligatoria' : null,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Meta es obligatoria' : null,
             ),
             const SizedBox(height: 12),
             _label('Fecha límite *'),
@@ -342,7 +370,9 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
               controller: _fechaFinCtrl,
               decoration: _inputDecoration('YYYY-MM-DD'),
               maxLines: 1,
-              validator: (v) => v == null || v.trim().isEmpty ? 'Fecha límite es obligatoria' : null,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? 'Fecha límite es obligatoria'
+                  : null,
             ),
           ],
         ),
@@ -374,7 +404,9 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
               controller: _correoCtrl,
               decoration: _inputDecoration('Ej: contacto@campana.org'),
               maxLines: 1,
-              validator: (v) => v == null || v.trim().isEmpty ? 'Correo es obligatorio' : null,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? 'Correo es obligatorio'
+                  : null,
             ),
           ],
         ),
@@ -392,16 +424,23 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
         child: Column(
           children: [
             Container(
-              width: 329.6,
+              width: double.infinity,
               height: 163.19,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 1.6),
+                border: Border.all(
+                  color: Colors.black.withOpacity(0.1),
+                  width: 1.6,
+                ),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.upload_outlined, size: 40, color: Color(0xFF717182)),
+                  const Icon(
+                    Icons.upload_outlined,
+                    size: 40,
+                    color: Color(0xFF717182),
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Documentos oficiales, fotos, enlaces a medios',
@@ -419,8 +458,13 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(153.6, 32),
                       backgroundColor: Colors.white,
-                      side: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: BorderSide(
+                        color: Colors.black.withOpacity(0.1),
+                        width: 0.8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       foregroundColor: const Color(0xFF0A0A0A),
                     ),
                     child: const Text(
@@ -471,8 +515,13 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 32),
                 backgroundColor: Colors.white,
-                side: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                side: BorderSide(
+                  color: Colors.black.withOpacity(0.1),
+                  width: 0.8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 foregroundColor: const Color(0xFF0A0A0A),
               ),
               child: const Text(
@@ -496,7 +545,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                      border: Border.all(color: Colors.black.withOpacity(0.08)),
                     ),
                     child: Text(
                       '${point.nombre} · ${point.direccion}',
@@ -570,7 +619,12 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
       }
       Get.offAllNamed(AppRoutes.home);
     } catch (e) {
-      Get.snackbar('Error', e.toString(), backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -605,7 +659,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                     height: 46,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withOpacity(0.2),
                     ),
                     alignment: Alignment.center,
                     child: const Text(
@@ -662,7 +716,9 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                                   foregroundColor: Colors.white,
                                   minimumSize: const Size.fromHeight(36),
                                   elevation: 0,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
                                 ),
                                 child: Text(
                                   _submitting ? 'Creando...' : 'Crear Campaña',
@@ -681,8 +737,13 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
                               style: OutlinedButton.styleFrom(
                                 minimumSize: const Size(88, 36),
                                 backgroundColor: Colors.white,
-                                side: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                side: BorderSide(
+                                  color: Colors.black.withOpacity(0.1),
+                                  width: 0.8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                                 foregroundColor: const Color(0xFF0A0A0A),
                               ),
                               child: const Text(
