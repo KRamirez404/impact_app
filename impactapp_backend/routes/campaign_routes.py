@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from models import CAMPAÑA, CATEGORIA, CIUDAD, REACCION, db
+from models import CAMPAÑA, CATEGORIA, CIUDAD, DONACION, REACCION, db
 
 campaign_bp = Blueprint("campaign_bp", __name__, url_prefix="/api")
 
@@ -38,7 +38,17 @@ def list_campaigns():
         query = query.filter(CAMPAÑA.estado == estado)
 
     campaigns = query.order_by(CAMPAÑA.id_campania.desc()).all()
-    return jsonify([campaign.to_dict(include_relations=True) for campaign in campaigns]), 200
+    payload = []
+    for campaign in campaigns:
+        data = campaign.to_dict(include_relations=True)
+        data["donantes_count"] = (
+            db.session.query(db.func.count(db.distinct(DONACION.id_donante)))
+            .filter(DONACION.id_campania == campaign.id_campania)
+            .scalar()
+            or 0
+        )
+        payload.append(data)
+    return jsonify(payload), 200
 
 
 @campaign_bp.get("/campaigns/mine")
@@ -98,6 +108,12 @@ def get_campaign(campaign_id: int):
     payload["seguimientos"] = [s.to_dict() for s in campaign.seguimientos]
     payload["puntos_recoleccion"] = [p.to_dict() for p in campaign.puntos_recoleccion]
     payload["donaciones"] = [d.to_dict() for d in campaign.donaciones]
+    payload["donantes_count"] = (
+        db.session.query(db.func.count(db.distinct(DONACION.id_donante)))
+        .filter(DONACION.id_campania == campaign.id_campania)
+        .scalar()
+        or 0
+    )
     payload["likes_count"] = REACCION.query.filter_by(
         id_campania=campaign.id_campania
     ).count()
