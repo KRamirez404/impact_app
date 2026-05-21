@@ -5,12 +5,14 @@ import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../../../shared/widgets/campaign_card.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../campaigns/presentation/controllers/campaign_list_controller.dart';
+import '../controllers/home_controller.dart';
 
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
   final CampaignListController campaignCtrl = Get.find<CampaignListController>();
   final AuthController authCtrl = Get.find<AuthController>();
+  final HomeController homeCtrl = Get.find<HomeController>();
 
   @override
   Widget build(BuildContext context) {
@@ -238,10 +240,12 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildTopDonadores() {
-    final topDonors = [
-      {'nombre': 'Fundación Éxito', 'monto': '\$12.5M', 'color': const Color(0xFFF59E0B)},
-      {'nombre': 'Carlos M.', 'monto': '\$8.2M', 'color': const Color(0xFF3B82F6)},
-      {'nombre': 'Ana G.', 'monto': '\$5.7M', 'color': const Color(0xFF22C55E)},
+    final cardColors = [
+      const Color(0xFFF59E0B),
+      const Color(0xFF3B82F6),
+      const Color(0xFF22C55E),
+      const Color(0xFFEC4899),
+      const Color(0xFF8B5CF6),
     ];
 
     return Padding(
@@ -258,51 +262,76 @@ class HomePage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            height: 185,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: topDonors.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (_, i) {
-                final donor = topDonors[i];
-                return Container(
-                  width: 124,
-                  decoration: BoxDecoration(
-                    color: donor['color'] as Color,
-                    borderRadius: BorderRadius.circular(19),
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Spacer(),
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Colors.white.withValues(alpha: 0.3),
-                        child: Text(
-                          (donor['nombre'] as String).substring(0, 1),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          Obx(() {
+            final donors = homeCtrl.topDonors;
+            final isLoading = homeCtrl.isLoadingTopDonors.value;
+            if (isLoading && donors.isEmpty) {
+              return const SizedBox(
+                height: 185,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (donors.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'Aún no hay donadores destacados',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF717182)),
+                ),
+              );
+            }
+            return SizedBox(
+              height: 185,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: donors.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                itemBuilder: (_, i) {
+                  final donor = donors[i];
+                  final color = cardColors[i % cardColors.length];
+                  final name = donor.nombreCompleto;
+                  final initial = name.isNotEmpty ? name[0] : '?';
+                  return Container(
+                    width: 124,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(19),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Spacer(),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
+                          child: Text(
+                            initial,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        donor['nombre'] as String,
-                        style: const TextStyle(
+                        const SizedBox(height: 8),
+                        Text(
+                          name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
-                            fontSize: 14),
-                      ),
-                      Text(
-                        donor['monto'] as String,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          _formatCurrencyShort(donor.totalDonado),
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -386,5 +415,17 @@ class HomePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatCurrencyShort(double amount) {
+    if (amount >= 1000000) {
+      final millones = (amount / 1000000).toStringAsFixed(1);
+      return '\$${millones.replaceAll('.', ',')}M';
+    }
+    if (amount >= 1000) {
+      final miles = (amount / 1000).toStringAsFixed(0);
+      return '\$$miles.000';
+    }
+    return '\$${amount.toStringAsFixed(0)}';
   }
 }

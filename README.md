@@ -167,6 +167,7 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | `GET` | `/api/categories` | — | Listar categorías |
 | `GET` | `/api/donations` | — | Listar donaciones |
 | `POST` | `/api/donations` | JWT | Crear donación |
+| `GET` | `/api/donations/top` | — | Top donadores |
 | `GET` | `/api/tracking/:campaign_id` | — | Seguimiento de campaña |
 | `GET` | `/api/ratings/:campaign_id` | — | Valoraciones |
 | `POST` | `/api/ratings` | JWT | Crear valoración |

@@ -6,6 +6,7 @@ import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../../../campaigns/domain/entities/donation_with_campaign_entity.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/profile_controller.dart';
+import 'settings_page.dart';
 
 class ProfilePage extends StatelessWidget {
   ProfilePage({super.key});
@@ -176,7 +177,7 @@ class ProfilePage extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           OutlinedButton.icon(
-                            onPressed: () {},
+                            onPressed: () => Get.to(() => const SettingsPage()),
                             icon: const Icon(Icons.settings, size: 16),
                             label: const Text('Ajustes'),
                             style: OutlinedButton.styleFrom(

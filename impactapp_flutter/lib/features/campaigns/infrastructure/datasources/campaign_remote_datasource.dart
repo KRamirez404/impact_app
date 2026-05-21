@@ -5,6 +5,7 @@ import '../models/campaign_model.dart';
 import '../models/donation_model.dart';
 import '../models/donation_with_campaign_model.dart';
 import '../models/like_status_model.dart';
+import '../models/top_donor_model.dart';
 
 class CampaignRemoteDataSource {
   final Dio _dio = DioClient.instance.dio;
@@ -66,5 +67,13 @@ class CampaignRemoteDataSource {
       data: {'id_campania': campaignId},
     );
     return LikeStatusModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<List<TopDonorModel>> getTopDonors({int limit = 5}) async {
+    final response = await _dio.get(
+      ApiConstants.topDonors,
+      queryParameters: {'limit': limit},
+    );
+    return (response.data as List).map((e) => TopDonorModel.fromJson(e)).toList();
   }
 }

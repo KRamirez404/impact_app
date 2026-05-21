@@ -9,6 +9,7 @@ import '../../features/campaigns/presentation/bindings/campaign_binding.dart';
 import '../../features/campaigns/presentation/pages/campaign_detail_page.dart';
 import '../../features/campaigns/presentation/pages/explore_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/home/presentation/bindings/home_binding.dart';
 import '../../features/campaigns/presentation/pages/create_campaign_page.dart';
 import '../../features/campaigns/presentation/pages/donate_page.dart';
 import '../../features/collection_points/presentation/bindings/collection_point_binding.dart';
@@ -42,7 +43,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.home,
       page: () => HomePage(),
-      bindings: [AuthBinding(), CampaignBinding()],
+      bindings: [AuthBinding(), CampaignBinding(), HomeBinding()],
     ),
     GetPage(
       name: AppRoutes.explore,

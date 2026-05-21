@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy import func
 
-from models import CAMPAÑA, DONACION, PUNTO_RECOLECCION, db
+from models import CAMPAÑA, DONACION, PUNTO_RECOLECCION, USUARIO, db
 from services.campaign_service import recalculate_campaign_progress
 
 donation_bp = Blueprint("donation_bp", __name__, url_prefix="/api/donations")
@@ -66,4 +67,35 @@ def get_my_donations():
             "fecha_fin": campaign.fecha_fin.isoformat() if campaign else "",
         }
         payload.append(data)
+    return jsonify(payload), 200
+
+
+@donation_bp.get("/top")
+def get_top_donors():
+    limit = request.args.get("limit", 5, type=int)
+    limit = max(1, min(limit, 20))
+    donors = (
+        db.session.query(
+            DONACION.id_donante,
+            USUARIO.nombre,
+            USUARIO.apellido,
+            func.sum(DONACION.monto_estimado).label("total_donado"),
+            func.count(DONACION.id_donacion).label("donaciones_count"),
+        )
+        .join(USUARIO, DONACION.id_donante == USUARIO.id_usuario)
+        .group_by(DONACION.id_donante, USUARIO.nombre, USUARIO.apellido)
+        .order_by(func.sum(DONACION.monto_estimado).desc())
+        .limit(limit)
+        .all()
+    )
+    payload = [
+        {
+            "id_usuario": donor.id_donante,
+            "nombre": donor.nombre,
+            "apellido": donor.apellido,
+            "total_donado": float(donor.total_donado or 0),
+            "donaciones_count": int(donor.donaciones_count or 0),
+        }
+        for donor in donors
+    ]
     return jsonify(payload), 200
