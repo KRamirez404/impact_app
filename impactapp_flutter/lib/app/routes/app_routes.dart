@@ -11,4 +11,6 @@ abstract class AppRoutes {
   static const collectionPoints = '/collection-points';
   static const rate = '/rate';
   static const profile = '/profile';
+  static const settings = '/settings';
+  static const donors = '/donors';
 }

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../../../campaigns/domain/entities/donation_with_campaign_entity.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/profile_controller.dart';
-import 'settings_page.dart';
 
 class ProfilePage extends StatelessWidget {
   ProfilePage({super.key});
@@ -24,11 +24,11 @@ class ProfilePage extends StatelessWidget {
           final user = controller.user.value;
           if (user == null) return const Center(child: Text('Sin datos de usuario'));
           final fullName = '${user.nombre} ${user.apellido}'.trim();
-          return Column(
-            children: [
-              Expanded(
-                child: DefaultTabController(
-                  length: 2,
+          return DefaultTabController(
+            length: 2,
+            child: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverToBoxAdapter(
                   child: Column(
                     children: [
                       _buildHeader(context, fullName, user.correo),
@@ -36,47 +36,41 @@ class ProfilePage extends StatelessWidget {
                       const SizedBox(height: 20),
                       _buildTabs(),
                       const SizedBox(height: 12),
-                      Expanded(
-                        child: TabBarView(
-                          children: [
-                            Obx(() {
-                              if (profileController.isLoadingCampaigns.value &&
-                                  profileController.myCampaigns.isEmpty) {
-                                return const Center(child: CircularProgressIndicator());
-                              }
-                              if (profileController.myCampaigns.isEmpty) {
-                                return const Center(child: Text('No tienes campañas creadas'));
-                              }
-                              final items = profileController.myCampaigns
-                                  .map(_activityFromCampaign)
-                                  .toList();
-                              return _buildActivityList(items);
-                            }),
-                            Obx(() {
-                              if (profileController.isLoadingDonations.value &&
-                                  profileController.myDonations.isEmpty) {
-                                return const Center(child: CircularProgressIndicator());
-                              }
-                              if (profileController.myDonations.isEmpty) {
-                                return const Center(child: Text('No tienes donaciones registradas'));
-                              }
-                              final items = profileController.myDonations
-                                  .map(_activityFromDonation)
-                                  .toList();
-                              return _buildActivityList(items);
-                            }),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
+              ],
+              body: TabBarView(
+                children: [
+                  Obx(() {
+                    if (profileController.isLoadingCampaigns.value &&
+                        profileController.myCampaigns.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (profileController.myCampaigns.isEmpty) {
+                      return const Center(child: Text('No tienes campañas creadas'));
+                    }
+                    final items = profileController.myCampaigns
+                        .map(_activityFromCampaign)
+                        .toList();
+                    return _buildScrollableTabContent(items);
+                  }),
+                  Obx(() {
+                    if (profileController.isLoadingDonations.value &&
+                        profileController.myDonations.isEmpty) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (profileController.myDonations.isEmpty) {
+                      return const Center(child: Text('No tienes donaciones registradas'));
+                    }
+                    final items = profileController.myDonations
+                        .map(_activityFromDonation)
+                        .toList();
+                    return _buildScrollableTabContent(items);
+                  }),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: CustomButton(text: 'Cerrar sesión', onPressed: controller.logout),
-              ),
-            ],
+            ),
           );
         },
       ),
@@ -177,7 +171,7 @@ class ProfilePage extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           OutlinedButton.icon(
-                            onPressed: () => Get.to(() => const SettingsPage()),
+                            onPressed: () => Get.toNamed(AppRoutes.settings),
                             icon: const Icon(Icons.settings, size: 16),
                             label: const Text('Ajustes'),
                             style: OutlinedButton.styleFrom(
@@ -265,12 +259,22 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityList(List<_ProfileActivityItem> items) {
-    return ListView.separated(
+  Widget _buildScrollableTabContent(List<_ProfileActivityItem> items) {
+    return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      itemCount: items.length,
-      separatorBuilder: (_, index) => const SizedBox(height: 12),
-      itemBuilder: (_, index) => _ActivityCard(item: items[index]),
+      itemCount: items.length + 1,
+      itemBuilder: (context, index) {
+        if (index < items.length) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: index < items.length - 1 ? 12 : 0),
+            child: _ActivityCard(item: items[index]),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CustomButton(text: 'Cerrar sesión', onPressed: controller.logout),
+        );
+      },
     );
   }
 
@@ -280,6 +284,7 @@ class ProfilePage extends StatelessWidget {
       amount: campaign.metaMonetaria,
       date: _formatDate(campaign.fechaFin),
       status: _mapCampaignStatus(campaign.estado),
+      campaignId: campaign.idCampania,
     );
   }
 
@@ -458,6 +463,42 @@ class _ActivityCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (item.campaignId != null) ...[
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () => Get.toNamed(
+                      AppRoutes.donors,
+                      parameters: {
+                        'id': item.campaignId.toString(),
+                        'title': item.title,
+                      },
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1976D2).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF1976D2).withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.people_outline, size: 16, color: Color(0xFF1976D2)),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Ver donadores',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF1976D2),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -485,10 +526,12 @@ class _ProfileActivityItem {
     required this.amount,
     required this.date,
     required this.status,
+    this.campaignId,
   });
 
   final String title;
   final double amount;
   final String date;
   final String status;
+  final int? campaignId;
 }

@@ -129,6 +129,31 @@ def get_campaign(campaign_id: int):
     return jsonify(payload), 200
 
 
+@campaign_bp.get("/campaigns/<int:campaign_id>/donors")
+@jwt_required()
+def get_campaign_donors(campaign_id: int):
+    current_user_id = int(get_jwt_identity())
+    campaign = CAMPAÑA.query.get_or_404(campaign_id)
+
+    if campaign.id_creador != current_user_id:
+        return jsonify({"error": "Solo el creador de la campaña puede ver los donadores"}), 403
+
+    donations = (
+        DONACION.query.filter(DONACION.id_campania == campaign_id)
+        .order_by(DONACION.fecha_donacion.desc())
+        .all()
+    )
+
+    result = []
+    for donation in donations:
+        d = donation.to_dict()
+        d["donante"] = donation.donante.to_dict() if donation.donante else {}
+        d["es_anonimo"] = False
+        result.append(d)
+
+    return jsonify(result), 200
+
+
 @campaign_bp.put("/campaigns/<int:campaign_id>")
 @jwt_required()
 def update_campaign(campaign_id: int):

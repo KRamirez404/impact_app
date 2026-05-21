@@ -1,12 +1,16 @@
 import 'package:get/get.dart';
 import '../../features/auth/presentation/bindings/auth_binding.dart';
 import '../../features/auth/presentation/bindings/profile_binding.dart';
+import '../../features/auth/presentation/bindings/settings_binding.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
+import '../../features/auth/presentation/pages/settings_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/campaigns/presentation/bindings/campaign_binding.dart';
+import '../../features/campaigns/presentation/bindings/donors_binding.dart';
 import '../../features/campaigns/presentation/pages/campaign_detail_page.dart';
+import '../../features/campaigns/presentation/pages/donors_page.dart';
 import '../../features/campaigns/presentation/pages/explore_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/bindings/home_binding.dart';
@@ -89,6 +93,22 @@ class AppPages {
       name: AppRoutes.profile,
       page: () => ProfilePage(),
       bindings: [AuthBinding(), CampaignBinding(), ProfileBinding()],
+    ),
+    GetPage(
+      name: AppRoutes.settings,
+      page: () => const SettingsPage(),
+      bindings: [SettingsBinding()],
+    ),
+    GetPage(
+      name: AppRoutes.donors,
+      page: () {
+        final args = Get.parameters;
+        return DonorsPage(
+          campaignId: int.parse(args['id'] ?? '0'),
+          campaignTitle: args['title'] ?? 'Campaña',
+        );
+      },
+      bindings: [DonorsBinding()],
     ),
   ];
 }

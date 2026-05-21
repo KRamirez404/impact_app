@@ -4,6 +4,7 @@ import '../../../../core/network/dio_client.dart';
 import '../models/campaign_model.dart';
 import '../models/donation_model.dart';
 import '../models/donation_with_campaign_model.dart';
+import '../models/donor_with_donation_model.dart';
 import '../models/like_status_model.dart';
 import '../models/top_donor_model.dart';
 
@@ -75,5 +76,10 @@ class CampaignRemoteDataSource {
       queryParameters: {'limit': limit},
     );
     return (response.data as List).map((e) => TopDonorModel.fromJson(e)).toList();
+  }
+
+  Future<List<DonorWithDonationModel>> getCampaignDonors(int campaignId) async {
+    final response = await _dio.get(ApiConstants.campaignDonors(campaignId));
+    return (response.data as List).map((e) => DonorWithDonationModel.fromJson(e)).toList();
   }
 }

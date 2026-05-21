@@ -1,6 +1,7 @@
 import '../../domain/entities/campaign_entity.dart';
 import '../../domain/entities/donation_entity.dart';
 import '../../domain/entities/donation_with_campaign_entity.dart';
+import '../../domain/entities/donor_with_donation_entity.dart';
 import '../../domain/entities/like_status_entity.dart';
 import '../../domain/entities/top_donor_entity.dart';
 import '../../domain/repositories/campaign_repository.dart';
@@ -58,5 +59,10 @@ class CampaignRepositoryImpl implements CampaignRepository {
   @override
   Future<List<CampaignEntity>> getMyCampaigns() {
     return dataSource.getMyCampaigns();
+  }
+
+  @override
+  Future<List<DonorWithDonationEntity>> getCampaignDonors(int campaignId) {
+    return dataSource.getCampaignDonors(campaignId);
   }
 }
