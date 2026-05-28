@@ -256,6 +256,109 @@ Patrón **Clean Architecture** con GetX para inyección de dependencias y estado
 
 ---
 
+---
+
+## Análisis de Arquitectura y Plataforma
+
+### Patrón Hexagonal ✅
+
+Cumple con Clean Architecture / Puertos y Adaptadores:
+
+| Capa | Rol | Ejemplo (`features/auth/`) |
+|---|---|---|
+| `domain/` | Núcleo de negocio | `entities/user_entity.dart`, `repositories/auth_repository.dart` (abstracto), `usecases/` |
+| `infrastructure/` | Adaptadores técnicos | `datasources/auth_remote_datasource.dart`, `repositories/auth_repository_impl.dart`, `models/user_model.dart` |
+| `presentation/` | Interfaz de usuario | `pages/login_page.dart`, `controllers/auth_controller.dart`, `bindings/auth_binding.dart` |
+
+La inyección de dependencias respeta el principio de inversión: `domain` nunca importa `infrastructure`.
+
+### GetX State Management ✅
+
+| Aspecto | Implementación |
+|---|---|
+| App raíz | `GetMaterialApp` en `app.dart` |
+| Controladores | `GetxController` con variables `.obs` y `Rxn<>` |
+| DI | `Bindings` con `Get.lazyPut<>()` y `Get.find<>()` |
+| Navegación | `Get.offAllNamed()`, `Get.toNamed()` |
+| Notificaciones | `Get.snackbar()` |
+
+### Conexión a Base de Datos ✅
+
+- **Cliente HTTP:** `Dio` con singleton `DioClient` (`lib/core/network/dio_client.dart`)
+- **Interceptor:** Agrega `Bearer token` automáticamente desde `GetStorage`
+- **Error handling:** Redirige a login en 401
+- **Backend:** Flask + SQLAlchemy + SQLite corriendo en `localhost:5000`
+
+### Almacenamiento Local (GetStorage) ✅
+
+Usa `get_storage` en lugar de `shared_preferences` (equivalente funcional, más rápido):
+
+- Inicializado en `main()` con `await GetStorage.init()`
+- Almacena `token` y `user` (JSON) vía `StorageKeys`
+- Usado en: `AuthRepositoryImpl` (persistir sesión), `DioClient` (leer token)
+
+### Optimización para Móvil ❌
+
+El proyecto **no está optimizado para Android/iOS**:
+
+| Aspecto | Estado |
+|---|---|
+| Carpetas `android/` e `ios/` | ❌ No existen |
+| Diseño responsivo | ❌ Tamaños fijos (`width: 378.4`, `width: 340`, `height: 36`) |
+| `MediaQuery` / `LayoutBuilder` | ❌ No se usan |
+| Adaptación por plataforma | ❌ Sin `Platform` ni `TargetPlatform` |
+| `SafeArea` / ScrollViews | ✅ Correcto |
+| Touch gestures | ⚠️ Parcial |
+
+> **Nota:** El Dockerfile compila para `web` y la ejecución principal es `linux desktop`. No hay soporte nativo para dispositivos móviles.
+
+---
+
+## Plan de migración a Móvil (Android/iOS)
+
+### 1. Agregar plataformas
+
+```bash
+cd impactapp_flutter
+flutter create --platforms=android,ios .
+```
+
+### 2. Refactorizar a diseño responsivo
+
+Reemplazar tamaños fijos por valores relativos:
+
+| Archivo | Cambio |
+|---|---|
+| `login_page.dart:96` | `width: 378.4` → `MediaQuery.of(context).size.width * 0.9` |
+| `campaign_card.dart:106` | `height: 192` → `MediaQuery.of(context).size.height * 0.24` |
+| `custom_button.dart:15-16` | `width: double.infinity` (ya OK), `height: 36` → `50` (estándar touch) |
+| `home_page.dart:369` | `width: 340` → `MediaQuery.of(context).size.width * 0.85` |
+| `home_page.dart:297` | `width: 124` → `(MediaQuery.of(context).size.width - 48) / 3` |
+| `bottom_nav_bar.dart:48` | `width: 24` → mantener, es decorativo |
+
+### 3. Agregar adaptaciones por plataforma
+
+- Usar `Theme.of(context).platform` o `defaultTargetPlatform` para switchear entre Material (Android) y Cupertino (iOS)
+- Ajustar `AppTheme.lightTheme` con valores específicos por SO
+
+### 4. Touch targets
+
+- Botones: mínimo `48px` de altura (actual `36px` en `CustomButton`)
+- Iconos táctiles: `splashRadius` mínimo `20`
+
+### 5. Safe areas y notch
+
+Ya se usa `SafeArea` correctamente en la mayoría de pantallas. Verificar en todas las pages.
+
+### 6. Probar en dispositivos reales
+
+```bash
+flutter run -d android     # Android físico/emulador
+flutter run -d ios         # iOS (requiere macOS + Xcode)
+```
+
+---
+
 ## Nota
 
 No ejecutar `flutter run` desde la raíz del repositorio. Siempre hacer `cd impactapp_flutter` primero.

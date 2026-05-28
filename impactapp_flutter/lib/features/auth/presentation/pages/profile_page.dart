@@ -7,6 +7,10 @@ import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../../../campaigns/domain/entities/donation_with_campaign_entity.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/profile_controller.dart';
+import '../widgets/profile/stat_card.dart';
+import '../widgets/profile/activity_card.dart';
+import '../widgets/profile/activity_item.dart';
+import '../widgets/profile/profile_tabs.dart';
 
 class ProfilePage extends StatelessWidget {
   ProfilePage({super.key});
@@ -34,7 +38,7 @@ class ProfilePage extends StatelessWidget {
                       _buildHeader(context, fullName, user.correo),
                       Obx(() => _buildStatsRow()),
                       const SizedBox(height: 20),
-                      _buildTabs(),
+                      const ProfileTabs(),
                       const SizedBox(height: 12),
                     ],
                   ),
@@ -97,21 +101,13 @@ class ProfilePage extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 54,
-                  height: 46,
+                  width: 54, height: 46,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Center(
-                    child: Text(
-                      'I',
-                      style: TextStyle(
-                        fontFamily: 'Audiowide',
-                        fontSize: 18,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: Text('I', style: TextStyle(fontFamily: 'Audiowide', fontSize: 18, color: Colors.white)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -126,8 +122,7 @@ class ProfilePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 80, height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 4),
@@ -145,15 +140,9 @@ class ProfilePage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        name,
-                        style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600),
-                      ),
+                      Text(name, style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
-                      Text(
-                        email,
-                        style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
-                      ),
+                      Text(email, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9))),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -211,55 +200,17 @@ class ProfilePage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
-          _StatCard(
-            value: campaignsCount.toString(),
-            label: 'Campañas',
-            valueColor: const Color(0xFF1976D2),
-          ),
+          StatCard(value: campaignsCount.toString(), label: 'Campañas', valueColor: const Color(0xFF1976D2)),
           const SizedBox(width: 12),
-          _StatCard(
-            value: donationsCount.toString(),
-            label: 'Donaciones',
-            valueColor: const Color(0xFF43A047),
-          ),
+          StatCard(value: donationsCount.toString(), label: 'Donaciones', valueColor: const Color(0xFF43A047)),
           const SizedBox(width: 12),
-          _StatCard(
-            value: _formatCompactCurrency(totalDonated),
-            label: 'Donado',
-            valueColor: const Color(0xFF1976D2),
-          ),
+          StatCard(value: _formatCompactCurrency(totalDonated), label: 'Donado', valueColor: const Color(0xFF1976D2)),
         ],
       ),
     );
   }
 
-  Widget _buildTabs() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        height: 36,
-        decoration: BoxDecoration(
-          color: const Color(0xFFECECF0),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: TabBar(
-          indicator: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          labelColor: const Color(0xFF0A0A0A),
-          unselectedLabelColor: const Color(0xFF0A0A0A),
-          labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'Mis Campañas'),
-            Tab(text: 'Donaciones'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScrollableTabContent(List<_ProfileActivityItem> items) {
+  Widget _buildScrollableTabContent(List<ProfileActivityItem> items) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       itemCount: items.length + 1,
@@ -267,7 +218,7 @@ class ProfilePage extends StatelessWidget {
         if (index < items.length) {
           return Padding(
             padding: EdgeInsets.only(bottom: index < items.length - 1 ? 12 : 0),
-            child: _ActivityCard(item: items[index]),
+            child: ActivityCard(item: items[index]),
           );
         }
         return Padding(
@@ -278,8 +229,8 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  _ProfileActivityItem _activityFromCampaign(CampaignEntity campaign) {
-    return _ProfileActivityItem(
+  ProfileActivityItem _activityFromCampaign(CampaignEntity campaign) {
+    return ProfileActivityItem(
       title: campaign.titulo,
       amount: campaign.metaMonetaria,
       date: _formatDate(campaign.fechaFin),
@@ -288,9 +239,9 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  _ProfileActivityItem _activityFromDonation(DonationWithCampaignEntity donation) {
+  ProfileActivityItem _activityFromDonation(DonationWithCampaignEntity donation) {
     final title = donation.campaignTitulo.isNotEmpty ? donation.campaignTitulo : 'Donación';
-    return _ProfileActivityItem(
+    return ProfileActivityItem(
       title: title,
       amount: donation.montoEstimado,
       date: _formatDate(donation.fechaDonacion),
@@ -300,16 +251,11 @@ class ProfilePage extends StatelessWidget {
 
   String _mapCampaignStatus(String estado) {
     switch (estado) {
-      case 'en_verificacion':
-        return 'En verificación';
-      case 'pausada':
-        return 'Rechazada';
-      case 'finalizada':
-        return 'Finalizada';
-      case 'activa':
-        return 'Activa';
-      default:
-        return 'Sin estado';
+      case 'en_verificacion': return 'En verificación';
+      case 'pausada': return 'Rechazada';
+      case 'finalizada': return 'Finalizada';
+      case 'activa': return 'Activa';
+      default: return 'Sin estado';
     }
   }
 
@@ -333,205 +279,4 @@ class ProfilePage extends StatelessWidget {
     }
     return '\$${amount.toStringAsFixed(0)}';
   }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.value,
-    required this.label,
-    required this.valueColor,
-  });
-
-  final String value;
-  final String label;
-  final Color valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        height: 90,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-          boxShadow: const [
-            BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 4)),
-            BoxShadow(color: Color(0x1A000000), blurRadius: 4, offset: Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(value, style: TextStyle(fontSize: 22, color: valueColor, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF717182))),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActivityCard extends StatelessWidget {
-  const _ActivityCard({required this.item});
-
-  final _ProfileActivityItem item;
-
-  Color _badgeBg() {
-    if (item.status == 'Finalizada') return const Color(0xFFF0FDF4);
-    if (item.status == 'Activa') return const Color(0xFFE0F2FE);
-    if (item.status == 'En verificación') return const Color(0xFFFFF7ED);
-    if (item.status == 'Rechazada') return const Color(0xFFFEE2E2);
-    return const Color(0xFFF1F5F9);
-  }
-
-  Color _badgeBorder() {
-    if (item.status == 'Finalizada') return const Color(0xFFB9F8CF);
-    if (item.status == 'Activa') return const Color(0xFFBAE6FD);
-    if (item.status == 'En verificación') return const Color(0xFFFED7AA);
-    if (item.status == 'Rechazada') return const Color(0xFFFECACA);
-    return const Color(0xFFE2E8F0);
-  }
-
-  Color _badgeText() {
-    if (item.status == 'Finalizada') return const Color(0xFF008236);
-    if (item.status == 'Activa') return const Color(0xFF0369A1);
-    if (item.status == 'En verificación') return const Color(0xFFC2410C);
-    if (item.status == 'Rechazada') return const Color(0xFFB91C1C);
-    return const Color(0xFF334155);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE2E8F0),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.image_outlined, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _formatCurrency(item.amount),
-                  style: const TextStyle(fontSize: 18, color: Color(0xFF43A047), fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 12, color: Color(0xFF717182)),
-                    const SizedBox(width: 6),
-                    Text(item.date, style: const TextStyle(fontSize: 12, color: Color(0xFF717182))),
-                    const SizedBox(width: 6),
-                    const Text('•', style: TextStyle(fontSize: 12, color: Color(0xFF717182))),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _badgeBg(),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _badgeBorder(), width: 0.8),
-                      ),
-                      child: Text(
-                        item.status,
-                        style: TextStyle(fontSize: 12, color: _badgeText(), fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-                if (item.campaignId != null) ...[
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () => Get.toNamed(
-                      AppRoutes.donors,
-                      parameters: {
-                        'id': item.campaignId.toString(),
-                        'title': item.title,
-                      },
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1976D2).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF1976D2).withValues(alpha: 0.2)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.people_outline, size: 16, color: Color(0xFF1976D2)),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Ver donadores',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF1976D2),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatCurrency(double amount) {
-    if (amount >= 1000000) {
-      final millones = (amount / 1000000).toStringAsFixed(1);
-      return '\$${millones.replaceAll('.', ',')}M';
-    }
-    if (amount >= 1000) {
-      final miles = (amount / 1000).toStringAsFixed(0);
-      return '\$$miles.000';
-    }
-    return '\$${amount.toStringAsFixed(0)}';
-  }
-}
-
-class _ProfileActivityItem {
-  const _ProfileActivityItem({
-    required this.title,
-    required this.amount,
-    required this.date,
-    required this.status,
-    this.campaignId,
-  });
-
-  final String title;
-  final double amount;
-  final String date;
-  final String status;
-  final int? campaignId;
 }

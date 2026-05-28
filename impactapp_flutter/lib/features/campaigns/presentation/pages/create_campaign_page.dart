@@ -8,6 +8,10 @@ import '../controllers/campaign_list_controller.dart';
 import 'create_collection_point_modal.dart';
 import '../../../collection_points/domain/usecases/create_collection_point_usecase.dart';
 import '../../infrastructure/datasources/campaign_remote_datasource.dart';
+import '../widgets/create_campaign/basics_card.dart';
+import '../widgets/create_campaign/organizer_card.dart';
+import '../widgets/create_campaign/evidence_card.dart';
+import '../widgets/create_campaign/points_card.dart';
 
 class CreateCampaignPage extends StatefulWidget {
   const CreateCampaignPage({super.key});
@@ -97,474 +101,6 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
         .toList();
   }
 
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintMaxLines: 1,
-      hintStyle: const TextStyle(
-        fontFamily: 'Inter',
-        fontSize: 16,
-        height: 1.19,
-        color: Color(0xFF717182),
-      ),
-      filled: true,
-      fillColor: const Color(0xFFF3F3F5),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFF1976D2), width: 1),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    );
-  }
-
-  Widget _card({
-    required String title,
-    required String description,
-    required Widget child,
-    EdgeInsetsGeometry? contentPadding,
-    double? height,
-  }) {
-    return Container(
-      width: double.infinity,
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.black.withOpacity(0.1), width: 0.8),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    height: 1.0,
-                    color: Color(0xFF0A0A0A),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    height: 1.33,
-                    color: Color(0xFF717182),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (contentPadding != null)
-            Padding(padding: contentPadding, child: child)
-          else
-            child,
-        ],
-      ),
-    );
-  }
-
-  Widget _label(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontFamily: 'Inter',
-        fontSize: 14,
-        height: 1.43,
-        color: Color(0xFF0A0A0A),
-      ),
-    );
-  }
-
-  Widget _buildBasicsCard() {
-    final categoryItems = _categories
-        .map(
-          (category) => DropdownMenuItem<String>(
-            value: '${category['id_categoria']}',
-            child: Text(
-              (category['nombre'] ?? '').toString(),
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                height: 1.43,
-                color: Color(0xFF0A0A0A),
-              ),
-            ),
-          ),
-        )
-        .toList();
-    final departmentItems = _departments
-        .map(
-          (dept) => DropdownMenuItem<String>(
-            value: dept,
-            child: Text(
-              dept,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                height: 1.43,
-                color: Color(0xFF0A0A0A),
-              ),
-            ),
-          ),
-        )
-        .toList();
-    final cityItems = _availableCities
-        .map(
-          (city) => DropdownMenuItem<String>(
-            value: '${city['id_ciudad']}',
-            child: Text(
-              (city['nombre'] ?? '').toString(),
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                height: 1.43,
-                color: Color(0xFF0A0A0A),
-              ),
-            ),
-          ),
-        )
-        .toList();
-
-    return _card(
-      title: 'Información Básica',
-      description: 'Datos principales de la campaña',
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _label('Título de la campaña *'),
-            const SizedBox(height: 4),
-            TextFormField(
-              controller: _tituloCtrl,
-              decoration: _inputDecoration(
-                'Ej: Ayuda para reconstrucción de escuela',
-              ),
-              maxLines: 1,
-              validator: (v) => v == null || v.trim().isEmpty
-                  ? 'Título es obligatorio'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            _label('Descripción detallada *'),
-            const SizedBox(height: 4),
-            TextFormField(
-              controller: _descripcionCtrl,
-              maxLines: 3,
-              decoration: _inputDecoration(
-                'Describe la situación, qué ayuda necesitas...',
-              ),
-              validator: (v) => v == null || v.trim().isEmpty
-                  ? 'Descripción es obligatoria'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            _label('Categoría *'),
-            const SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCategoryId == null
-                  ? null
-                  : '$_selectedCategoryId',
-              isExpanded: true,
-              items: categoryItems,
-              onChanged: (value) {
-                setState(() {
-                  _selectedCategoryId = value == null ? null : int.parse(value);
-                });
-              },
-              decoration: _inputDecoration('Selecciona una categoría'),
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Categoría es obligatoria'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            _label('Departamento *'),
-            const SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedDepartment,
-              isExpanded: true,
-              items: departmentItems,
-              onChanged: (value) {
-                setState(() {
-                  _selectedDepartment = value;
-                  _selectedCityId = null;
-                });
-              },
-              decoration: _inputDecoration('Departamento'),
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Departamento es obligatorio'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            _label('Ciudad *'),
-            const SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCityId == null ? null : '$_selectedCityId',
-              isExpanded: true,
-              items: cityItems,
-              onChanged: (value) {
-                setState(() {
-                  _selectedCityId = value == null ? null : int.parse(value);
-                });
-              },
-              decoration: _inputDecoration('Selecciona una ciudad'),
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Ciudad es obligatoria'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            _label('Tipo de ayuda *'),
-            const SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedHelpType,
-              isExpanded: true,
-              items: const [
-                DropdownMenuItem(value: 'economica', child: Text('Económica')),
-                DropdownMenuItem(value: 'alimentos', child: Text('Alimentos')),
-                DropdownMenuItem(value: 'ropa', child: Text('Ropa')),
-                DropdownMenuItem(
-                  value: 'medicamentos',
-                  child: Text('Medicamentos'),
-                ),
-                DropdownMenuItem(value: 'mixta', child: Text('Mixta')),
-              ],
-              onChanged: (value) =>
-                  setState(() => _selectedHelpType = value ?? 'economica'),
-              decoration: _inputDecoration('Tipo de ayuda'),
-            ),
-            const SizedBox(height: 12),
-            _label('Meta de recaudación (COP) *'),
-            const SizedBox(height: 4),
-            TextFormField(
-              controller: _metaCtrl,
-              keyboardType: TextInputType.number,
-              decoration: _inputDecoration('Ej: 50000000'),
-              maxLines: 1,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Meta es obligatoria' : null,
-            ),
-            const SizedBox(height: 12),
-            _label('Fecha límite *'),
-            const SizedBox(height: 4),
-            TextFormField(
-              controller: _fechaFinCtrl,
-              decoration: _inputDecoration('YYYY-MM-DD'),
-              maxLines: 1,
-              validator: (v) => v == null || v.trim().isEmpty
-                  ? 'Fecha límite es obligatoria'
-                  : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOrganizerCard() {
-    return _card(
-      title: 'Información del Organizador',
-      description: 'Datos de contacto del responsable',
-      height: 243.59,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _label('Inserte número de Cuenta o Bre-B'),
-            const SizedBox(height: 4),
-            TextFormField(
-              controller: _cuentaCtrl,
-              decoration: _inputDecoration('Ej: @tucuenta123'),
-              maxLines: 1,
-            ),
-            const SizedBox(height: 12),
-            _label('Correo de contacto *'),
-            const SizedBox(height: 4),
-            TextFormField(
-              controller: _correoCtrl,
-              decoration: _inputDecoration('Ej: contacto@campana.org'),
-              maxLines: 1,
-              validator: (v) => v == null || v.trim().isEmpty
-                  ? 'Correo es obligatorio'
-                  : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEvidenceCard() {
-    return _card(
-      title: 'Evidencias y Documentos',
-      description: 'Adjunta documentos que respalden tu campaña',
-      height: 274.77,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24.8, 24.79, 24.8, 24),
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              height: 163.19,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.black.withOpacity(0.1),
-                  width: 1.6,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.upload_outlined,
-                    size: 40,
-                    color: Color(0xFF717182),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Documentos oficiales, fotos, enlaces a medios',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      height: 1.33,
-                      color: Color(0xFF717182),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton(
-                    onPressed: _pickAttachments,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(153.6, 32),
-                      backgroundColor: Colors.white,
-                      side: BorderSide(
-                        color: Colors.black.withOpacity(0.1),
-                        width: 0.8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      foregroundColor: const Color(0xFF0A0A0A),
-                    ),
-                    child: const Text(
-                      'Seleccionar archivos',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 1.43,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (_attachments.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  '${_attachments.length} archivo(s) seleccionado(s)',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    color: Color(0xFF717182),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPointsCard() {
-    return _card(
-      title: 'Puntos de Recolección (Opcional)',
-      description: 'Ubicaciones para donaciones físicas',
-      height: 143.59 + (_draftPoints.isEmpty ? 0 : 44.0 * _draftPoints.length),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24.8, 24, 24.8, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            OutlinedButton(
-              onPressed: _openPointModal,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 32),
-                backgroundColor: Colors.white,
-                side: BorderSide(
-                  color: Colors.black.withOpacity(0.1),
-                  width: 0.8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                foregroundColor: const Color(0xFF0A0A0A),
-              ),
-              child: const Text(
-                'Agregar punto de recolección',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  height: 1.43,
-                ),
-              ),
-            ),
-            if (_draftPoints.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              ..._draftPoints.map(
-                (point) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.black.withOpacity(0.08)),
-                    ),
-                    child: Text(
-                      '${point.nombre} · ${point.direccion}',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _pickAttachments() async {
     final picked = await _picker.pickMultiImage(imageQuality: 85);
     if (!mounted) return;
@@ -620,16 +156,103 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
       Get.offAllNamed(AppRoutes.home);
     } catch (e) {
       Get.snackbar(
-        'Error',
-        e.toString(),
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        'Error', e.toString(),
+        backgroundColor: Colors.red, colorText: Colors.white,
       );
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
       }
     }
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+        children: [
+          BasicsCard(
+            tituloCtrl: _tituloCtrl,
+            descripcionCtrl: _descripcionCtrl,
+            metaCtrl: _metaCtrl,
+            fechaFinCtrl: _fechaFinCtrl,
+            categories: _categories,
+            departments: _departments,
+            availableCities: _availableCities,
+            selectedCategoryId: _selectedCategoryId,
+            selectedDepartment: _selectedDepartment,
+            selectedCityId: _selectedCityId,
+            selectedHelpType: _selectedHelpType,
+            onCategoryChanged: (v) => setState(() => _selectedCategoryId = v),
+            onDepartmentChanged: (v) => setState(() { _selectedDepartment = v; _selectedCityId = null; }),
+            onCityChanged: (v) => setState(() => _selectedCityId = v),
+            onHelpTypeChanged: (v) => setState(() => _selectedHelpType = v ?? 'economica'),
+          ),
+          const SizedBox(height: 16),
+          OrganizerCard(
+            cuentaCtrl: _cuentaCtrl,
+            correoCtrl: _correoCtrl,
+          ),
+          const SizedBox(height: 16),
+          EvidenceCard(
+            attachmentsCount: _attachments.length,
+            onPickAttachments: _pickAttachments,
+          ),
+          const SizedBox(height: 16),
+          PointsCard(
+            draftPoints: _draftPoints,
+            onAddPoint: _openPointModal,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _submitting
+                      ? null
+                      : () {
+                          if (_formKey.currentState!.validate()) _submit();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1976D2),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(36),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: Text(
+                    _submitting ? 'Creando...' : 'Crear Campaña',
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w500, height: 1.43),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: _submitting ? null : () => Get.back(),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(88, 36),
+                  backgroundColor: Colors.white,
+                  side: BorderSide(color: Colors.black.withOpacity(0.1), width: 0.8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  foregroundColor: const Color(0xFF0A0A0A),
+                ),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w500, height: 1.43),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Las campañas serán verificadas en 24-48 horas antes de publicarse.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontFamily: 'Inter', fontSize: 12, height: 1.33, color: Color(0xFF717182)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -642,43 +265,25 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
             height: 60,
             decoration: const BoxDecoration(
               color: Color(0xFF1976D2),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x1A000000),
-                  blurRadius: 6,
-                  offset: Offset(0, 4),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 4))],
             ),
             child: SafeArea(
               child: Row(
                 children: [
                   const SizedBox(width: 16),
                   Container(
-                    width: 54,
-                    height: 46,
+                    width: 54, height: 46,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       color: Colors.white.withOpacity(0.2),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      'I',
-                      style: TextStyle(
-                        fontFamily: 'Audiowide',
-                        fontSize: 20,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: const Text('I', style: TextStyle(fontFamily: 'Audiowide', fontSize: 20, color: Colors.white)),
                   ),
                   const SizedBox(width: 12),
                   const Text(
                     'Crear Campaña',
-                    style: TextStyle(
-                      fontFamily: 'Segoe UI Emoji',
-                      fontSize: 18,
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(fontFamily: 'Segoe UI Emoji', fontSize: 18, color: Colors.white),
                   ),
                 ],
               ),
@@ -687,91 +292,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
           Expanded(
             child: _loadingOptions
                 ? const Center(child: CircularProgressIndicator())
-                : Form(
-                    key: _formKey,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                      children: [
-                        _buildBasicsCard(),
-                        const SizedBox(height: 16),
-                        _buildOrganizerCard(),
-                        const SizedBox(height: 16),
-                        _buildEvidenceCard(),
-                        const SizedBox(height: 16),
-                        _buildPointsCard(),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _submitting
-                                    ? null
-                                    : () {
-                                        if (_formKey.currentState!.validate()) {
-                                          _submit();
-                                        }
-                                      },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1976D2),
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size.fromHeight(36),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: Text(
-                                  _submitting ? 'Creando...' : 'Crear Campaña',
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.43,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            OutlinedButton(
-                              onPressed: _submitting ? null : () => Get.back(),
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(88, 36),
-                                backgroundColor: Colors.white,
-                                side: BorderSide(
-                                  color: Colors.black.withOpacity(0.1),
-                                  width: 0.8,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                foregroundColor: const Color(0xFF0A0A0A),
-                              ),
-                              child: const Text(
-                                'Cancelar',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.43,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Las campañas serán verificadas en 24-48 horas antes de publicarse.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            height: 1.33,
-                            color: Color(0xFF717182),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                : _buildForm(),
           ),
         ],
       ),
