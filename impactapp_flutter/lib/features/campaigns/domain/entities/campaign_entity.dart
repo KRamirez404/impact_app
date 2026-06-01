@@ -17,6 +17,11 @@ class CampaignEntity {
   final String creadorApellido;
   final String creadorCorreo;
   final String? creadorTelefono;
+  final String? notaRevision;
+  final String? fechaRevision;
+  final String? auditorNombre;
+  final String? auditorApellido;
+  final String? auditorCorreo;
   final int donantesCount;
   final int puntosCount;
   final int vistasCount;
@@ -46,6 +51,11 @@ class CampaignEntity {
     this.creadorApellido = '',
     this.creadorCorreo = '',
     this.creadorTelefono,
+    this.notaRevision,
+    this.fechaRevision,
+    this.auditorNombre,
+    this.auditorApellido,
+    this.auditorCorreo,
     this.donantesCount = 0,
     this.puntosCount = 0,
     this.vistasCount = 0,
@@ -76,6 +86,11 @@ class CampaignEntity {
     String? creadorApellido,
     String? creadorCorreo,
     String? creadorTelefono,
+    String? notaRevision,
+    String? fechaRevision,
+    String? auditorNombre,
+    String? auditorApellido,
+    String? auditorCorreo,
     int? donantesCount,
     int? puntosCount,
     int? vistasCount,
@@ -105,6 +120,11 @@ class CampaignEntity {
       creadorApellido: creadorApellido ?? this.creadorApellido,
       creadorCorreo: creadorCorreo ?? this.creadorCorreo,
       creadorTelefono: creadorTelefono ?? this.creadorTelefono,
+      notaRevision: notaRevision ?? this.notaRevision,
+      fechaRevision: fechaRevision ?? this.fechaRevision,
+      auditorNombre: auditorNombre ?? this.auditorNombre,
+      auditorApellido: auditorApellido ?? this.auditorApellido,
+      auditorCorreo: auditorCorreo ?? this.auditorCorreo,
       donantesCount: donantesCount ?? this.donantesCount,
       puntosCount: puntosCount ?? this.puntosCount,
       vistasCount: vistasCount ?? this.vistasCount,

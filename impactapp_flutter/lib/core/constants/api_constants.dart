@@ -15,6 +15,10 @@ class ApiConstants {
   static const String topDonors = '$baseUrl/donations/top';
   static String campaignDonors(int campaignId) => '$baseUrl/campaigns/$campaignId/donors';
   static const String supports = '$baseUrl/supports';
+  static const String supportSummary = '$baseUrl/support/summary';
+  static const String supportCampaigns = '$baseUrl/support/campaigns';
+  static String supportApprove(int campaignId) => '$baseUrl/support/campaigns/$campaignId/approve';
+  static String supportReject(int campaignId) => '$baseUrl/support/campaigns/$campaignId/reject';
   static const String tracking = '$baseUrl/tracking';
   static const String collectionPoints = '$baseUrl/collection-points';
   static const String ratings = '$baseUrl/ratings';

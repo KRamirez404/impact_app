@@ -12,6 +12,12 @@ class USUARIO(db.Model):
     correo = db.Column(db.String(150), unique=True, nullable=False)
     contraseña_hash = db.Column(db.String(255), nullable=False)
     telefono = db.Column(db.String(30), nullable=True)
+    biografia = db.Column(db.String(500), nullable=True)
+    rol = db.Column(
+        db.Enum("usuario", "soporte", name="usuario_rol", native_enum=False),
+        default="usuario",
+        nullable=False,
+    )
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     estado = db.Column(
         db.Enum("activo", "bloqueado", name="usuario_estado", native_enum=False),
@@ -19,7 +25,12 @@ class USUARIO(db.Model):
         nullable=False,
     )
 
-    campañas = db.relationship("CAMPAÑA", backref="creador", lazy=True)
+    campañas = db.relationship(
+        "CAMPAÑA",
+        backref="creador",
+        lazy=True,
+        foreign_keys="CAMPAÑA.id_creador",
+    )
 
     def to_dict(self):
         return {
@@ -28,7 +39,8 @@ class USUARIO(db.Model):
             "apellido": self.apellido,
             "correo": self.correo,
             "telefono": self.telefono,
+            "biografia": self.biografia,
+            "rol": self.rol,
             "fecha_registro": self.fecha_registro.isoformat(),
             "estado": self.estado,
         }
-

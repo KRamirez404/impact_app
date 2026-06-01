@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from config import Config
 from models import (
@@ -68,8 +68,12 @@ def seed_database():
             contraseña_hash=hash_password("Admin123*"),
             telefono="3000000000",
             estado="activo",
+            rol="soporte",
         )
         db.session.add(admin)
+        db.session.commit()
+    else:
+        admin.rol = "soporte"
         db.session.commit()
 
     if CAMPAÑA.query.count() == 0:
@@ -121,6 +125,30 @@ def seed_database():
         db.session.commit()
 
 
+def ensure_user_schema():
+    inspector = inspect(db.engine)
+    columns = {column["name"] for column in inspector.get_columns("USUARIO")}
+    if "biografia" not in columns:
+        db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN biografia TEXT'))
+        db.session.commit()
+    if "rol" not in columns:
+        db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN rol TEXT'))
+        db.session.execute(text('UPDATE "USUARIO" SET rol = "usuario" WHERE rol IS NULL'))
+        db.session.commit()
+
+
+def ensure_campaign_schema():
+    inspector = inspect(db.engine)
+    columns = {column["name"] for column in inspector.get_columns("CAMPAÑA")}
+    if "nota_revision" not in columns:
+        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN nota_revision TEXT'))
+    if "fecha_revision" not in columns:
+        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN fecha_revision DATETIME'))
+    if "id_auditor" not in columns:
+        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN id_auditor INTEGER'))
+    db.session.commit()
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -145,6 +173,8 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        ensure_user_schema()
+        ensure_campaign_schema()
         seed_database()
 
     return app

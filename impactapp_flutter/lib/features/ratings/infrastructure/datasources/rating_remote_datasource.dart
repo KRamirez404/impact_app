@@ -1,10 +1,18 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/rating_model.dart';
 
 class RatingRemoteDataSource {
   final Dio _dio = DioClient.instance.dio;
+
+  Map<String, dynamic> _safeMap(dynamic data) {
+    if (data == null || data is! Map<String, dynamic>) {
+      throw ServerException('Respuesta inválida del servidor');
+    }
+    return data;
+  }
 
   Future<RatingModel> rateCampaign({
     required int idCampania,
@@ -19,7 +27,7 @@ class RatingRemoteDataSource {
         'comentario': comentario,
       },
     );
-    return RatingModel.fromJson(response.data as Map<String, dynamic>);
+    return RatingModel.fromJson(_safeMap(response.data));
   }
 }
 

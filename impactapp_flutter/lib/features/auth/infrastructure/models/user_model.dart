@@ -7,6 +7,9 @@ class UserModel extends UserEntity {
     required super.apellido,
     required super.correo,
     super.telefono,
+    super.biografia,
+    super.fechaRegistro,
+    required super.rol,
     required super.estado,
   });
 
@@ -17,6 +20,9 @@ class UserModel extends UserEntity {
       apellido: json['apellido'] ?? '',
       correo: json['correo'] ?? '',
       telefono: json['telefono'],
+      biografia: json['biografia'],
+      fechaRegistro: json['fecha_registro'],
+      rol: json['rol'] ?? 'usuario',
       estado: json['estado'] ?? 'activo',
     );
   }
@@ -27,7 +33,9 @@ class UserModel extends UserEntity {
         'apellido': apellido,
         'correo': correo,
         'telefono': telefono,
+        'biografia': biografia,
+        'fecha_registro': fechaRegistro,
+        'rol': rol,
         'estado': estado,
       };
 }
-

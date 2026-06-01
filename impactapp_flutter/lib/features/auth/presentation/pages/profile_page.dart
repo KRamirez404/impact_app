@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
-import '../../../../shared/widgets/custom_button.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../../../campaigns/domain/entities/donation_with_campaign_entity.dart';
 import '../controllers/auth_controller.dart';
@@ -35,7 +34,7 @@ class ProfilePage extends StatelessWidget {
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
-                      _buildHeader(context, fullName, user.correo),
+                      _buildHeader(context, fullName, user.correo, user.biografia),
                       Obx(() => _buildStatsRow()),
                       const SizedBox(height: 20),
                       const ProfileTabs(),
@@ -44,34 +43,61 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
               ],
-              body: TabBarView(
+              body: Column(
                 children: [
-                  Obx(() {
-                    if (profileController.isLoadingCampaigns.value &&
-                        profileController.myCampaigns.isEmpty) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (profileController.myCampaigns.isEmpty) {
-                      return const Center(child: Text('No tienes campañas creadas'));
-                    }
-                    final items = profileController.myCampaigns
-                        .map(_activityFromCampaign)
-                        .toList();
-                    return _buildScrollableTabContent(items);
-                  }),
-                  Obx(() {
-                    if (profileController.isLoadingDonations.value &&
-                        profileController.myDonations.isEmpty) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (profileController.myDonations.isEmpty) {
-                      return const Center(child: Text('No tienes donaciones registradas'));
-                    }
-                    final items = profileController.myDonations
-                        .map(_activityFromDonation)
-                        .toList();
-                    return _buildScrollableTabContent(items);
-                  }),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        Obx(() {
+                          if (profileController.isLoadingCampaigns.value &&
+                              profileController.myCampaigns.isEmpty) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (profileController.myCampaigns.isEmpty) {
+                            return const Center(child: Text('No tienes campañas creadas'));
+                          }
+                          final items = profileController.myCampaigns
+                              .map(_activityFromCampaign)
+                              .toList();
+                          return _buildScrollableTabContent(items);
+                        }),
+                        Obx(() {
+                          if (profileController.isLoadingDonations.value &&
+                              profileController.myDonations.isEmpty) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (profileController.myDonations.isEmpty) {
+                            return const Center(child: Text('No tienes donaciones registradas'));
+                          }
+                          final items = profileController.myDonations
+                              .map(_activityFromDonation)
+                              .toList();
+                          return _buildScrollableTabContent(items);
+                        }),
+                      ],
+                    ),
+                  ),
+                  SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 36,
+                        child: OutlinedButton.icon(
+                          onPressed: controller.logout,
+                          icon: const Icon(Icons.logout, size: 16, color: Color(0xFFD4183D)),
+                          label: const Text('Cerrar sesión'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFD4183D),
+                            side: const BorderSide(color: Color(0xFFD4183D), width: 0.8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -81,8 +107,11 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String name, String email) {
+  Widget _buildHeader(BuildContext context, String name, String email, String? bio) {
     final initials = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'I';
+    final bioText = (bio == null || bio.trim().isEmpty)
+        ? 'Aún no has agregado una biografía.'
+        : bio.trim();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
@@ -147,7 +176,7 @@ class ProfilePage extends StatelessWidget {
                       Row(
                         children: [
                           ElevatedButton.icon(
-                            onPressed: () {},
+                            onPressed: () => Get.toNamed(AppRoutes.editProfile),
                             icon: const Icon(Icons.edit, size: 16),
                             label: const Text('Editar'),
                             style: ElevatedButton.styleFrom(
@@ -180,7 +209,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Apasionada por ayudar a mi comunidad. Creo en la solidaridad y el impacto positivo.',
+              bioText,
               style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9), height: 1.4),
             ),
           ],
@@ -213,29 +242,28 @@ class ProfilePage extends StatelessWidget {
   Widget _buildScrollableTabContent(List<ProfileActivityItem> items) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      itemCount: items.length + 1,
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        if (index < items.length) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: index < items.length - 1 ? 12 : 0),
-            child: ActivityCard(item: items[index]),
-          );
-        }
         return Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: CustomButton(text: 'Cerrar sesión', onPressed: controller.logout),
+          padding: EdgeInsets.only(bottom: index < items.length - 1 ? 12 : 0),
+          child: ActivityCard(item: items[index]),
         );
       },
     );
   }
 
   ProfileActivityItem _activityFromCampaign(CampaignEntity campaign) {
+    final auditorName = campaign.auditorNombre == null
+        ? null
+        : '${campaign.auditorNombre} ${campaign.auditorApellido ?? ''}'.trim();
     return ProfileActivityItem(
       title: campaign.titulo,
       amount: campaign.metaMonetaria,
       date: _formatDate(campaign.fechaFin),
       status: _mapCampaignStatus(campaign.estado),
       campaignId: campaign.idCampania,
+      rejectionNote: campaign.notaRevision,
+      auditorName: auditorName?.isEmpty == true ? null : auditorName,
     );
   }
 
@@ -252,6 +280,7 @@ class ProfilePage extends StatelessWidget {
   String _mapCampaignStatus(String estado) {
     switch (estado) {
       case 'en_verificacion': return 'En verificación';
+      case 'rechazada': return 'Rechazada';
       case 'pausada': return 'Rechazada';
       case 'finalizada': return 'Finalizada';
       case 'activa': return 'Activa';

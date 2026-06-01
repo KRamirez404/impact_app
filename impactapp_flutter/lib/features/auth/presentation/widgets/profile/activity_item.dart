@@ -5,6 +5,8 @@ class ProfileActivityItem {
     required this.date,
     required this.status,
     this.campaignId,
+    this.rejectionNote,
+    this.auditorName,
   });
 
   final String title;
@@ -12,4 +14,6 @@ class ProfileActivityItem {
   final String date;
   final String status;
   final int? campaignId;
+  final String? rejectionNote;
+  final String? auditorName;
 }

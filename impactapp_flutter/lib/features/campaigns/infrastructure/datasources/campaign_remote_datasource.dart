@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/campaign_model.dart';
 import '../models/donation_model.dart';
@@ -11,14 +12,28 @@ import '../models/top_donor_model.dart';
 class CampaignRemoteDataSource {
   final Dio _dio = DioClient.instance.dio;
 
+  Map<String, dynamic> _safeMap(dynamic data) {
+    if (data == null || data is! Map<String, dynamic>) {
+      throw ServerException('Respuesta inválida del servidor');
+    }
+    return data;
+  }
+
+  List<Map<String, dynamic>> _safeList(dynamic data) {
+    if (data == null || data is! List) {
+      throw ServerException('Respuesta inválida del servidor');
+    }
+    return data.cast<Map<String, dynamic>>();
+  }
+
   Future<List<Map<String, dynamic>>> getCities() async {
     final response = await _dio.get(ApiConstants.cities);
-    return (response.data as List).cast<Map<String, dynamic>>();
+    return _safeList(response.data);
   }
 
   Future<List<Map<String, dynamic>>> getCategories() async {
     final response = await _dio.get(ApiConstants.categories);
-    return (response.data as List).cast<Map<String, dynamic>>();
+    return _safeList(response.data);
   }
 
   Future<List<CampaignModel>> getCampaigns({
@@ -34,32 +49,32 @@ class CampaignRemoteDataSource {
     if (estado != null && estado.isNotEmpty) query['estado'] = estado;
 
     final response = await _dio.get(ApiConstants.campaigns, queryParameters: query);
-    return (response.data as List).map((e) => CampaignModel.fromJson(e)).toList();
+    return _safeList(response.data).map((e) => CampaignModel.fromJson(e)).toList();
   }
 
   Future<List<CampaignModel>> getMyCampaigns() async {
     final response = await _dio.get(ApiConstants.myCampaigns);
-    return (response.data as List).map((e) => CampaignModel.fromJson(e)).toList();
+    return _safeList(response.data).map((e) => CampaignModel.fromJson(e)).toList();
   }
 
   Future<CampaignModel> getCampaignDetail(int id) async {
     final response = await _dio.get('${ApiConstants.campaigns}/$id');
-    return CampaignModel.fromJson(response.data as Map<String, dynamic>);
+    return CampaignModel.fromJson(_safeMap(response.data));
   }
 
   Future<CampaignModel> createCampaign(Map<String, dynamic> payload) async {
     final response = await _dio.post(ApiConstants.campaigns, data: payload);
-    return CampaignModel.fromJson(response.data as Map<String, dynamic>);
+    return CampaignModel.fromJson(_safeMap(response.data));
   }
 
   Future<DonationModel> donate(Map<String, dynamic> payload) async {
     final response = await _dio.post(ApiConstants.donations, data: payload);
-    return DonationModel.fromJson(response.data as Map<String, dynamic>);
+    return DonationModel.fromJson(_safeMap(response.data));
   }
 
   Future<List<DonationWithCampaignModel>> getMyDonations() async {
     final response = await _dio.get(ApiConstants.myDonations);
-    return (response.data as List).map((e) => DonationWithCampaignModel.fromJson(e)).toList();
+    return _safeList(response.data).map((e) => DonationWithCampaignModel.fromJson(e)).toList();
   }
 
   Future<LikeStatusModel> toggleLike(int campaignId) async {
@@ -67,7 +82,7 @@ class CampaignRemoteDataSource {
       '${ApiConstants.likes}/toggle',
       data: {'id_campania': campaignId},
     );
-    return LikeStatusModel.fromJson(response.data as Map<String, dynamic>);
+    return LikeStatusModel.fromJson(_safeMap(response.data));
   }
 
   Future<List<TopDonorModel>> getTopDonors({int limit = 5}) async {
@@ -75,11 +90,11 @@ class CampaignRemoteDataSource {
       ApiConstants.topDonors,
       queryParameters: {'limit': limit},
     );
-    return (response.data as List).map((e) => TopDonorModel.fromJson(e)).toList();
+    return _safeList(response.data).map((e) => TopDonorModel.fromJson(e)).toList();
   }
 
   Future<List<DonorWithDonationModel>> getCampaignDonors(int campaignId) async {
     final response = await _dio.get(ApiConstants.campaignDonors(campaignId));
-    return (response.data as List).map((e) => DonorWithDonationModel.fromJson(e)).toList();
+    return _safeList(response.data).map((e) => DonorWithDonationModel.fromJson(e)).toList();
   }
 }

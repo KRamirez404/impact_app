@@ -5,6 +5,7 @@ from .donation_routes import donation_bp
 from .like_routes import like_bp
 from .rating_routes import rating_bp
 from .support_routes import support_bp
+from .support_panel_routes import support_panel_bp
 from .tracking_routes import tracking_bp
 
 
@@ -14,6 +15,7 @@ def register_blueprints(app):
     app.register_blueprint(donation_bp)
     app.register_blueprint(like_bp)
     app.register_blueprint(support_bp)
+    app.register_blueprint(support_panel_bp)
     app.register_blueprint(tracking_bp)
     app.register_blueprint(collection_point_bp)
     app.register_blueprint(rating_bp)

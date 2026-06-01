@@ -135,6 +135,9 @@ def get_campaign_donors(campaign_id: int):
     current_user_id = int(get_jwt_identity())
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
 
+    if campaign.estado in ("pausada", "rechazada"):
+        return jsonify({"error": "La campaña está rechazada"}), 403
+
     if campaign.id_creador != current_user_id:
         return jsonify({"error": "Solo el creador de la campaña puede ver los donadores"}), 403
 

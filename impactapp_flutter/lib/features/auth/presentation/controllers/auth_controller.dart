@@ -7,6 +7,7 @@ import '../../../../core/constants/storage_keys.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
+import '../../domain/usecases/update_profile_usecase.dart';
 import '../../infrastructure/models/user_model.dart';
 import '../../infrastructure/repositories/auth_repository_impl.dart';
 
@@ -14,22 +15,33 @@ class AuthController extends GetxController {
   AuthController({
     required this.loginUseCase,
     required this.registerUseCase,
+    required this.updateProfileUseCase,
     required this.repository,
     required this.storage,
   });
 
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
+  final UpdateProfileUseCase updateProfileUseCase;
   final AuthRepositoryImpl repository;
   final GetStorage storage;
 
   final isLoading = false.obs;
+  final isUpdatingProfile = false.obs;
   final user = Rxn<UserEntity>();
 
   @override
   void onInit() {
     super.onInit();
     loadUserFromStorage();
+  }
+
+  @override
+  void onClose() {
+    isLoading.close();
+    isUpdatingProfile.close();
+    user.close();
+    super.onClose();
   }
 
   void showSuccess(String msg) {
@@ -66,7 +78,8 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       user.value = await repository.me();
-      Get.offAllNamed(AppRoutes.home);
+      final nextRoute = user.value?.rol == 'soporte' ? AppRoutes.supportHome : AppRoutes.home;
+      Get.offAllNamed(nextRoute);
     } catch (_) {
       logout();
     } finally {
@@ -79,8 +92,9 @@ class AuthController extends GetxController {
       isLoading.value = true;
       await loginUseCase(correo, contrasena);
       user.value = await repository.me();
+      final nextRoute = user.value?.rol == 'soporte' ? AppRoutes.supportHome : AppRoutes.home;
+      await Get.offAllNamed(nextRoute);
       showSuccess('Bienvenido a ImpactApp');
-      Get.offAllNamed(AppRoutes.home);
     } catch (e) {
       showError(e.toString());
     } finally {
@@ -119,5 +133,31 @@ class AuthController extends GetxController {
     user.value = null;
     Get.offAllNamed(AppRoutes.login);
   }
-}
 
+  Future<bool> updateProfile({
+    required String nombre,
+    required String apellido,
+    required String correo,
+    String? telefono,
+    String? biografia,
+  }) async {
+    try {
+      isUpdatingProfile.value = true;
+      final updatedUser = await updateProfileUseCase(
+        nombre: nombre,
+        apellido: apellido,
+        correo: correo,
+        telefono: telefono,
+        biografia: biografia,
+      );
+      user.value = updatedUser;
+      showSuccess('Perfil actualizado');
+      return true;
+    } catch (e) {
+      showError(e.toString());
+      return false;
+    } finally {
+      isUpdatingProfile.value = false;
+    }
+  }
+}

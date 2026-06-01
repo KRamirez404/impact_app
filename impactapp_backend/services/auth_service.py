@@ -19,6 +19,10 @@ def register_user(data: dict) -> USUARIO:
     if existing:
         raise ValueError("El correo ya está registrado")
 
+    role = data.get("rol")
+    if role not in (None, "usuario", "soporte"):
+        role = None
+
     user = USUARIO(
         nombre=data["nombre"].strip(),
         apellido=data["apellido"].strip(),
@@ -26,6 +30,7 @@ def register_user(data: dict) -> USUARIO:
         contraseña_hash=hash_password(data["contrasena"]),
         telefono=data.get("telefono"),
         estado="activo",
+        rol=role or "usuario",
     )
     db.session.add(user)
     db.session.commit()
@@ -44,4 +49,3 @@ def login_user(correo: str, contrasena: str):
         expires_delta=timedelta(hours=24),
     )
     return token, user
-

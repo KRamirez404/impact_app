@@ -20,6 +20,11 @@ class CampaignModel extends CampaignEntity {
     super.creadorApellido = '',
     super.creadorCorreo = '',
     super.creadorTelefono,
+    super.notaRevision,
+    super.fechaRevision,
+    super.auditorNombre,
+    super.auditorApellido,
+    super.auditorCorreo,
     super.donantesCount = 0,
     super.puntosCount = 0,
     super.vistasCount = 0,
@@ -35,6 +40,7 @@ class CampaignModel extends CampaignEntity {
     final ciudad = json['ciudad'] as Map<String, dynamic>?;
     final categoria = json['categoria'] as Map<String, dynamic>?;
     final creador = json['creador'] as Map<String, dynamic>?;
+    final auditor = json['auditor'] as Map<String, dynamic>?;
 
     return CampaignModel(
       idCampania: json['id_campania'] ?? 0,
@@ -48,6 +54,8 @@ class CampaignModel extends CampaignEntity {
       fechaInicio: json['fecha_inicio'] ?? '',
       fechaFin: json['fecha_fin'] ?? '',
       estado: json['estado'] ?? '',
+      notaRevision: json['nota_revision'],
+      fechaRevision: json['fecha_revision'],
       porcentajeAvance: (json['porcentaje_avance'] as num?)?.toDouble() ?? 0,
       ciudadNombre: ciudad?['nombre'] ?? '',
       categoriaNombre: categoria?['nombre'] ?? '',
@@ -55,6 +63,9 @@ class CampaignModel extends CampaignEntity {
       creadorApellido: creador?['apellido'] ?? '',
       creadorCorreo: creador?['correo'] ?? '',
       creadorTelefono: creador?['telefono'],
+      auditorNombre: auditor?['nombre'],
+      auditorApellido: auditor?['apellido'],
+      auditorCorreo: auditor?['correo'],
       donantesCount: json['donantes_count'] ?? (json['donaciones'] as List? ?? []).length,
       puntosCount: (json['puntos_recoleccion'] as List? ?? []).length,
       vistasCount: json['vistas_count'] ?? 0,

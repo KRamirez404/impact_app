@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../../features/auth/presentation/bindings/auth_binding.dart';
 import '../../features/auth/presentation/bindings/profile_binding.dart';
 import '../../features/auth/presentation/bindings/settings_binding.dart';
+import '../../features/auth/presentation/pages/edit_profile_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -23,6 +24,9 @@ import '../../features/ratings/presentation/bindings/rating_binding.dart';
 import '../../features/ratings/presentation/pages/rate_campaign_page.dart';
 import '../../features/verification/presentation/bindings/verification_binding.dart';
 import '../../features/verification/presentation/pages/upload_support_page.dart';
+import '../../features/support/presentation/bindings/support_binding.dart';
+import '../../features/support/presentation/pages/support_home_page.dart';
+import '../../features/support/presentation/pages/support_campaign_detail_page.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -95,6 +99,11 @@ class AppPages {
       bindings: [AuthBinding(), CampaignBinding(), ProfileBinding()],
     ),
     GetPage(
+      name: AppRoutes.editProfile,
+      page: () => EditProfilePage(),
+      bindings: [AuthBinding()],
+    ),
+    GetPage(
       name: AppRoutes.settings,
       page: () => const SettingsPage(),
       bindings: [SettingsBinding()],
@@ -109,6 +118,16 @@ class AppPages {
         );
       },
       bindings: [DonorsBinding()],
+    ),
+    GetPage(
+      name: AppRoutes.supportHome,
+      page: () => SupportHomePage(),
+      bindings: [AuthBinding(), CampaignBinding(), SupportBinding()],
+    ),
+    GetPage(
+      name: '${AppRoutes.supportCampaignDetail}/:id',
+      page: () => SupportCampaignDetailPage(),
+      bindings: [AuthBinding(), CampaignBinding(), SupportBinding()],
     ),
   ];
 }

@@ -4,6 +4,9 @@ class UserEntity {
   final String apellido;
   final String correo;
   final String? telefono;
+  final String? biografia;
+  final String? fechaRegistro;
+  final String rol;
   final String estado;
 
   const UserEntity({
@@ -12,7 +15,9 @@ class UserEntity {
     required this.apellido,
     required this.correo,
     this.telefono,
+    this.biografia,
+    this.fechaRegistro,
+    required this.rol,
     required this.estado,
   });
 }
-

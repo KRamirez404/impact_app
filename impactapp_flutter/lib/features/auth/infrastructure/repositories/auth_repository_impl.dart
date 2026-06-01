@@ -45,5 +45,23 @@ class AuthRepositoryImpl implements AuthRepository {
     await storage.write(StorageKeys.user, jsonEncode(user.toJson()));
     return user;
   }
-}
 
+  @override
+  Future<UserEntity> updateProfile({
+    required String nombre,
+    required String apellido,
+    required String correo,
+    String? telefono,
+    String? biografia,
+  }) async {
+    final user = await dataSource.updateProfile(
+      nombre: nombre,
+      apellido: apellido,
+      correo: correo,
+      telefono: telefono,
+      biografia: biografia,
+    );
+    await storage.write(StorageKeys.user, jsonEncode(user.toJson()));
+    return user;
+  }
+}

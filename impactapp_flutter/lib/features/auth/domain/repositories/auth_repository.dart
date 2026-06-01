@@ -10,5 +10,11 @@ abstract class AuthRepository {
     String? telefono,
   });
   Future<UserEntity> me();
+  Future<UserEntity> updateProfile({
+    required String nombre,
+    required String apellido,
+    required String correo,
+    String? telefono,
+    String? biografia,
+  });
 }
-
