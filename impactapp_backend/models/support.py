@@ -16,6 +16,7 @@ class SOPORTE(db.Model):
             "imagen",
             "enlace_medio",
             "certificado_institucional",
+            "foto",
             name="soporte_tipo",
             native_enum=False,
         ),

@@ -70,7 +70,7 @@ def approve_campaign(campaign_id: int):
         return error
 
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     note = (data.get("nota_revision") or data.get("nota") or "").strip()
 
     campaign.estado = "activa"
@@ -91,7 +91,7 @@ def reject_campaign(campaign_id: int):
     if error:
         return error
 
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     note = (data.get("nota_revision") or data.get("nota") or "").strip()
     if not note:
         return jsonify({"error": "La nota de rechazo es requerida"}), 400

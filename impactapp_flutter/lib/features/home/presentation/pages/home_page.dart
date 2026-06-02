@@ -295,39 +295,55 @@ class HomePage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: color,
                       borderRadius: BorderRadius.circular(19),
+                      image: donor.fotoPerfil != null
+                          ? DecorationImage(
+                              image: NetworkImage('${ApiConstants.baseUrl.replaceAll('/api', '')}${donor.fotoPerfil}'),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Spacer(),
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: Colors.white.withValues(alpha: 0.3),
-                          backgroundImage: donor.fotoPerfil != null 
-                              ? NetworkImage('${ApiConstants.baseUrl.replaceAll('/api', '')}${donor.fotoPerfil}') 
-                              : null,
-                          child: donor.fotoPerfil == null ? Text(
-                            initial,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ) : null,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(19),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.6),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (donor.fotoPerfil == null)
+                            Text(
+                              initial,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          const Spacer(),
+                          Text(
+                            name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
-                        Text(
-                          _formatCurrencyShort(donor.totalDonado),
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                      ],
+                          Text(
+                            _formatCurrencyShort(donor.totalDonado),
+                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

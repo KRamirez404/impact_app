@@ -196,14 +196,99 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                     onComments: () => _tabController.animateTo(1),
                     onRate: () => _showRateCampaignDialog(id),
                   ),
-                  const SizedBox(height: 12),
-                  DonationButtons(
-                    onDonateMoney: () => _showMoneyDonationDialog(id),
-                    onDonatePhysical: () => _showPhysicalDonationDialog(
-                      id,
-                      campaign.puntosRecoleccion,
+                  if (campaign.estado == 'finalizada' || 
+                      campaign.porcentajeAvance >= 100 || 
+                      (DateTime.tryParse(campaign.fechaFin)?.isBefore(DateTime.now()) ?? false)) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        border: Border.all(color: const Color(0xFF7BF1A8), width: 1.18),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFB9F8CF),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.check_circle_outline, color: Color(0xFF008236)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '¡Campaña Exitosa!',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF0D542B),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  '🎉 Esta campaña alcanzó su meta. ¡Gracias a todos los que ayudaron!',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF717182),
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Finalizada el ${_formatDate(campaign.fechaFin)}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF717182),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: const BoxDecoration(
+                        border: Border(bottom: BorderSide(color: Color(0x1A000000))),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.lock_outline, size: 16, color: Color(0xFF717182)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Las donaciones han finalizado',
+                                style: TextStyle(fontSize: 14, color: Color(0xFF717182)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Esta campaña ya no acepta nuevas contribuciones',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF717182)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    DonationButtons(
+                      onDonateMoney: () => _showMoneyDonationDialog(id),
+                      onDonatePhysical: () => _showPhysicalDonationDialog(
+                        id,
+                        campaign.puntosRecoleccion,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   TabsHeader(
                     tabController: _tabController,
