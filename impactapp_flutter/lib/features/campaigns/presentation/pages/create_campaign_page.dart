@@ -201,7 +201,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
           ),
           const SizedBox(height: 16),
           EvidenceCard(
-            attachmentsCount: _attachments.length,
+            attachments: _attachments,
             onPickAttachments: _pickAttachments,
           ),
           const SizedBox(height: 16),

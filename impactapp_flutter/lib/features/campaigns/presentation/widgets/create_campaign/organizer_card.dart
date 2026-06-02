@@ -16,7 +16,6 @@ class OrganizerCard extends StatelessWidget {
     return CampaignCardWrapper(
       title: 'Información del Organizador',
       description: 'Datos de contacto del responsable',
-      height: 243.59,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
         child: Column(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../ratings/infrastructure/datasources/rating_remote_datasource.dart';
 import '../../../ratings/infrastructure/repositories/rating_repository_impl.dart';
 import '../controllers/campaign_detail_controller.dart';
@@ -58,7 +59,7 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
   String? _imageSupportUrl(List<Map<String, dynamic>> supports) {
     for (final support in supports) {
       final tipo = (support['tipo'] ?? '').toString().toLowerCase().trim();
-      if (tipo != 'imagen') {
+      if (tipo != 'imagen' && tipo != 'foto') {
         continue;
       }
       final url = (support['url_o_ruta'] ?? '').toString().trim();
@@ -142,7 +143,12 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
         final collected =
             (campaign.porcentajeAvance / 100) * campaign.metaMonetaria;
         final daysRemaining = _calculateDaysRemaining(campaign.fechaFin);
-        final headerImageUrl = _imageSupportUrl(campaign.soportes);
+        final rawImageUrl = _imageSupportUrl(campaign.soportes);
+        final headerImageUrl = rawImageUrl != null
+            ? (rawImageUrl.startsWith('/')
+                ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$rawImageUrl'
+                : rawImageUrl)
+            : null;
 
         return Column(
           children: [

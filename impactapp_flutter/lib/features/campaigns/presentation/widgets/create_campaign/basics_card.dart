@@ -202,7 +202,33 @@ class BasicsCard extends StatelessWidget {
             const SizedBox(height: 4),
             TextFormField(
               controller: fechaFinCtrl,
-              decoration: _inputDecoration('YYYY-MM-DD'),
+              readOnly: true,
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now().add(const Duration(days: 1)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 3650)), // 10 years from now
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: Color(0xFF1976D2), // header background color
+                          onPrimary: Colors.white, // header text color
+                          onSurface: Colors.black, // body text color
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (picked != null) {
+                  fechaFinCtrl.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                }
+              },
+              decoration: _inputDecoration('YYYY-MM-DD').copyWith(
+                suffixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF717182)),
+              ),
               maxLines: 1,
               validator: (v) => v == null || v.trim().isEmpty ? 'Fecha límite es obligatoria' : null,
             ),

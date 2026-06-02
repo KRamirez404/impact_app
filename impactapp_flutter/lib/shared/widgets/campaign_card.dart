@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../features/campaigns/domain/entities/campaign_entity.dart';
 
 class CampaignCard extends StatelessWidget {
@@ -67,6 +68,12 @@ class CampaignCard extends StatelessWidget {
     final isCompleted = campaign.porcentajeAvance >= 100;
     final isVerificada = campaign.estado == 'activa' || campaign.estado == 'finalizada';
 
+    final mainImageSoporte = campaign.soportes.firstWhere(
+      (s) => s['tipo'] == 'foto' || s['tipo'] == 'imagen',
+      orElse: () => <String, dynamic>{},
+    );
+    final mainImageUrl = mainImageSoporte['url_o_ruta'] as String?;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -90,7 +97,7 @@ class CampaignCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImageSection(isCompleted, isVerificada),
+            _buildImageSection(isCompleted, isVerificada, mainImageUrl),
             _buildContentSection(isCompleted),
             _buildFooter(),
           ],
@@ -99,21 +106,30 @@ class CampaignCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImageSection(bool isCompleted, bool isVerificada) {
+  Widget _buildImageSection(bool isCompleted, bool isVerificada, String? mainImageUrl) {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
       child: Container(
         height: 192,
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              _categoryColor(campaign.categoriaNombre).withValues(alpha: 0.7),
-              _categoryColor(campaign.categoriaNombre),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: mainImageUrl != null ? const Color(0xFFF3F4F6) : null,
+          gradient: mainImageUrl == null
+              ? LinearGradient(
+                  colors: [
+                    _categoryColor(campaign.categoriaNombre).withValues(alpha: 0.7),
+                    _categoryColor(campaign.categoriaNombre),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          image: mainImageUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(mainImageUrl.startsWith('/') ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$mainImageUrl' : mainImageUrl),
+                  fit: BoxFit.cover,
+                )
+              : null,
         ),
         child: Stack(
           children: [

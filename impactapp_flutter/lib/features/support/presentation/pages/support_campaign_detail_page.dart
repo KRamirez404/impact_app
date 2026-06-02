@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/constants/api_constants.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../controllers/support_controller.dart';
@@ -337,9 +338,7 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
   }
 
   Widget _buildEvidenciasSection(List<Map<String, dynamic>> soportes) {
-    final evidencias = soportes
-        .where((s) => (s['tipo'] as String? ?? '') != 'imagen')
-        .toList();
+    final evidencias = soportes.toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -352,7 +351,7 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
                   size: 16, color: Color(0xFF0A0A0A)),
               const SizedBox(width: 8),
               Text(
-                'Evidencias (${soportes.length})',
+                'Evidencias (${evidencias.length})',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -372,55 +371,83 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
     final name = soporte['descripcion'] as String? ?? 'Documento';
     final tipo = soporte['tipo'] as String? ?? 'documento';
     final tipoLabel = _mapTipoLabel(tipo);
+    final url = soporte['url_o_ruta'] as String? ?? '';
+    final isImage = url.toLowerCase().endsWith('.png') || url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDBEAFE),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Center(
-              child: Icon(Icons.description_outlined,
-                  size: 20, color: Color(0xFF155DFC)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+    return GestureDetector(
+      onTap: () {
+        if (url.isEmpty) return;
+        Get.dialog(
+          Dialog(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF0A0A0A),
+                if (isImage || tipo == 'foto' || tipo == 'imagen')
+                  Image.network(
+                    url.startsWith('/') ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$url' : url,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Padding(padding: EdgeInsets.all(16), child: Text('No se pudo cargar la imagen')),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: SelectableText('Enlace/Archivo: ${url.startsWith('/') ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$url' : url}'),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  tipoLabel,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF4A5565),
-                  ),
-                ),
+                TextButton(onPressed: () => Get.back(), child: const Text('Cerrar')),
               ],
             ),
           ),
-        ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDBEAFE),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Icon(isImage || tipo == 'foto' || tipo == 'imagen' ? Icons.image_outlined : Icons.description_outlined,
+                    size: 20, color: const Color(0xFF155DFC)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name.isEmpty ? 'Documento adjunto' : name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF0A0A0A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    tipoLabel,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF4A5565),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

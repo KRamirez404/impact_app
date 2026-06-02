@@ -67,7 +67,7 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
   void initState() {
     super.initState();
     _selectedCategories = widget.controller.selectedCategoryLabels.toList();
-    _selectedCity = widget.controller.selectedCityLabel.value ?? 'Antioquia';
+    _selectedCity = widget.controller.selectedCityLabel.value;
   }
 
   @override
@@ -148,27 +148,41 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
                         children: [
                           _sectionTitle('Ubicación'),
                           const SizedBox(height: 18),
-                          DropdownButtonFormField<String>(
-                            initialValue: _selectedCity,
+                          DropdownButtonFormField<String?>(
+                            value: _selectedCity,
                             isExpanded: true,
-                            items: _cityOptions
-                                .map(
-                                  (city) => DropdownMenuItem<String>(
-                                    value: city,
-                                    child: Text(
-                                      city,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.43,
-                                        color: Color(0xFF0A0A0A),
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text(
+                                  'Todas las ciudades',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.43,
+                                    color: Color(0xFF0A0A0A),
+                                  ),
+                                ),
+                              ),
+                              ..._cityOptions.map(
+                                    (city) => DropdownMenuItem<String?>(
+                                      value: city,
+                                      child: Text(
+                                        city,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          height: 1.43,
+                                          color: Color(0xFF0A0A0A),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                )
-                                .toList(),
+                            ],
                             onChanged: (value) {
                               setState(() {
                                 _selectedCity = value;

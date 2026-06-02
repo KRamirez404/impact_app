@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/network/dio_client.dart';
@@ -478,6 +479,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (picked != null) {
+      final ext = picked.name.split('.').last.toLowerCase();
+      if (ext == 'avif' || ext == 'heic' || ext == 'heif') {
+        final bytes = await picked.readAsBytes();
+        final decoded = img.decodeImage(bytes);
+        if (decoded != null) {
+          final jpegBytes = img.encodeJpg(decoded, quality: 90);
+          final tempDir = Directory.systemTemp;
+          final tempFile = File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+          await tempFile.writeAsBytes(jpegBytes);
+          setState(() => _selectedImage = XFile(tempFile.path));
+          return;
+        }
+      }
       setState(() => _selectedImage = picked);
     }
   }
