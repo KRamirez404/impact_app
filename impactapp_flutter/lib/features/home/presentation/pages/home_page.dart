@@ -386,6 +386,7 @@ class HomePage extends StatelessWidget {
                 return SizedBox(
                   width: 340,
                   child: CampaignCard(
+                    key: ValueKey(nearGoal[i].idCampania),
                     campaign: nearGoal[i],
                     onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${nearGoal[i].idCampania}'),
                   ),
@@ -426,6 +427,7 @@ class HomePage extends StatelessWidget {
           ...campaigns.map((c) => Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: CampaignCard(
+                  key: ValueKey(c.idCampania),
                   campaign: c,
                   onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${c.idCampania}'),
                 ),

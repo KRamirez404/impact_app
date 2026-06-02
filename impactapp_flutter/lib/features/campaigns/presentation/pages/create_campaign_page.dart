@@ -158,6 +158,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
         await _remoteDataSource.uploadSupport(campaign.idCampania, 'foto', attachment.path);
       }
 
+      await controller.fetchCampaigns();
       Get.offAllNamed(AppRoutes.home);
     } catch (e) {
       Get.snackbar(

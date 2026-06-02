@@ -69,7 +69,10 @@ class CampaignCard extends StatelessWidget {
     final isVerificada = campaign.estado == 'activa' || campaign.estado == 'finalizada';
 
     final mainImageSoporte = campaign.soportes.firstWhere(
-      (s) => s['tipo'] == 'foto' || s['tipo'] == 'imagen',
+      (s) {
+        final tipo = (s['tipo'] ?? '').toString().toLowerCase().trim();
+        return tipo == 'foto' || tipo == 'imagen';
+      },
       orElse: () => <String, dynamic>{},
     );
     final mainImageUrl = mainImageSoporte['url_o_ruta'] as String?;

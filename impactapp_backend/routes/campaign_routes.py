@@ -47,6 +47,7 @@ def list_campaigns():
             .scalar()
             or 0
         )
+        data["soportes"] = [s.to_dict() for s in campaign.soportes]
         payload.append(data)
     return jsonify(payload), 200
 
@@ -60,7 +61,12 @@ def list_my_campaigns():
         .order_by(CAMPAÑA.id_campania.desc())
         .all()
     )
-    return jsonify([campaign.to_dict(include_relations=True) for campaign in campaigns]), 200
+    payload = []
+    for campaign in campaigns:
+        data = campaign.to_dict(include_relations=True)
+        data["soportes"] = [s.to_dict() for s in campaign.soportes]
+        payload.append(data)
+    return jsonify(payload), 200
 
 
 @campaign_bp.post("/campaigns")

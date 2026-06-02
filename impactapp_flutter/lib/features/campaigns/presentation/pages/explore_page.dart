@@ -61,6 +61,7 @@ class _ExplorePageState extends State<ExplorePage> {
                             (campaign) => Padding(
                               padding: const EdgeInsets.only(bottom: 16),
                               child: CampaignCard(
+                                key: ValueKey(campaign.idCampania),
                                 campaign: campaign,
                                 onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${campaign.idCampania}'),
                               ),

@@ -105,7 +105,6 @@ class CampaignListController extends GetxController {
       isLoading.value = true;
       final campaign = await createCampaignUseCase(payload);
       _ok('Campaña creada');
-      await fetchCampaigns();
       return campaign;
     } catch (e) {
       _err(e.toString());
