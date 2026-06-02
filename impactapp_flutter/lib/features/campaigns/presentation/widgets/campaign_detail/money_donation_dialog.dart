@@ -41,8 +41,9 @@ Future<void> showMoneyDonationDialog({
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -180,7 +181,8 @@ Future<void> showMoneyDonationDialog({
                       ),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

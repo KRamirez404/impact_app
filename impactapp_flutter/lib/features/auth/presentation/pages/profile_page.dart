@@ -160,13 +160,30 @@ class ProfilePage extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 4),
                   ),
-                  child: CircleAvatar(
-                    backgroundColor: Colors.white.withValues(alpha: 0.15),
-                    backgroundImage: fotoPerfil != null ? NetworkImage('${ApiConstants.baseUrl.replaceAll('/api', '')}$fotoPerfil') : null,
-                    child: fotoPerfil == null ? Text(
-                      initials,
-                      style: const TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.w600),
-                    ) : null,
+                  child: ClipOval(
+                    child: fotoPerfil != null
+                        ? Image.network(
+                            '${ApiConstants.baseUrl.replaceAll('/api', '')}$fotoPerfil',
+                            fit: BoxFit.cover,
+                            width: 80,
+                            height: 80,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              alignment: Alignment.center,
+                              child: Text(
+                                initials,
+                                style: const TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            alignment: Alignment.center,
+                            child: Text(
+                              initials,
+                              style: const TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.w600),
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 16),

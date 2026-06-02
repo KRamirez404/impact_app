@@ -55,8 +55,9 @@ class _EvaluationDialogContentState extends State<_EvaluationDialogContent> {
       child: Container(
         width: 373,
         padding: const EdgeInsets.all(25),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeader(),
             const SizedBox(height: 16),
@@ -66,6 +67,7 @@ class _EvaluationDialogContentState extends State<_EvaluationDialogContent> {
             const SizedBox(height: 20),
             _buildFooter(controller),
           ],
+        ),
         ),
       ),
     );
@@ -330,6 +332,17 @@ class _EvaluationDialogContentState extends State<_EvaluationDialogContent> {
   Future<void> _onConfirm(SupportController controller) async {
     if (_selectedAction == null) return;
 
+    final note = _noteController.text.trim();
+    if (_selectedAction == EvaluationAction.reject && note.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'La nota de rechazo es obligatoria',
+        backgroundColor: const Color(0xFFD32F2F),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     Get.back();
 
     switch (_selectedAction!) {
@@ -337,13 +350,11 @@ class _EvaluationDialogContentState extends State<_EvaluationDialogContent> {
         await controller.approve(widget.campaignId);
         break;
       case EvaluationAction.requestInfo:
-        final note = _noteController.text.trim();
         final fullNote =
             '[Requiere más información]${note.isNotEmpty ? ' - $note' : ''}';
         await controller.reject(widget.campaignId, fullNote);
         break;
       case EvaluationAction.reject:
-        final note = _noteController.text.trim();
         await controller.reject(widget.campaignId, note);
         break;
     }

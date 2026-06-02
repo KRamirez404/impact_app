@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../../core/network/dio_client.dart';
 
 String _formatCurrency(double amount) {
   if (amount >= 1000000) {
@@ -20,6 +23,8 @@ Future<void> showPaymentProcessDialog({
 }) async {
   var acceptTerms = false;
   var isSaving = false;
+  var isUploading = false;
+  String? receiptUrl;
   await showDialog<void>(
     context: context,
     builder: (dialogContext) {
@@ -52,8 +57,9 @@ Future<void> showPaymentProcessDialog({
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -211,33 +217,54 @@ Future<void> showPaymentProcessDialog({
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Container(
-                          height: 90,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.black.withOpacity(0.1),
+                        InkWell(
+                          onTap: isUploading || isSaving ? null : () async {
+                            final picker = ImagePicker();
+                            final file = await picker.pickImage(source: ImageSource.gallery);
+                            if (file != null) {
+                              setState(() => isUploading = true);
+                              try {
+                                final url = await DioClient.instance.uploadFile(file.path);
+                                setState(() => receiptUrl = url);
+                              } catch (e) {
+                                Get.snackbar('Error', 'No se pudo subir la imagen',
+                                    backgroundColor: const Color(0xFFD32F2F), colorText: Colors.white);
+                              } finally {
+                                setState(() => isUploading = false);
+                              }
+                            }
+                          },
+                          child: Container(
+                            height: 90,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: receiptUrl != null ? Colors.green : Colors.black.withOpacity(0.1),
+                                width: receiptUrl != null ? 2 : 1,
+                              ),
                             ),
-                          ),
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.upload,
-                                color: Color(0xFF717182),
-                                size: 28,
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Subir comprobante',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF717182),
-                                ),
-                              ),
-                            ],
+                            child: isUploading
+                                ? const Center(child: CircularProgressIndicator())
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        receiptUrl != null ? Icons.check_circle : Icons.upload,
+                                        color: receiptUrl != null ? Colors.green : const Color(0xFF717182),
+                                        size: 28,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        receiptUrl != null ? 'Comprobante subido' : 'Subir comprobante',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: receiptUrl != null ? Colors.green : const Color(0xFF717182),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ),
                       ],
@@ -312,7 +339,7 @@ Future<void> showPaymentProcessDialog({
                                 'id_campania': campaignId,
                                 'tipo': 'economica',
                                 'monto_estimado': amount,
-                                'descripcion': 'Donación económica',
+                                'descripcion': 'Donación económica' + (receiptUrl != null ? '\nComprobante: $receiptUrl' : ''),
                               });
                               navigator.pop();
                             },
@@ -359,6 +386,7 @@ Future<void> showPaymentProcessDialog({
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           );

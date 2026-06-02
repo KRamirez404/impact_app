@@ -149,7 +149,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
           'id_ciudad': _selectedCityId,
           'nombre': point.nombre,
           'direccion': point.direccion,
-          'horario': point.horario,
+          'horario': '${point.horario} (Artículos: ${point.articulosAceptados})',
           'contacto': _correoCtrl.text.trim(),
         });
       }

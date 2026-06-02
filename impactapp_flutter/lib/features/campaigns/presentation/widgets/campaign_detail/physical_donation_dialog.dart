@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../../core/network/dio_client.dart';
 
 Future<void> showPhysicalDonationDialog({
   required BuildContext context,
@@ -19,6 +21,9 @@ Future<void> showPhysicalDonationDialog({
   if (puntosRecoleccion.isNotEmpty) {
     selectedPointId = puntosRecoleccion.first['id_punto'] as int?;
   }
+  var isUploading = false;
+  String? photoUrl;
+  var isSaving = false;
 
   await showDialog<void>(
     context: context,
@@ -52,8 +57,9 @@ Future<void> showPhysicalDonationDialog({
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -216,36 +222,59 @@ Future<void> showPhysicalDonationDialog({
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Container(
-                    height: 65,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F3F5),
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.photo_camera_outlined,
-                          color: Color(0xFF2A343D),
+                  InkWell(
+                    onTap: isUploading || isSaving ? null : () async {
+                      final picker = ImagePicker();
+                      final file = await picker.pickImage(source: ImageSource.gallery);
+                      if (file != null) {
+                        setState(() => isUploading = true);
+                        try {
+                          final url = await DioClient.instance.uploadFile(file.path);
+                          setState(() => photoUrl = url);
+                        } catch (e) {
+                          Get.snackbar('Error', 'No se pudo subir la imagen',
+                              backgroundColor: const Color(0xFFD32F2F), colorText: Colors.white);
+                        } finally {
+                          setState(() => isUploading = false);
+                        }
+                      }
+                    },
+                    child: Container(
+                      height: 65,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: photoUrl != null ? Colors.green.withOpacity(0.1) : const Color(0xFFF3F3F5),
+                        borderRadius: BorderRadius.circular(7),
+                        border: Border.all(
+                          color: photoUrl != null ? Colors.green : Colors.transparent,
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Tomar Foto',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF717182),
-                          ),
-                        ),
-                      ],
+                      ),
+                      child: isUploading
+                          ? const Center(child: CircularProgressIndicator())
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  photoUrl != null ? Icons.check_circle : Icons.photo_camera_outlined,
+                                  color: photoUrl != null ? Colors.green : const Color(0xFF2A343D),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  photoUrl != null ? 'Foto subida' : 'Tomar Foto',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: photoUrl != null ? Colors.green : const Color(0xFF717182),
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () async {
+                      onPressed: isSaving ? null : () async {
                         if (selectedPointId == null) {
                           Get.snackbar(
                             'Punto requerido',
@@ -255,13 +284,18 @@ Future<void> showPhysicalDonationDialog({
                           );
                           return;
                         }
+                        setState(() => isSaving = true);
                         final navigator = Navigator.of(dialogContext);
+                        final baseDesc = commentController.text.trim();
+                        final finalDesc = baseDesc.isEmpty 
+                            ? (photoUrl != null ? 'Foto: $photoUrl' : '') 
+                            : baseDesc + (photoUrl != null ? '\nFoto: $photoUrl' : '');
                         await onDonate({
                           'id_campania': campaignId,
                           'id_punto': selectedPointId,
                           'tipo': selectedType,
                           'monto_estimado': 0,
-                          'descripcion': commentController.text.trim(),
+                          'descripcion': finalDesc,
                         });
                         navigator.pop();
                       },
@@ -283,6 +317,7 @@ Future<void> showPhysicalDonationDialog({
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           );

@@ -41,8 +41,9 @@ Future<void> showRateCampaignDialog({
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -155,6 +156,7 @@ Future<void> showRateCampaignDialog({
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           );

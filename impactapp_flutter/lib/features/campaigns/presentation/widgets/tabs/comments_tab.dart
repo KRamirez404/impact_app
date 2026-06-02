@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
+import '../../../../../core/constants/api_constants.dart';
 import '../../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../../ratings/infrastructure/datasources/rating_remote_datasource.dart';
 import '../../../../ratings/infrastructure/repositories/rating_repository_impl.dart';
@@ -85,6 +86,7 @@ class _CommentsTabState extends State<CommentsTab> {
         ? '${authUser.nombre.isNotEmpty ? authUser.nombre[0] : ''}${authUser.apellido.isNotEmpty ? authUser.apellido[0] : ''}'
             .toUpperCase()
         : '?';
+    final fotoPerfil = authUser?.fotoPerfil;
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -99,12 +101,34 @@ class _CommentsTabState extends State<CommentsTab> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFF1976D2),
-                child: Text(
-                  userInitials.isEmpty ? '?' : userInitials,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(shape: BoxShape.circle),
+                child: ClipOval(
+                  child: fotoPerfil != null
+                      ? Image.network(
+                          '${ApiConstants.baseUrl.replaceAll('/api', '')}$fotoPerfil',
+                          fit: BoxFit.cover,
+                          width: 40,
+                          height: 40,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: const Color(0xFF1976D2),
+                            alignment: Alignment.center,
+                            child: Text(
+                              userInitials.isEmpty ? '?' : userInitials,
+                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: const Color(0xFF1976D2),
+                          alignment: Alignment.center,
+                          child: Text(
+                            userInitials.isEmpty ? '?' : userInitials,
+                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -204,6 +228,7 @@ class _CommentCard extends StatelessWidget {
     final nombre = usuario != null
         ? '${usuario['nombre'] ?? ''} ${usuario['apellido'] ?? ''}'.trim()
         : 'Usuario';
+    final fotoPerfil = usuario != null ? usuario['foto_perfil'] as String? : null;
     final initials = nombre.isNotEmpty
         ? nombre.split(' ').where((p) => p.isNotEmpty).take(2).map((p) => p[0]).join().toUpperCase()
         : 'U';
@@ -220,12 +245,34 @@ class _CommentCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: const Color(0xFFECECF0),
-            child: Text(
-              initials,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0A0A0A)),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(shape: BoxShape.circle),
+            child: ClipOval(
+              child: fotoPerfil != null
+                  ? Image.network(
+                      '${ApiConstants.baseUrl.replaceAll('/api', '')}$fotoPerfil',
+                      fit: BoxFit.cover,
+                      width: 40,
+                      height: 40,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: const Color(0xFFECECF0),
+                        alignment: Alignment.center,
+                        child: Text(
+                          initials,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0A0A0A)),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: const Color(0xFFECECF0),
+                      alignment: Alignment.center,
+                      child: Text(
+                        initials,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0A0A0A)),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 12),
