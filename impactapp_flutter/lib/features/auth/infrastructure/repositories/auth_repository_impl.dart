@@ -53,6 +53,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String correo,
     String? telefono,
     String? biografia,
+    String? fotoPerfil,
   }) async {
     final user = await dataSource.updateProfile(
       nombre: nombre,
@@ -60,6 +61,7 @@ class AuthRepositoryImpl implements AuthRepository {
       correo: correo,
       telefono: telefono,
       biografia: biografia,
+      fotoPerfil: fotoPerfil,
     );
     await storage.write(StorageKeys.user, jsonEncode(user.toJson()));
     return user;

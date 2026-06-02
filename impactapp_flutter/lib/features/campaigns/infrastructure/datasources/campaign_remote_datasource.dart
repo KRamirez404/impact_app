@@ -97,4 +97,13 @@ class CampaignRemoteDataSource {
     final response = await _dio.get(ApiConstants.campaignDonors(campaignId));
     return _safeList(response.data).map((e) => DonorWithDonationModel.fromJson(e)).toList();
   }
+
+  Future<void> uploadSupport(int campaignId, String tipo, String filePath) async {
+    final formData = FormData.fromMap({
+      'id_campania': campaignId.toString(),
+      'tipo': tipo,
+      'file': await MultipartFile.fromFile(filePath),
+    });
+    await _dio.post(ApiConstants.supports, data: formData);
+  }
 }

@@ -217,8 +217,9 @@ class _CreateCollectionPointModalState
                                   Expanded(
                                     child: ElevatedButton(
                                       onPressed: () {
-                                        if (!_formKey.currentState!.validate())
+                                        if (!_formKey.currentState!.validate()) {
                                           return;
+                                        }
                                         Navigator.of(context).pop(
                                           CollectionPointDraft(
                                             nombre: _nombreCtrl.text.trim(),

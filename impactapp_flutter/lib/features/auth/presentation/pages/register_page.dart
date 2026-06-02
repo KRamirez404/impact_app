@@ -52,23 +52,13 @@ class RegisterPage extends StatelessWidget {
   Widget _buildHeader() {
     return Column(
       children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1976D2),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Center(
-            child: Text(
-              'I',
-              style: TextStyle(
-                fontFamily: 'Audiowide',
-                fontSize: 32,
-                color: Colors.white,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.asset(
+            'assets/logo/logo.png',
+            width: 60,
+            height: 60,
+            fit: BoxFit.cover,
           ),
         ),
         const SizedBox(height: 12),
@@ -155,14 +145,14 @@ class RegisterPage extends StatelessWidget {
           label: 'Teléfono',
         ),
         const SizedBox(height: 16),
-        CustomTextField(
-          controller: _passCtrl,
-          label: 'Contraseña',
-          obscure: _obscurePass.value,
-          validator: Validators.password,
-          textInputAction: TextInputAction.done,
-          suffixIcon: Obx(
-            () => IconButton(
+        Obx(
+          () => CustomTextField(
+            controller: _passCtrl,
+            label: 'Contraseña',
+            obscure: _obscurePass.value,
+            validator: Validators.password,
+            textInputAction: TextInputAction.done,
+            suffixIcon: IconButton(
               icon: Icon(
                 _obscurePass.value ? Icons.visibility_off : Icons.visibility,
                 color: const Color(0xFF717182),

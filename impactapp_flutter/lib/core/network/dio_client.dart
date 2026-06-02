@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart' hide FormData, MultipartFile;
+import 'package:get/get.dart' hide FormData, MultipartFile, Response;
 import 'package:get_storage/get_storage.dart';
 import '../../app/routes/app_routes.dart';
 import '../constants/api_constants.dart';
@@ -44,4 +44,12 @@ class DioClient {
         },
       ),
     );
+
+  Future<String> uploadFile(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+    });
+    final response = await dio.post(ApiConstants.upload, data: formData);
+    return response.data['url'] as String;
+  }
 }

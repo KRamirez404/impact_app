@@ -91,7 +91,12 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       await loginUseCase(correo, contrasena);
-      user.value = await repository.me();
+      await loadUserFromStorage();
+      try {
+        user.value = await repository.me();
+      } catch (_) {
+        // Si falla me(), usamos los datos guardados del login
+      }
       final nextRoute = user.value?.rol == 'soporte' ? AppRoutes.supportHome : AppRoutes.home;
       await Get.offAllNamed(nextRoute);
       showSuccess('Bienvenido a ImpactApp');
@@ -140,6 +145,7 @@ class AuthController extends GetxController {
     required String correo,
     String? telefono,
     String? biografia,
+    String? fotoPerfil,
   }) async {
     try {
       isUpdatingProfile.value = true;
@@ -149,6 +155,7 @@ class AuthController extends GetxController {
         correo: correo,
         telefono: telefono,
         biografia: biografia,
+        fotoPerfil: fotoPerfil,
       );
       user.value = updatedUser;
       showSuccess('Perfil actualizado');

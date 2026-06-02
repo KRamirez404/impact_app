@@ -4,6 +4,7 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../../../campaigns/domain/entities/donation_with_campaign_entity.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/profile/stat_card.dart';
@@ -19,6 +20,10 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (controller.user.value?.rol == 'soporte') {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Get.offAllNamed(AppRoutes.supportHome));
+      return const SizedBox.shrink();
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: const BottomNavBar(currentIndex: 3),
@@ -34,7 +39,7 @@ class ProfilePage extends StatelessWidget {
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
-                      _buildHeader(context, fullName, user.correo, user.biografia),
+                      _buildHeader(context, fullName, user.correo, user.biografia, user.fotoPerfil),
                       Obx(() => _buildStatsRow()),
                       const SizedBox(height: 20),
                       const ProfileTabs(),
@@ -107,7 +112,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String name, String email, String? bio) {
+  Widget _buildHeader(BuildContext context, String name, String email, String? bio, String? fotoPerfil) {
     final initials = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'I';
     final bioText = (bio == null || bio.trim().isEmpty)
         ? 'Aún no has agregado una biografía.'
@@ -129,14 +134,13 @@ class ProfilePage extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 54, height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Center(
-                    child: Text('I', style: TextStyle(fontFamily: 'Audiowide', fontSize: 18, color: Colors.white)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    'assets/logo/logo.png',
+                    width: 54,
+                    height: 46,
+                    fit: BoxFit.cover,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -158,10 +162,11 @@ class ProfilePage extends StatelessWidget {
                   ),
                   child: CircleAvatar(
                     backgroundColor: Colors.white.withValues(alpha: 0.15),
-                    child: Text(
+                    backgroundImage: fotoPerfil != null ? NetworkImage('${ApiConstants.baseUrl.replaceAll('/api', '')}$fotoPerfil') : null,
+                    child: fotoPerfil == null ? Text(
                       initials,
                       style: const TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
+                    ) : null,
                   ),
                 ),
                 const SizedBox(width: 16),

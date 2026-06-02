@@ -84,5 +84,11 @@ def update_me():
             biografia = biografia or None
         user.biografia = biografia
 
+    if "foto_perfil" in data:
+        foto_perfil = data.get("foto_perfil")
+        if isinstance(foto_perfil, str):
+            foto_perfil = foto_perfil.strip() or None
+        user.foto_perfil = foto_perfil
+
     db.session.commit()
     return jsonify(user.to_dict()), 200

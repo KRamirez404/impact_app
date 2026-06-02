@@ -18,6 +18,7 @@ class USUARIO(db.Model):
         default="usuario",
         nullable=False,
     )
+    foto_perfil = db.Column(db.String(255), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     estado = db.Column(
         db.Enum("activo", "bloqueado", name="usuario_estado", native_enum=False),
@@ -40,6 +41,7 @@ class USUARIO(db.Model):
             "correo": self.correo,
             "telefono": self.telefono,
             "biografia": self.biografia,
+            "foto_perfil": self.foto_perfil,
             "rol": self.rol,
             "fecha_registro": self.fecha_registro.isoformat(),
             "estado": self.estado,

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../../../shared/widgets/campaign_card.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../campaigns/presentation/controllers/campaign_list_controller.dart';
 import '../controllers/home_controller.dart';
@@ -16,6 +17,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (authCtrl.user.value?.rol == 'soporte') {
+      WidgetsBinding.instance.addPostFrameCallback((_) => Get.offAllNamed(AppRoutes.supportHome));
+      return const SizedBox.shrink();
+    }
     return Scaffold(
       body: Column(
         children: [
@@ -66,19 +71,13 @@ class HomePage extends StatelessWidget {
           child: Row(
             children: [
               const SizedBox(width: 16),
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Center(
-                  child: Text('I',
-                      style: TextStyle(
-                          fontFamily: 'Audiowide',
-                          fontSize: 20,
-                          color: Colors.white)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'assets/logo/logo.png',
+                  width: 42,
+                  height: 42,
+                  fit: BoxFit.cover,
                 ),
               ),
               const SizedBox(width: 8),
@@ -305,10 +304,13 @@ class HomePage extends StatelessWidget {
                         CircleAvatar(
                           radius: 20,
                           backgroundColor: Colors.white.withValues(alpha: 0.3),
-                          child: Text(
+                          backgroundImage: donor.fotoPerfil != null 
+                              ? NetworkImage('${ApiConstants.baseUrl.replaceAll('/api', '')}${donor.fotoPerfil}') 
+                              : null,
+                          child: donor.fotoPerfil == null ? Text(
                             initial,
                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
+                          ) : null,
                         ),
                         const SizedBox(height: 8),
                         Text(

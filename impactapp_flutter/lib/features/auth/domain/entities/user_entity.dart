@@ -5,6 +5,7 @@ class UserEntity {
   final String correo;
   final String? telefono;
   final String? biografia;
+  final String? fotoPerfil;
   final String? fechaRegistro;
   final String rol;
   final String estado;
@@ -16,6 +17,7 @@ class UserEntity {
     required this.correo,
     this.telefono,
     this.biografia,
+    this.fotoPerfil,
     this.fechaRegistro,
     required this.rol,
     required this.estado,

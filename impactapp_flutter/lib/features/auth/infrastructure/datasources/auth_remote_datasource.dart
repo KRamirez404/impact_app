@@ -58,6 +58,7 @@ class AuthRemoteDataSource {
     required String correo,
     String? telefono,
     String? biografia,
+    String? fotoPerfil,
   }) async {
     final response = await _dio.put(
       ApiConstants.me,
@@ -67,6 +68,7 @@ class AuthRemoteDataSource {
         'correo': correo,
         'telefono': telefono,
         'biografia': biografia,
+        'foto_perfil': fotoPerfil,
       },
     );
     return UserModel.fromJson(_safeData(response.data));

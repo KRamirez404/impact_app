@@ -5,12 +5,15 @@ class TopDonorEntity {
   final double totalDonado;
   final int donacionesCount;
 
+  final String? fotoPerfil;
+
   const TopDonorEntity({
     required this.idUsuario,
     required this.nombre,
     required this.apellido,
     required this.totalDonado,
     required this.donacionesCount,
+    this.fotoPerfil,
   });
 
   String get nombreCompleto {

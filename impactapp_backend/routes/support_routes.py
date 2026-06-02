@@ -17,7 +17,7 @@ def create_support():
     id_campania = form.get("id_campania")
     tipo = form.get("tipo")
     descripcion = form.get("descripcion")
-    validado = form.get("validado", "false").lower() == "true"
+    validado = False
 
     if not id_campania or not tipo:
         return jsonify({"error": "id_campania y tipo son requeridos"}), 400

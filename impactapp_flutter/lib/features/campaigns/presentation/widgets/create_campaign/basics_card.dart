@@ -179,14 +179,23 @@ class BasicsCard extends StatelessWidget {
               decoration: _inputDecoration('Tipo de ayuda'),
             ),
             const SizedBox(height: 12),
-            _label('Meta de recaudación (COP) *'),
+            _label(selectedHelpType == 'economica' || selectedHelpType == 'mixta'
+                ? 'Meta de recaudación (COP) *'
+                : 'Meta de recaudación (COP) (Opcional)'),
             const SizedBox(height: 4),
             TextFormField(
               controller: metaCtrl,
               keyboardType: TextInputType.number,
               decoration: _inputDecoration('Ej: 50000000'),
               maxLines: 1,
-              validator: (v) => v == null || v.trim().isEmpty ? 'Meta es obligatoria' : null,
+              validator: (v) {
+                if (selectedHelpType == 'economica' || selectedHelpType == 'mixta') {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Meta es obligatoria';
+                  }
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             _label('Fecha límite *'),

@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from models import PUNTO_RECOLECCION, db
+from models import CAMPAÑA, PUNTO_RECOLECCION, db
 
 collection_point_bp = Blueprint(
     "collection_point_bp", __name__, url_prefix="/api/collection-points"
@@ -22,6 +22,10 @@ def create_collection_point():
     missing = [field for field in required if not data.get(field)]
     if missing:
         return jsonify({"error": f"Campos faltantes: {', '.join(missing)}"}), 400
+
+    campaign = CAMPAÑA.query.get_or_404(int(data["id_campania"]))
+    if campaign.id_creador != int(get_jwt_identity()):
+        return jsonify({"error": "Solo el creador de la campaña puede crear puntos de recolección"}), 403
 
     point = PUNTO_RECOLECCION(
         id_campania=data["id_campania"],

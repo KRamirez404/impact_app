@@ -7,6 +7,7 @@ from .rating_routes import rating_bp
 from .support_routes import support_bp
 from .support_panel_routes import support_panel_bp
 from .tracking_routes import tracking_bp
+from .upload_routes import upload_bp
 
 
 def register_blueprints(app):
@@ -19,3 +20,4 @@ def register_blueprints(app):
     app.register_blueprint(tracking_bp)
     app.register_blueprint(collection_point_bp)
     app.register_blueprint(rating_bp)
+    app.register_blueprint(upload_bp)

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../controllers/support_controller.dart';
+import '../widgets/support_evaluation_dialog.dart';
 
 class SupportHomePage extends GetView<SupportController> {
   const SupportHomePage({super.key});
@@ -39,21 +41,37 @@ class SupportHomePage extends GetView<SupportController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Panel de Soporte',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Verificación de campañas',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Panel de Soporte',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Verificación de campañas',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  onPressed: () => Get.find<AuthController>().logout(),
+                  tooltip: 'Cerrar sesión',
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Obx(() {
@@ -64,17 +82,17 @@ class SupportHomePage extends GetView<SupportController> {
                   child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                 );
               }
-              return Row(
-                children: [
-                  _buildStatCard(
-                      '${controller.pendientesCount.value}', 'Pendientes'),
-                  const SizedBox(width: 8),
-                  _buildStatCard(
-                      '${controller.aprobadasCount.value}', 'Aprobada'),
-                  const SizedBox(width: 8),
-                  _buildStatCard(
-                      '${controller.rechazadasCount.value}', 'Rechazado'),
-                ],
+              return SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _buildStatCard('${controller.pendientesCount.value}', 'Pendientes'),
+                    _buildStatCard('${controller.aprobadasCount.value}', 'Aprobadas'),
+                    _buildStatCard('${controller.rechazadasCount.value}', 'Rechazadas'),
+                  ],
+                ),
               );
             }),
             const SizedBox(height: 12),
@@ -86,19 +104,25 @@ class SupportHomePage extends GetView<SupportController> {
   }
 
   Widget _buildStatCard(String count, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          '$count $label',
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-            color: Colors.white,
+    return Container(
+      width: 135,
+      height: 43,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            '$count $label',
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
@@ -132,35 +156,38 @@ class SupportHomePage extends GetView<SupportController> {
 
   Widget _buildTabsSection() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(33, 16, 0, 4),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
           bottom: BorderSide(color: Color(0x1A000000), width: 1),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Obx(
-            () => _buildSegmentedControl(
-              labels: const ['Pendientes', 'Rechazadas', 'Activas'],
-              selectedIndex: controller.selectedTab.value >= 0 &&
-                      controller.selectedTab.value <= 2
-                  ? controller.selectedTab.value
-                  : -1,
-              onSelect: controller.setTab,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            Obx(
+              () => _buildSegmentedControl(
+                labels: const ['Pendientes', 'Rechazadas', 'Aprobadas'],
+                selectedIndex: controller.selectedTab.value >= 0 &&
+                        controller.selectedTab.value <= 2
+                    ? controller.selectedTab.value
+                    : -1,
+                onSelect: controller.setTab,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Obx(
-            () => _buildFlatTab(
-              label: 'Todas',
-              isSelected: controller.selectedTab.value == 3,
-              onTap: () => controller.setTab(3),
+            const SizedBox(width: 12),
+            Obx(
+              () => _buildFlatTab(
+                label: 'Todas',
+                isSelected: controller.selectedTab.value == 3,
+                onTap: () => controller.setTab(3),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -183,9 +210,9 @@ class SupportHomePage extends GetView<SupportController> {
           return GestureDetector(
             onTap: () => onSelect(i),
             child: Container(
-              width: 110.87,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               height: 29,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
+              margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
               decoration: BoxDecoration(
                 color: isSelected ? Colors.white : Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
@@ -307,8 +334,13 @@ class SupportHomePage extends GetView<SupportController> {
           children: [
             Positioned(
               top: 14,
-              right: 16,
+              left: 16,
               child: _buildStatusBadge(campaign.estado),
+            ),
+            Positioned(
+              top: 14,
+              right: 16,
+              child: _buildImageCategoryBadge(campaign.categoriaNombre),
             ),
           ],
         ),
@@ -319,23 +351,28 @@ class SupportHomePage extends GetView<SupportController> {
   Widget _buildStatusBadge(String estado) {
     Color bgColor;
     String label;
+    IconData icon;
 
     switch (estado) {
       case 'en_verificacion':
         bgColor = const Color(0xFFF0B100);
         label = 'Pendiente';
+        icon = Icons.schedule;
         break;
       case 'activa':
-        bgColor = const Color(0xFF43A047);
-        label = 'Activa';
+        bgColor = const Color(0xFF00A63E);
+        label = 'Verificada';
+        icon = Icons.check;
         break;
       case 'pausada':
-        bgColor = const Color(0xFFE53935);
-        label = 'Rechazado';
+        bgColor = const Color(0xFFFB2C36);
+        label = 'Rechazada';
+        icon = Icons.close;
         break;
       default:
         bgColor = const Color(0xFF99A1AF);
         label = estado;
+        icon = Icons.schedule;
     }
 
     return Container(
@@ -348,7 +385,7 @@ class SupportHomePage extends GetView<SupportController> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.schedule, size: 12, color: Colors.white),
+          Icon(icon, size: 12, color: Colors.white),
           const SizedBox(width: 4),
           Text(
             label,
@@ -376,9 +413,12 @@ class SupportHomePage extends GetView<SupportController> {
               const Icon(Icons.location_on_outlined,
                   size: 12, color: Color(0xFF4A5565)),
               const SizedBox(width: 4),
-              Text(
-                campaign.ciudadNombre,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+              Flexible(
+                child: Text(
+                  campaign.ciudadNombre,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+                ),
               ),
             ],
           ),
@@ -406,9 +446,34 @@ class SupportHomePage extends GetView<SupportController> {
           ),
           const SizedBox(height: 12),
           _buildMetadataSection(campaign),
+          if (campaign.estado == 'pausada' && campaign.notaRevision != null) ...[
+            const SizedBox(height: 12),
+            _buildRejectionNote(campaign),
+          ],
           const SizedBox(height: 12),
           _buildActionButtons(campaign),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImageCategoryBadge(String categoryName) {
+    return Container(
+      height: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFDCFCE7),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          categoryName,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF008236),
+          ),
+        ),
       ),
     );
   }
@@ -462,35 +527,82 @@ class SupportHomePage extends GetView<SupportController> {
           label,
           style: const TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
         ),
-        if (showCalendarIcon)
-          Row(
+        const SizedBox(width: 16),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const Icon(Icons.calendar_today,
-                  size: 12, color: Color(0xFF0A0A0A)),
-              const SizedBox(width: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF0A0A0A),
+              if (showCalendarIcon) ...[
+                const Icon(Icons.calendar_today,
+                    size: 12, color: Color(0xFF0A0A0A)),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF0A0A0A),
+                  ),
                 ),
               ),
             ],
-          )
-        else
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF0A0A0A),
-            ),
           ),
+        ),
       ],
     );
   }
 
+  Widget _buildRejectionNote(CampaignEntity campaign) {
+    final auditor = '${campaign.auditorNombre ?? ''} ${campaign.auditorApellido ?? ''}'.trim();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        border: Border.all(color: const Color(0xFFFFD6A8)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFF54900)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Última nota - ${auditor.isNotEmpty ? auditor : "Auditor"}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF7E2A0C),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  campaign.notaRevision!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFCA3500),
+                    height: 1.33,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButtons(CampaignEntity campaign) {
+    final isPending = campaign.estado == 'en_verificacion';
+
     return Row(
       children: [
         Expanded(
@@ -510,46 +622,53 @@ class SupportHomePage extends GetView<SupportController> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF155DFC), Color(0xFF00A63E)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
+        if (isPending) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF155DFC), Color(0xFF00A63E)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
               ),
-            ),
-            child: ElevatedButton(
-              onPressed: () => Get.toNamed(
-                  '${AppRoutes.supportCampaignDetail}/${campaign.idCampania}'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-                padding: const EdgeInsets.symmetric(vertical: 6),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 16, color: Colors.white),
-                  SizedBox(width: 4),
-                  Text(
-                    'Evaluar',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await SupportEvaluationDialog.show(
+                    campaign.idCampania,
+                    campaign.titulo,
+                  );
+                  controller.loadData();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_outline,
+                        size: 16, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      'Evaluar',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }

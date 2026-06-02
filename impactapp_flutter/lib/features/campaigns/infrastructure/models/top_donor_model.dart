@@ -7,6 +7,7 @@ class TopDonorModel extends TopDonorEntity {
     required super.apellido,
     required super.totalDonado,
     required super.donacionesCount,
+    super.fotoPerfil,
   });
 
   factory TopDonorModel.fromJson(Map<String, dynamic> json) {
@@ -16,6 +17,7 @@ class TopDonorModel extends TopDonorEntity {
       apellido: json['apellido'] ?? '',
       totalDonado: (json['total_donado'] as num?)?.toDouble() ?? 0,
       donacionesCount: json['donaciones_count'] ?? 0,
+      fotoPerfil: json['foto_perfil'],
     );
   }
 }

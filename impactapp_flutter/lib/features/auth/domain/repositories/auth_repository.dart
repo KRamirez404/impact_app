@@ -16,5 +16,6 @@ abstract class AuthRepository {
     required String correo,
     String? telefono,
     String? biografia,
+    String? fotoPerfil,
   });
 }

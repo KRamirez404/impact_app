@@ -135,6 +135,9 @@ def ensure_user_schema():
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN rol TEXT'))
         db.session.execute(text('UPDATE "USUARIO" SET rol = "usuario" WHERE rol IS NULL'))
         db.session.commit()
+    if "foto_perfil" not in columns:
+        db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN foto_perfil TEXT'))
+        db.session.commit()
 
 
 def ensure_campaign_schema():

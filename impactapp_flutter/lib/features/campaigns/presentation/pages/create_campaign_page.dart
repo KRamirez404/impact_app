@@ -133,7 +133,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
       'id_ciudad': _selectedCityId,
       'id_categoria': _selectedCategoryId,
       'tipo_ayuda_requerida': _selectedHelpType,
-      'meta_monetaria': double.parse(_metaCtrl.text.trim()),
+      'meta_monetaria': double.tryParse(_metaCtrl.text.trim()) ?? 0.0,
       'fecha_fin': _fechaFinCtrl.text.trim(),
     });
     if (!mounted) return;
@@ -153,6 +153,11 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
           'contacto': _correoCtrl.text.trim(),
         });
       }
+
+      for (final attachment in _attachments) {
+        await _remoteDataSource.uploadSupport(campaign.idCampania, 'foto', attachment.path);
+      }
+
       Get.offAllNamed(AppRoutes.home);
     } catch (e) {
       Get.snackbar(
@@ -271,14 +276,14 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
               child: Row(
                 children: [
                   const SizedBox(width: 16),
-                  Container(
-                    width: 54, height: 46,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.white.withOpacity(0.2),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      'assets/logo/logo.png',
+                      width: 54,
+                      height: 46,
+                      fit: BoxFit.cover,
                     ),
-                    alignment: Alignment.center,
-                    child: const Text('I', style: TextStyle(fontFamily: 'Audiowide', fontSize: 20, color: Colors.white)),
                   ),
                   const SizedBox(width: 12),
                   const Text(

@@ -93,9 +93,19 @@ class _ExplorePageState extends State<ExplorePage> {
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Text(
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              'assets/logo/logo.png',
+              width: 42,
+              height: 42,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
             'Explorar',
             style: TextStyle(
               color: Colors.white,

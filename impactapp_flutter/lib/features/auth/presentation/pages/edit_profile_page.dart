@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../controllers/auth_controller.dart';
 
 class EditProfilePage extends StatefulWidget {
-  EditProfilePage({super.key});
+  const EditProfilePage({super.key});
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -18,6 +22,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _phoneCtrl = TextEditingController();
   final _bioCtrl = TextEditingController();
   final AuthController _controller = Get.find<AuthController>();
+  XFile? _selectedImage;
 
   @override
   void initState() {
@@ -201,7 +206,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       child: Column(
         children: [
           GestureDetector(
-            onTap: () => Get.snackbar('Info', 'Funcionalidad no implementada'),
+            onTap: _pickImage,
             child: Stack(
               alignment: Alignment.bottomRight,
               children: [
@@ -212,18 +217,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 4),
                   ),
-                  child: CircleAvatar(
-                    backgroundColor: Colors.white.withValues(alpha: 0.15),
-                    child: Text(
-                      _fullNameCtrl.text.isNotEmpty
-                          ? _fullNameCtrl.text.trim().substring(0, 1).toUpperCase()
-                          : 'I',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(100),
+                    child: _selectedImage != null
+                        ? Image.file(File(_selectedImage!.path), fit: BoxFit.cover)
+                        : (_controller.user.value?.fotoPerfil != null
+                            ? Image.network('${ApiConstants.baseUrl.replaceAll('/api', '')}${_controller.user.value!.fotoPerfil}', fit: BoxFit.cover)
+                            : CircleAvatar(
+                                backgroundColor: Colors.white.withValues(alpha: 0.15),
+                                child: Text(
+                                  _fullNameCtrl.text.isNotEmpty
+                                      ? _fullNameCtrl.text.trim().substring(0, 1).toUpperCase()
+                                      : 'I',
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              )),
                   ),
                 ),
                 Container(
@@ -462,18 +474,40 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      setState(() => _selectedImage = picked);
+    }
+  }
+
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
     final fullName = _fullNameCtrl.text.trim();
     final parts = _splitFullName(fullName);
     final telefono = _phoneCtrl.text.trim();
     final biografia = _bioCtrl.text.trim();
+
+    String? fotoPerfilUrl = _controller.user.value?.fotoPerfil;
+    if (_selectedImage != null) {
+      _controller.isUpdatingProfile.value = true;
+      try {
+        fotoPerfilUrl = await DioClient.instance.uploadFile(_selectedImage!.path);
+      } catch (e) {
+        _controller.isUpdatingProfile.value = false;
+        _controller.showError('Error al subir imagen: $e');
+        return;
+      }
+    }
+
     final success = await _controller.updateProfile(
       nombre: parts.$1,
       apellido: parts.$2,
       correo: _emailCtrl.text.trim(),
       telefono: telefono.isEmpty ? null : telefono,
       biografia: biografia.isEmpty ? null : biografia,
+      fotoPerfil: fotoPerfilUrl,
     );
     if (success && mounted) {
       Get.back();
