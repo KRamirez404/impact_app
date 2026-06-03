@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../controllers/donors_controller.dart';
 import '../widgets/donors/donor_card.dart';
@@ -7,11 +8,13 @@ import '../widgets/donors/donor_card.dart';
 class DonorsPage extends StatelessWidget {
   final int campaignId;
   final String campaignTitle;
+  final String? campaignImageUrl;
 
   const DonorsPage({
     super.key,
     required this.campaignId,
     required this.campaignTitle,
+    this.campaignImageUrl,
   });
 
   @override
@@ -48,15 +51,25 @@ class DonorsPage extends StatelessWidget {
   }
 
   Widget _buildHeader() {
+    final hasImage = campaignImageUrl != null && campaignImageUrl!.isNotEmpty;
+    final normalizedUrl = hasImage && campaignImageUrl!.startsWith('/')
+        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$campaignImageUrl'
+        : campaignImageUrl;
     return Stack(
       children: [
-        Container(
-          height: 200, width: double.infinity,
-          color: const Color(0xFFE2E8F0),
-          child: const Center(
-            child: Icon(Icons.image_outlined, size: 48, color: Color(0xFF64748B)),
-          ),
-        ),
+        if (hasImage)
+          Image.network(
+            normalizedUrl!,
+            height: 200, width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _headerPlaceholder(),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return _headerPlaceholder();
+            },
+          )
+        else
+          _headerPlaceholder(),
         Container(
           height: 200,
           decoration: const BoxDecoration(
@@ -107,6 +120,16 @@ class DonorsPage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _headerPlaceholder() {
+    return Container(
+      height: 200, width: double.infinity,
+      color: const Color(0xFFE2E8F0),
+      child: const Center(
+        child: Icon(Icons.image_outlined, size: 48, color: Color(0xFF64748B)),
+      ),
     );
   }
 

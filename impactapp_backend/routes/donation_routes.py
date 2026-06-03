@@ -65,6 +65,7 @@ def get_my_donations():
             "titulo": campaign.titulo if campaign else "",
             "estado": campaign.estado if campaign else "",
             "fecha_fin": campaign.fecha_fin.isoformat() if campaign else "",
+            "soportes": [s.to_dict() for s in campaign.soportes] if campaign else [],
         }
         payload.append(data)
     return jsonify(payload), 200

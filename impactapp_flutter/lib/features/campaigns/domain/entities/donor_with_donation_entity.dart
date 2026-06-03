@@ -11,6 +11,7 @@ class DonorWithDonationEntity {
   final String apellidoDonante;
   final String correoDonante;
   final bool esAnonimo;
+  final String? fotoPerfil;
 
   const DonorWithDonationEntity({
     required this.idDonacion,
@@ -25,6 +26,7 @@ class DonorWithDonationEntity {
     required this.apellidoDonante,
     required this.correoDonante,
     this.esAnonimo = false,
+    this.fotoPerfil,
   });
 
   String get nombreCompleto {

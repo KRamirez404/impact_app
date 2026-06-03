@@ -7,6 +7,7 @@ class ProfileActivityItem {
     this.campaignId,
     this.rejectionNote,
     this.auditorName,
+    this.imageUrl,
   });
 
   final String title;
@@ -16,4 +17,5 @@ class ProfileActivityItem {
   final int? campaignId;
   final String? rejectionNote;
   final String? auditorName;
+  final String? imageUrl;
 }

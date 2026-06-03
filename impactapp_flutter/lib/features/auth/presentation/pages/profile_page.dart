@@ -278,6 +278,14 @@ class ProfilePage extends StatelessWidget {
     final auditorName = campaign.auditorNombre == null
         ? null
         : '${campaign.auditorNombre} ${campaign.auditorApellido ?? ''}'.trim();
+    final mainImageSoporte = campaign.soportes.firstWhere(
+      (s) {
+        final tipo = (s['tipo'] ?? '').toString().toLowerCase().trim();
+        return tipo == 'foto' || tipo == 'imagen';
+      },
+      orElse: () => <String, dynamic>{},
+    );
+    final imageUrl = mainImageSoporte['url_o_ruta'] as String?;
     return ProfileActivityItem(
       title: campaign.titulo,
       amount: campaign.metaMonetaria,
@@ -286,6 +294,7 @@ class ProfilePage extends StatelessWidget {
       campaignId: campaign.idCampania,
       rejectionNote: campaign.notaRevision,
       auditorName: auditorName?.isEmpty == true ? null : auditorName,
+      imageUrl: imageUrl,
     );
   }
 
@@ -296,6 +305,7 @@ class ProfilePage extends StatelessWidget {
       amount: donation.montoEstimado,
       date: _formatDate(donation.fechaDonacion),
       status: _mapCampaignStatus(donation.campaignEstado),
+      imageUrl: donation.campaignImageUrl,
     );
   }
 

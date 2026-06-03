@@ -14,6 +14,7 @@ class DonorWithDonationModel extends DonorWithDonationEntity {
     required super.apellidoDonante,
     required super.correoDonante,
     required super.esAnonimo,
+    super.fotoPerfil,
   });
 
   factory DonorWithDonationModel.fromJson(Map<String, dynamic> json) {
@@ -31,6 +32,7 @@ class DonorWithDonationModel extends DonorWithDonationEntity {
       apellidoDonante: donante['apellido'] ?? '',
       correoDonante: donante['correo'] ?? '',
       esAnonimo: json['es_anonimo'] == true || json['es_anonimo'] == 1,
+      fotoPerfil: donante['foto_perfil'],
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../../app/routes/app_routes.dart';
+import '../../../../../core/constants/api_constants.dart';
 import 'activity_item.dart';
 
 class ActivityCard extends StatelessWidget {
@@ -46,7 +47,11 @@ class ActivityCard extends StatelessWidget {
         onTap: canNavigate
             ? () => Get.toNamed(
                   AppRoutes.donors,
-                  parameters: {'id': item.campaignId.toString(), 'title': item.title},
+                  parameters: {
+                    'id': item.campaignId.toString(),
+                    'title': item.title,
+                    'imageUrl': item.imageUrl ?? '',
+                  },
                 )
             : null,
         borderRadius: BorderRadius.circular(14),
@@ -59,15 +64,7 @@ class ActivityCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.image_outlined, color: Color(0xFF64748B)),
-              ),
+              _buildImage(),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -377,6 +374,54 @@ class ActivityCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildImage() {
+    final imageUrl = item.imageUrl;
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE2E8F0),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.image_outlined, color: Color(0xFF64748B)),
+      );
+    }
+    final normalizedUrl = imageUrl.startsWith('/')
+        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$imageUrl'
+        : imageUrl;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(
+        normalizedUrl,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          width: 80,
+          height: 80,
+          color: const Color(0xFFE2E8F0),
+          child: const Icon(Icons.image_outlined, color: Color(0xFF64748B)),
+        ),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: 80,
+            height: 80,
+            color: const Color(0xFFE2E8F0),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

@@ -115,6 +115,7 @@ class AppPages {
         return DonorsPage(
           campaignId: int.parse(args['id'] ?? '0'),
           campaignTitle: args['title'] ?? 'Campaña',
+          campaignImageUrl: (args['imageUrl'] ?? '').isEmpty ? null : args['imageUrl'],
         );
       },
       bindings: [DonorsBinding()],

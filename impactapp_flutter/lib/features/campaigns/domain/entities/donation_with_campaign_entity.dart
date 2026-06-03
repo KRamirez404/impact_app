@@ -10,6 +10,7 @@ class DonationWithCampaignEntity {
   final String campaignTitulo;
   final String campaignEstado;
   final String campaignFechaFin;
+  final String? campaignImageUrl;
 
   const DonationWithCampaignEntity({
     required this.idDonacion,
@@ -23,5 +24,6 @@ class DonationWithCampaignEntity {
     required this.campaignTitulo,
     required this.campaignEstado,
     required this.campaignFechaFin,
+    this.campaignImageUrl,
   });
 }

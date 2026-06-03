@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../core/constants/api_constants.dart';
 import '../../../../../shared/theme/app_theme.dart';
 import '../../../domain/entities/donor_with_donation_entity.dart';
 
@@ -22,16 +23,7 @@ class DonorCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Center(
-                  child: Icon(Icons.person_outline, size: 24, color: Color(0xFF64748B)),
-                ),
-              ),
+              _buildAvatar(),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -117,6 +109,60 @@ class DonorCard extends StatelessWidget {
           ],
           const SizedBox(height: 16),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    if (donor.esAnonimo || donor.fotoPerfil == null || donor.fotoPerfil!.isEmpty) {
+      return Container(
+        width: 48, height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE2E8F0),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: const Center(
+          child: Icon(Icons.person_outline, size: 24, color: Color(0xFF64748B)),
+        ),
+      );
+    }
+    final normalizedUrl = donor.fotoPerfil!.startsWith('/')
+        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}${donor.fotoPerfil}'
+        : donor.fotoPerfil!;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Image.network(
+        normalizedUrl,
+        width: 48,
+        height: 48,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          width: 48, height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE2E8F0),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: const Center(
+            child: Icon(Icons.person_outline, size: 24, color: Color(0xFF64748B)),
+          ),
+        ),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE2E8F0),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
