@@ -95,7 +95,7 @@ def create_campaign():
         meta_monetaria=data.get("meta_monetaria", 0),
         fecha_inicio=datetime.utcnow().date(),
         fecha_fin=datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date(),
-        cuenta_recaudo=data.get("cuenta_recaudo"),
+       # cuenta_recaudo=data.get("cuenta_recaudo"),
         estado="en_verificacion",
         porcentaje_avance=0,
     )

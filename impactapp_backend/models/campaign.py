@@ -41,7 +41,7 @@ class CAMPAÑA(db.Model):
         default="en_verificacion",
         nullable=False,
     )
-    cuenta_recaudo = db.Column(db.String(100), nullable=True)
+    #cuenta_recaudo = db.Column(db.String(100), nullable=True)
     nota_revision = db.Column(db.Text, nullable=True)
     fecha_revision = db.Column(db.DateTime, nullable=True)
     id_auditor = db.Column(db.Integer, db.ForeignKey("USUARIO.id_usuario"), nullable=True)
@@ -70,7 +70,7 @@ class CAMPAÑA(db.Model):
             "fecha_inicio": self.fecha_inicio.isoformat(),
             "fecha_fin": self.fecha_fin.isoformat(),
             "estado": self.estado,
-            "cuenta_recaudo": self.cuenta_recaudo,
+         #   "cuenta_recaudo": self.cuenta_recaudo,
             "nota_revision": self.nota_revision,
             "fecha_revision": self.fecha_revision.isoformat() if self.fecha_revision else None,
             "porcentaje_avance": float(self.porcentaje_avance or 0),

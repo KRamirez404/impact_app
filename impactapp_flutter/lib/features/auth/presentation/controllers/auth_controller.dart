@@ -158,7 +158,6 @@ class AuthController extends GetxController {
         fotoPerfil: fotoPerfil,
       );
       user.value = updatedUser;
-      showSuccess('Perfil actualizado');
       return true;
     } catch (e) {
       showError(e.toString());

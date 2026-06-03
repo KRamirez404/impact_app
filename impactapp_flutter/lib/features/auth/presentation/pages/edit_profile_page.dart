@@ -525,6 +525,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
     if (success && mounted) {
       Get.back();
+      _controller.showSuccess('Perfil actualizado');
     }
   }
 
