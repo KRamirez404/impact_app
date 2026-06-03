@@ -28,4 +28,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo/
+    - assets/hero_bg.jpg
 
