@@ -18,6 +18,7 @@ class CampaignListController extends GetxController {
   final searchQuery = ''.obs;
   final selectedCategoryLabels = <String>[].obs;
   final selectedCityLabel = RxnString();
+  final cities = <String>[].obs;
 
   @override
   void onInit() {
@@ -84,7 +85,9 @@ class CampaignListController extends GetxController {
   Future<void> fetchCampaigns() async {
     try {
       isLoading.value = true;
-      campaigns.assignAll(await getCampaignsUseCase());
+      final result = await getCampaignsUseCase();
+      campaigns.assignAll(result);
+      cities.assignAll(result.map((c) => c.ciudadNombre).toSet().toList()..sort());
     } catch (e) {
       _err(e.toString());
     } finally {

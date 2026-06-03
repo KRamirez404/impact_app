@@ -17,7 +17,6 @@ class PointsCard extends StatelessWidget {
     return CampaignCardWrapper(
       title: 'Puntos de Recolección (Opcional)',
       description: 'Ubicaciones para donaciones físicas',
-      height: 143.59 + (draftPoints.isEmpty ? 0 : 44.0 * draftPoints.length),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24.8, 24, 24.8, 24),
         child: Column(

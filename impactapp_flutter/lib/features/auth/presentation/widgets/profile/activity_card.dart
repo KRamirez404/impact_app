@@ -35,8 +35,9 @@ class ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRejected = item.status == 'Rechazada';
-    final canNavigate = item.campaignId != null && !isRejected;
+    final canNavigate = item.campaignId != null &&
+        item.status != 'Rechazada' &&
+        item.status != 'En verificación';
     final note = item.rejectionNote?.trim();
     final hasNote = note != null && note.isNotEmpty;
     final auditor = item.auditorName?.trim();
@@ -122,7 +123,7 @@ class ActivityCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (isRejected && hasNote) ...[
+                    if (item.status == 'Rechazada' && hasNote) ...[
                       const SizedBox(height: 10),
                       Container(
                         width: double.infinity,
@@ -153,7 +154,7 @@ class ActivityCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (isRejected && item.campaignId != null) ...[
+                    if (item.status == 'Rechazada' && item.campaignId != null) ...[
                       const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,

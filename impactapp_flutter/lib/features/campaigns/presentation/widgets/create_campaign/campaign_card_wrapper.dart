@@ -20,13 +20,13 @@ class CampaignCardWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: height,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.black.withOpacity(0.1), width: 0.8),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(

@@ -19,45 +19,9 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
     'Salud',
     'Educación',
     'Vivienda',
-    'Desastre Natural',
+    'Desastres Naturales',
     'Alimentación',
     'Otros',
-  ];
-
-  static const _cityOptions = <String>[
-    'Antioquia',
-    'Amazonas',
-    'Arauca',
-    'Atlántico',
-    'Bogotá D.C.',
-    'Bolívar',
-    'Boyacá',
-    'Caldas',
-    'Caquetá',
-    'Casanare',
-    'Cauca',
-    'Cesar',
-    'Chocó',
-    'Córdoba',
-    'Cundinamarca',
-    'Guainía',
-    'Guaviare',
-    'Huila',
-    'La Guajira',
-    'Magdalena',
-    'Meta',
-    'Nariño',
-    'Norte de Santander',
-    'Putumayo',
-    'Quindío',
-    'Risaralda',
-    'San Andrés y Providencia',
-    'Santander',
-    'Sucre',
-    'Tolima',
-    'Valle del Cauca',
-    'Vaupés',
-    'Vichada',
   ];
 
   late final List<String> _selectedCategories;
@@ -166,7 +130,7 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
                                   ),
                                 ),
                               ),
-                              ..._cityOptions.map(
+                              ...widget.controller.cities.map(
                                     (city) => DropdownMenuItem<String?>(
                                       value: city,
                                       child: Text(
