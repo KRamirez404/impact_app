@@ -61,7 +61,7 @@ class AppPages {
     GetPage(
       name: '${AppRoutes.campaignDetail}/:id',
       page: () => CampaignDetailPage(),
-      bindings: [AuthBinding(), CampaignBinding()],
+      bindings: [AuthBinding(), CampaignBinding(), RatingBinding()],
     ),
     GetPage(
       name: AppRoutes.createCampaign,

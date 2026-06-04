@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../controllers/support_controller.dart';
@@ -315,20 +316,42 @@ class SupportHomePage extends GetView<SupportController> {
   }
 
   Widget _buildCardImage(CampaignEntity campaign) {
+    final mainImageSoporte = campaign.soportes.firstWhere(
+      (s) {
+        final tipo = (s['tipo'] ?? '').toString().toLowerCase().trim();
+        return tipo == 'foto' || tipo == 'imagen';
+      },
+      orElse: () => <String, dynamic>{},
+    );
+    final mainImageUrl = mainImageSoporte['url_o_ruta'] as String?;
+
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
       child: Container(
         height: 184,
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              _categoryColor(campaign.categoriaNombre).withValues(alpha: 0.7),
-              _categoryColor(campaign.categoriaNombre),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: mainImageUrl != null ? const Color(0xFFF3F4F6) : null,
+          gradient: mainImageUrl == null
+              ? LinearGradient(
+                  colors: [
+                    _categoryColor(campaign.categoriaNombre).withValues(alpha: 0.7),
+                    _categoryColor(campaign.categoriaNombre),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          image: mainImageUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(
+                    mainImageUrl.startsWith('/')
+                        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$mainImageUrl'
+                        : mainImageUrl,
+                  ),
+                  fit: BoxFit.cover,
+                )
+              : null,
         ),
         child: Stack(
           children: [

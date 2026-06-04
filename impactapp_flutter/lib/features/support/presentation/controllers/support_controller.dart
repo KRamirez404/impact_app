@@ -1,19 +1,26 @@
 import 'package:get/get.dart';
-import 'package:dio/dio.dart';
 
-import '../../../../core/network/dio_client.dart';
-import '../../../../core/constants/api_constants.dart';
-import '../../../campaigns/domain/usecases/get_campaigns_usecase.dart';
 import '../../../campaigns/domain/usecases/get_campaign_detail_usecase.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
-import '../../../campaigns/infrastructure/models/campaign_model.dart';
+import '../../domain/usecases/approve_campaign_usecase.dart';
+import '../../domain/usecases/reject_campaign_usecase.dart';
+import '../../domain/usecases/get_support_summary_usecase.dart';
+import '../../domain/usecases/get_support_campaigns_usecase.dart';
 
 class SupportController extends GetxController {
-  final GetCampaignsUseCase getCampaignsUseCase;
   final GetCampaignDetailUseCase getCampaignDetailUseCase;
-  final Dio _dio = DioClient.instance.dio;
+  final GetSupportCampaignsUseCase getSupportCampaignsUseCase;
+  final GetSupportSummaryUseCase getSupportSummaryUseCase;
+  final ApproveCampaignUseCase approveCampaignUseCase;
+  final RejectCampaignUseCase rejectCampaignUseCase;
 
-  SupportController(this.getCampaignsUseCase, this.getCampaignDetailUseCase);
+  SupportController(
+    this.getCampaignDetailUseCase,
+    this.getSupportCampaignsUseCase,
+    this.getSupportSummaryUseCase,
+    this.approveCampaignUseCase,
+    this.rejectCampaignUseCase,
+  );
 
   final allCampaigns = <CampaignEntity>[].obs;
   final campaignDetail = Rxn<CampaignEntity>();
@@ -64,11 +71,10 @@ class SupportController extends GetxController {
   Future<void> loadSummary() async {
     try {
       isLoadingSummary.value = true;
-      final response = await _dio.get(ApiConstants.supportSummary);
-      final data = response.data as Map<String, dynamic>;
-      pendientesCount.value = (data['pendientes'] ?? 0) as int;
-      aprobadasCount.value = (data['aprobadas'] ?? 0) as int;
-      rechazadasCount.value = (data['rechazadas'] ?? 0) as int;
+      final summary = await getSupportSummaryUseCase();
+      pendientesCount.value = summary.pendientes;
+      aprobadasCount.value = summary.aprobadas;
+      rechazadasCount.value = summary.rechazadas;
     } catch (e) {
       Get.snackbar('Error', e.toString());
     } finally {
@@ -79,10 +85,7 @@ class SupportController extends GetxController {
   Future<void> loadCampaigns() async {
     try {
       isLoading.value = true;
-      final response = await _dio.get(ApiConstants.supportCampaigns);
-      final list = (response.data as List)
-          .map((e) => CampaignModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final list = await getSupportCampaignsUseCase();
       allCampaigns.assignAll(list);
     } catch (e) {
       Get.snackbar('Error', e.toString());
@@ -106,7 +109,7 @@ class SupportController extends GetxController {
   Future<void> approve(int id) async {
     try {
       isLoading.value = true;
-      await _dio.post(ApiConstants.supportApprove(id));
+      await approveCampaignUseCase(id);
       Get.snackbar('Éxito', 'Campaña aprobada');
       await loadData();
     } catch (e) {
@@ -119,7 +122,7 @@ class SupportController extends GetxController {
   Future<void> reject(int id, String note) async {
     try {
       isLoading.value = true;
-      await _dio.post(ApiConstants.supportReject(id), data: {'nota': note});
+      await rejectCampaignUseCase(id, note);
       Get.snackbar('Éxito', 'Campaña rechazada');
       await loadData();
     } catch (e) {

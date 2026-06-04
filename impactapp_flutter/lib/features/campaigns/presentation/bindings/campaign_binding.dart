@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../domain/repositories/campaign_repository.dart';
 import '../../domain/usecases/create_campaign_usecase.dart';
 import '../../domain/usecases/donate_usecase.dart';
 import '../../domain/usecases/get_campaign_detail_usecase.dart';
@@ -15,27 +16,27 @@ class CampaignBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<CampaignRemoteDataSource>(() => CampaignRemoteDataSource());
-    Get.lazyPut<CampaignRepositoryImpl>(
+    Get.lazyPut<CampaignRepository>(
       () => CampaignRepositoryImpl(Get.find<CampaignRemoteDataSource>()),
     );
     Get.lazyPut<GetCampaignsUseCase>(
-      () => GetCampaignsUseCase(Get.find<CampaignRepositoryImpl>()),
+      () => GetCampaignsUseCase(Get.find<CampaignRepository>()),
     );
     Get.lazyPut<CreateCampaignUseCase>(
-      () => CreateCampaignUseCase(Get.find<CampaignRepositoryImpl>()),
+      () => CreateCampaignUseCase(Get.find<CampaignRepository>()),
     );
     Get.lazyPut<GetCampaignDetailUseCase>(
-      () => GetCampaignDetailUseCase(Get.find<CampaignRepositoryImpl>()),
+      () => GetCampaignDetailUseCase(Get.find<CampaignRepository>()),
     );
-    Get.lazyPut<DonateUseCase>(() => DonateUseCase(Get.find<CampaignRepositoryImpl>()));
+    Get.lazyPut<DonateUseCase>(() => DonateUseCase(Get.find<CampaignRepository>()));
     Get.lazyPut<GetMyCampaignsUseCase>(
-      () => GetMyCampaignsUseCase(Get.find<CampaignRepositoryImpl>()),
+      () => GetMyCampaignsUseCase(Get.find<CampaignRepository>()),
     );
     Get.lazyPut<GetMyDonationsUseCase>(
-      () => GetMyDonationsUseCase(Get.find<CampaignRepositoryImpl>()),
+      () => GetMyDonationsUseCase(Get.find<CampaignRepository>()),
     );
     Get.lazyPut<ToggleLikeUseCase>(
-      () => ToggleLikeUseCase(Get.find<CampaignRepositoryImpl>()),
+      () => ToggleLikeUseCase(Get.find<CampaignRepository>()),
     );
 
     Get.lazyPut<CampaignListController>(

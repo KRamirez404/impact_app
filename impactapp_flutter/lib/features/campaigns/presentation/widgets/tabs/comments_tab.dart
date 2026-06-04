@@ -3,8 +3,7 @@ import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import '../../../../../core/constants/api_constants.dart';
 import '../../../../auth/presentation/controllers/auth_controller.dart';
-import '../../../../ratings/infrastructure/datasources/rating_remote_datasource.dart';
-import '../../../../ratings/infrastructure/repositories/rating_repository_impl.dart';
+import '../../../../ratings/domain/usecases/rate_campaign_usecase.dart';
 
 class CommentsTab extends StatefulWidget {
   final int campaignId;
@@ -55,9 +54,9 @@ class _CommentsTabState extends State<CommentsTab> {
     }
 
     setState(() => _isPublishingComment = true);
-    final repository = RatingRepositoryImpl(RatingRemoteDataSource());
+    final rateCampaignUseCase = Get.find<RateCampaignUseCase>();
     try {
-      await repository.rateCampaign(
+      await rateCampaignUseCase(
         idCampania: widget.campaignId,
         calificacion: 5,
         comentario: text,

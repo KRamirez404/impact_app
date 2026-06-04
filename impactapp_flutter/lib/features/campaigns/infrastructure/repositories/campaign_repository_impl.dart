@@ -65,4 +65,19 @@ class CampaignRepositoryImpl implements CampaignRepository {
   Future<List<DonorWithDonationEntity>> getCampaignDonors(int campaignId) {
     return dataSource.getCampaignDonors(campaignId);
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getCities() {
+    return dataSource.getCities();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getCategories() {
+    return dataSource.getCategories();
+  }
+
+  @override
+  Future<void> uploadSupport(int campaignId, String tipo, String filePath) {
+    return dataSource.uploadSupport(campaignId, tipo, filePath);
+  }
 }

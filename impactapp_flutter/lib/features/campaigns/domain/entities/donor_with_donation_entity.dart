@@ -30,7 +30,7 @@ class DonorWithDonationEntity {
   });
 
   String get nombreCompleto {
-    if (esAnonimo) return '🎭 Donante Anónimo';
+    if (esAnonimo) return 'Donante Anónimo';
     return '$nombreDonante $apellidoDonante'.trim();
   }
 

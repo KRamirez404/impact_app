@@ -4,10 +4,10 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
+import '../../domain/repositories/campaign_repository.dart';
 import '../controllers/campaign_list_controller.dart';
 import 'create_collection_point_modal.dart';
 import '../../../collection_points/domain/usecases/create_collection_point_usecase.dart';
-import '../../infrastructure/datasources/campaign_remote_datasource.dart';
 import '../widgets/create_campaign/basics_card.dart';
 import '../widgets/create_campaign/organizer_card.dart';
 import '../widgets/create_campaign/evidence_card.dart';
@@ -31,8 +31,8 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
 
   final _picker = ImagePicker();
   final CampaignListController controller = Get.find<CampaignListController>();
-  final CampaignRemoteDataSource _remoteDataSource =
-      Get.find<CampaignRemoteDataSource>();
+  final CampaignRepository _repository =
+      Get.find<CampaignRepository>();
   final CreateCollectionPointUseCase _createCollectionPointUseCase =
       Get.find<CreateCollectionPointUseCase>();
 
@@ -67,8 +67,8 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
 
   Future<void> _loadOptions() async {
     final results = await Future.wait([
-      _remoteDataSource.getCities(),
-      _remoteDataSource.getCategories(),
+      _repository.getCities(),
+      _repository.getCategories(),
     ]);
     if (!mounted) return;
     setState(() {
@@ -155,7 +155,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
       }
 
       for (final attachment in _attachments) {
-        await _remoteDataSource.uploadSupport(campaign.idCampania, 'foto', attachment.path);
+        await _repository.uploadSupport(campaign.idCampania, 'foto', attachment.path);
       }
 
       await controller.fetchCampaigns();

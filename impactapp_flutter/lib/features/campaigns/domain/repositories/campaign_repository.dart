@@ -20,4 +20,7 @@ abstract class CampaignRepository {
   Future<LikeStatusEntity> toggleLike(int campaignId);
   Future<List<TopDonorEntity>> getTopDonors({int limit = 5});
   Future<List<DonorWithDonationEntity>> getCampaignDonors(int campaignId);
+  Future<List<Map<String, dynamic>>> getCities();
+  Future<List<Map<String, dynamic>>> getCategories();
+  Future<void> uploadSupport(int campaignId, String tipo, String filePath);
 }

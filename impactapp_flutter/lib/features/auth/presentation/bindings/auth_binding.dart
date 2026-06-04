@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/update_profile_usecase.dart';
@@ -11,25 +12,25 @@ class AuthBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<AuthRemoteDataSource>(() => AuthRemoteDataSource());
-    Get.lazyPut<AuthRepositoryImpl>(
+    Get.lazyPut<AuthRepository>(
       () => AuthRepositoryImpl(
         dataSource: Get.find<AuthRemoteDataSource>(),
         storage: GetStorage(),
       ),
     );
-    Get.lazyPut<LoginUseCase>(() => LoginUseCase(Get.find<AuthRepositoryImpl>()));
+    Get.lazyPut<LoginUseCase>(() => LoginUseCase(Get.find<AuthRepository>()));
     Get.lazyPut<RegisterUseCase>(
-      () => RegisterUseCase(Get.find<AuthRepositoryImpl>()),
+      () => RegisterUseCase(Get.find<AuthRepository>()),
     );
     Get.lazyPut<UpdateProfileUseCase>(
-      () => UpdateProfileUseCase(Get.find<AuthRepositoryImpl>()),
+      () => UpdateProfileUseCase(Get.find<AuthRepository>()),
     );
     Get.lazyPut<AuthController>(
       () => AuthController(
         loginUseCase: Get.find<LoginUseCase>(),
         registerUseCase: Get.find<RegisterUseCase>(),
         updateProfileUseCase: Get.find<UpdateProfileUseCase>(),
-        repository: Get.find<AuthRepositoryImpl>(),
+        repository: Get.find<AuthRepository>(),
         storage: GetStorage(),
       ),
       fenix: true,

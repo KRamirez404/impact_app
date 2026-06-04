@@ -194,7 +194,10 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
 
   Widget _buildImagesSection(List<Map<String, dynamic>> soportes) {
     final images = soportes
-        .where((s) => (s['tipo'] as String? ?? '') == 'imagen')
+        .where((s) {
+          final tipo = (s['tipo'] as String? ?? '').toLowerCase().trim();
+          return tipo == 'imagen' || tipo == 'foto';
+        })
         .toList();
 
     if (images.isEmpty) return const SizedBox.shrink();
@@ -220,22 +223,42 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
               itemCount: images.length > 2 ? 2 : images.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
+                final url = images[i]['url_o_ruta'] as String? ?? '';
+                final fullUrl = url.startsWith('/')
+                    ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$url'
+                    : url;
                 return Container(
                   width: 166,
                   height: 128,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.image_outlined,
-                        size: 40, color: Color(0xFF9CA3AF)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: fullUrl.isNotEmpty
+                        ? Image.network(
+                            fullUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _imagePlaceholder(),
+                          )
+                        : _imagePlaceholder(),
                   ),
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      color: const Color(0xFFE5E7EB),
+      child: const Center(
+        child: Icon(Icons.image_outlined,
+            size: 40, color: Color(0xFF9CA3AF)),
       ),
     );
   }

@@ -8,8 +8,8 @@ import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/update_profile_usecase.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../infrastructure/models/user_model.dart';
-import '../../infrastructure/repositories/auth_repository_impl.dart';
 
 class AuthController extends GetxController {
   AuthController({
@@ -23,7 +23,7 @@ class AuthController extends GetxController {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
   final UpdateProfileUseCase updateProfileUseCase;
-  final AuthRepositoryImpl repository;
+  final AuthRepository repository;
   final GetStorage storage;
 
   final isLoading = false.obs;

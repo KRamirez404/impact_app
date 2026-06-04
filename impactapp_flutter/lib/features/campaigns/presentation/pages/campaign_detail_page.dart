@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/constants/api_constants.dart';
-import '../../../ratings/infrastructure/datasources/rating_remote_datasource.dart';
-import '../../../ratings/infrastructure/repositories/rating_repository_impl.dart';
+import '../../../ratings/domain/usecases/rate_campaign_usecase.dart';
 import '../controllers/campaign_detail_controller.dart';
 import '../widgets/tabs/info_tab.dart';
 import '../widgets/tabs/comments_tab.dart';
@@ -111,12 +110,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
   }
 
   Future<void> _showRateCampaignDialog(int campaignId) {
-    final ratingDataSource = RatingRemoteDataSource();
-    final ratingRepo = RatingRepositoryImpl(ratingDataSource);
+    final rateCampaignUseCase = Get.find<RateCampaignUseCase>();
     return showRateCampaignDialog(
       context: context,
       campaignId: campaignId,
-      onRate: (data) => ratingRepo.rateCampaign(
+      onRate: (data) => rateCampaignUseCase(
         idCampania: data['id_campania'] as int,
         calificacion: data['puntuacion'] as int,
         comentario: data['comentario'] as String? ?? '',
