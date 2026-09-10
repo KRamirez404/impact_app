@@ -11,6 +11,8 @@ class DonationWithCampaignEntity {
   final String campaignEstado;
   final String campaignFechaFin;
   final String? campaignImageUrl;
+  final int totalAvances;
+  final int nuevosAvances;
 
   const DonationWithCampaignEntity({
     required this.idDonacion,
@@ -25,5 +27,7 @@ class DonationWithCampaignEntity {
     required this.campaignEstado,
     required this.campaignFechaFin,
     this.campaignImageUrl,
+    this.totalAvances = 0,
+    this.nuevosAvances = 0,
   });
 }

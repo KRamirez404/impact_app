@@ -35,25 +35,33 @@ class ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canNavigate = item.campaignId != null &&
+    final hasCampaign = item.campaignId != null;
+    final canNavigate = hasCampaign &&
         item.status != 'Rechazada' &&
         item.status != 'En verificación';
     final note = item.rejectionNote?.trim();
     final hasNote = note != null && note.isNotEmpty;
     final auditor = item.auditorName?.trim();
+    final showAdvancesBadge = item.openCampaignDetail && item.nuevosAvances > 0;
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: canNavigate
-            ? () => Get.toNamed(
-                  AppRoutes.donors,
-                  parameters: {
-                    'id': item.campaignId.toString(),
-                    'title': item.title,
-                    'imageUrl': item.imageUrl ?? '',
-                  },
-                )
+            ? () {
+                if (item.openCampaignDetail) {
+                  Get.toNamed('${AppRoutes.campaignDetail}/${item.campaignId}');
+                } else {
+                  Get.toNamed(
+                    AppRoutes.donors,
+                    parameters: {
+                      'id': item.campaignId.toString(),
+                      'title': item.title,
+                      'imageUrl': item.imageUrl ?? '',
+                    },
+                  );
+                }
+              }
             : null,
         borderRadius: BorderRadius.circular(14),
         child: Container(
@@ -123,6 +131,49 @@ class ActivityCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (item.openCampaignDetail && item.totalAvances > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.route_outlined, size: 13, color: Color(0xFF717182)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '${item.totalAvances} avance${item.totalAvances == 1 ? '' : 's'} de seguimiento · toca para ver',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF717182)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (showAdvancesBadge) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3F0FB),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.campaign_outlined, size: 14, color: Color(0xFF1976D2)),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                '${item.nuevosAvances} avance${item.nuevosAvances == 1 ? '' : 's'} nuevo${item.nuevosAvances == 1 ? '' : 's'} desde tu aporte',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF0369A1),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (item.status == 'Rechazada' && hasNote) ...[
                       const SizedBox(height: 10),
                       Container(

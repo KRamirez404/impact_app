@@ -8,6 +8,9 @@ class ProfileActivityItem {
     this.rejectionNote,
     this.auditorName,
     this.imageUrl,
+    this.nuevosAvances = 0,
+    this.totalAvances = 0,
+    this.openCampaignDetail = false,
   });
 
   final String title;
@@ -18,4 +21,7 @@ class ProfileActivityItem {
   final String? rejectionNote;
   final String? auditorName;
   final String? imageUrl;
+  final int nuevosAvances;
+  final int totalAvances;
+  final bool openCampaignDetail;
 }

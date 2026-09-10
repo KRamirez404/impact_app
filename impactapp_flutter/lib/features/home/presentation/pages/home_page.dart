@@ -288,13 +288,14 @@ class HomePage extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 itemCount: donors.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 12),
-                itemBuilder: (_, i) {
+                itemBuilder: (ctx, i) {
                   final donor = donors[i];
                   final color = cardColors[i % cardColors.length];
                   final name = donor.nombreCompleto;
                   final initial = name.isNotEmpty ? name[0] : '?';
+                  final cardWidth = (MediaQuery.of(ctx).size.width * 0.3).clamp(96.0, 124.0).toDouble();
                   return Container(
-                    width: 124,
+                    width: cardWidth,
                     decoration: BoxDecoration(
                       color: color,
                       borderRadius: BorderRadius.circular(19),
@@ -379,24 +380,28 @@ class HomePage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            height: 500,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: nearGoal.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (_, i) {
-                return SizedBox(
-                  width: 340,
-                  child: CampaignCard(
-                    key: ValueKey(nearGoal[i].idCampania),
-                    campaign: nearGoal[i],
-                    onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${nearGoal[i].idCampania}'),
-                  ),
-                );
-              },
-            ),
-          ),
+          Builder(builder: (context) {
+            final imageH =
+                (MediaQuery.of(context).size.height * 0.24).clamp(170.0, 240.0).toDouble();
+            return SizedBox(
+              height: imageH + 308,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: nearGoal.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                itemBuilder: (_, i) {
+                  return SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    child: CampaignCard(
+                      key: ValueKey(nearGoal[i].idCampania),
+                      campaign: nearGoal[i],
+                      onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${nearGoal[i].idCampania}'),
+                    ),
+                  );
+                },
+              ),
+            );
+          }),
         ],
       ),
     );

@@ -14,6 +14,8 @@ class DonationWithCampaignModel extends DonationWithCampaignEntity {
     required super.campaignEstado,
     required super.campaignFechaFin,
     super.campaignImageUrl,
+    super.totalAvances,
+    super.nuevosAvances,
   });
 
   factory DonationWithCampaignModel.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,8 @@ class DonationWithCampaignModel extends DonationWithCampaignEntity {
       campaignEstado: campaign['estado'] ?? '',
       campaignFechaFin: campaign['fecha_fin'] ?? '',
       campaignImageUrl: imageUrl,
+      totalAvances: campaign['total_avances'] ?? 0,
+      nuevosAvances: campaign['nuevos_avances'] ?? 0,
     );
   }
 }

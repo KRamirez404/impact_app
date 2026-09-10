@@ -29,15 +29,21 @@ class LoginPage extends StatelessWidget {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 412),
-              child: Column(
-                children: [
-                  const SizedBox(height: 45),
-                  _buildHeader(),
-                  const SizedBox(height: 40),
-                  _buildCard(),
-                ],
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 412),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 45),
+                      _buildHeader(),
+                      const SizedBox(height: 40),
+                      _buildCard(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -82,7 +88,7 @@ class LoginPage extends StatelessWidget {
 
   Widget _buildCard() {
     return Container(
-      width: 378.4,
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24.8, 24.8, 24.8, 0.8),
       decoration: BoxDecoration(
         color: Colors.white,

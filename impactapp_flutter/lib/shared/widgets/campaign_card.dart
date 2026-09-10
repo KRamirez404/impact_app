@@ -100,7 +100,7 @@ class CampaignCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImageSection(isCompleted, isVerificada, mainImageUrl),
+            _buildImageSection(context, isCompleted, isVerificada, mainImageUrl),
             _buildContentSection(isCompleted),
             _buildFooter(),
           ],
@@ -109,11 +109,13 @@ class CampaignCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImageSection(bool isCompleted, bool isVerificada, String? mainImageUrl) {
+  Widget _buildImageSection(BuildContext context, bool isCompleted, bool isVerificada, String? mainImageUrl) {
+    final imageHeight =
+        (MediaQuery.of(context).size.height * 0.24).clamp(170.0, 240.0).toDouble();
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
       child: Container(
-        height: 192,
+        height: imageHeight,
         width: double.infinity,
         decoration: BoxDecoration(
           color: mainImageUrl != null ? const Color(0xFFF3F4F6) : null,
