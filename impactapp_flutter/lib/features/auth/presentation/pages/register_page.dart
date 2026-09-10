@@ -16,6 +16,8 @@ class RegisterPage extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
   final AuthController controller = Get.find<AuthController>();
   final _obscurePass = true.obs;
+  final _rol = 'donante'.obs;
+  final _aceptaTratamiento = false.obs;
 
   @override
   Widget build(BuildContext context) {
@@ -32,15 +34,21 @@ class RegisterPage extends StatelessWidget {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 412),
-              child: Column(
-                children: [
-                  const SizedBox(height: 45),
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  _buildCard(),
-                ],
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 412),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 45),
+                      _buildHeader(),
+                      const SizedBox(height: 24),
+                      _buildCard(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -82,7 +90,7 @@ class RegisterPage extends StatelessWidget {
 
   Widget _buildCard() {
     return Container(
-      width: 378.4,
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24.8, 24.8, 24.8, 0.8),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -166,12 +174,82 @@ class RegisterPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
+        _buildRoleSelector(),
+        const SizedBox(height: 16),
+        Obx(
+          () => Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () => _aceptaTratamiento.toggle(),
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  margin: const EdgeInsets.only(top: 2),
+                  decoration: BoxDecoration(
+                    color: _aceptaTratamiento.value ? const Color(0xFF1976D2) : Colors.white,
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(
+                      color: _aceptaTratamiento.value
+                          ? const Color(0xFF1976D2)
+                          : const Color(0xFFD9D9E0),
+                      width: 1.4,
+                    ),
+                  ),
+                  child: _aceptaTratamiento.value
+                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF717182), height: 1.4),
+                    children: [
+                      const TextSpan(
+                        text: 'He leído y acepto la ',
+                      ),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.baseline,
+                        baseline: TextBaseline.alphabetic,
+                        child: GestureDetector(
+                          onTap: () => Get.toNamed(AppRoutes.privacyPolicy),
+                          child: const Text(
+                            'Política de Tratamiento de Datos Personales',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: Color(0xFF1976D2),
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const TextSpan(text: ' (Ley 1581 de 2012).'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         Obx(
           () => CustomButton(
             text: controller.isLoading.value ? 'Registrando...' : 'Crear cuenta',
             onPressed: controller.isLoading.value
                 ? null
                 : () {
+                    if (!_aceptaTratamiento.value) {
+                      Get.snackbar(
+                        'Aviso de privacidad',
+                        'Debes aceptar la política de tratamiento de datos personales.',
+                        backgroundColor: Colors.orange,
+                        colorText: Colors.white,
+                      );
+                      return;
+                    }
                     if (_formKey.currentState!.validate()) {
                       controller.register(
                         nombre: _nombreCtrl.text.trim(),
@@ -179,12 +257,104 @@ class RegisterPage extends StatelessWidget {
                         correo: _correoCtrl.text.trim(),
                         contrasena: _passCtrl.text.trim(),
                         telefono: _telefonoCtrl.text.trim(),
+                        rol: _rol.value,
+                        aceptaTratamiento: true,
                       );
                     }
                   },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRoleSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quiero registrarme como',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF0A0A0A),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Obx(
+          () => Row(
+            children: [
+              Expanded(
+                child: _roleCard(
+                  label: 'Donante',
+                  subtitle: 'Apoyar campañas',
+                  icon: Icons.favorite_outline,
+                  selected: _rol.value == 'donante',
+                  onTap: () => _rol.value = 'donante',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _roleCard(
+                  label: 'Organizador',
+                  subtitle: 'Crear campañas',
+                  icon: Icons.campaign_outlined,
+                  selected: _rol.value == 'organizador',
+                  onTap: () => _rol.value = 'organizador',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _roleCard({
+    required String label,
+    required String subtitle,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFE3F0FB) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? const Color(0xFF1976D2) : const Color(0xFFD9D9E0),
+            width: 1.2,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: selected ? const Color(0xFF1976D2) : const Color(0xFF717182),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: selected ? const Color(0xFF1976D2) : const Color(0xFF0A0A0A),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF717182)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/routes/app_routes.dart';
+import '../../../../core/constants/storage_keys.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../domain/repositories/campaign_repository.dart';
 import '../controllers/campaign_list_controller.dart';
@@ -47,6 +51,17 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
   String? _selectedDepartment;
   int? _selectedCityId;
   int? _selectedCategoryId;
+
+  String _currentRole() {
+    final cached = GetStorage().read<String>(StorageKeys.user);
+    if (cached == null || cached.isEmpty) return 'donante';
+    try {
+      final data = jsonDecode(cached) as Map<String, dynamic>;
+      return (data['rol'] as String? ?? 'donante').toLowerCase();
+    } catch (_) {
+      return 'donante';
+    }
+  }
 
   @override
   void initState() {
@@ -263,6 +278,20 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_currentRole() == 'donante') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Get.offAllNamed(AppRoutes.home);
+          Get.snackbar(
+            'Acceso denegado',
+            'Solo los organizadores pueden crear campañas.',
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+          );
+        }
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(

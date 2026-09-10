@@ -12,8 +12,14 @@ class Validators {
   }
 
   static String? password(String? value) {
-    if (value == null || value.length < 6) {
-      return 'Contraseña mínima de 6 caracteres';
+    if (value == null || value.length < 8) {
+      return 'Contraseña mínima de 8 caracteres';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'Debe incluir al menos una mayúscula';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'Debe incluir al menos un número';
     }
     return null;
   }

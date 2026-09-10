@@ -14,12 +14,20 @@ class USUARIO(db.Model):
     telefono = db.Column(db.String(30), nullable=True)
     biografia = db.Column(db.String(500), nullable=True)
     rol = db.Column(
-        db.Enum("usuario", "soporte", name="usuario_rol", native_enum=False),
-        default="usuario",
+        db.Enum(
+            "donante",
+            "organizador",
+            "soporte",
+            name="usuario_rol",
+            native_enum=False,
+        ),
+        default="donante",
         nullable=False,
     )
     foto_perfil = db.Column(db.String(255), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    acepta_tratamiento = db.Column(db.Boolean, default=False, nullable=False)
+    fecha_aceptacion = db.Column(db.DateTime, nullable=True)
     estado = db.Column(
         db.Enum("activo", "bloqueado", name="usuario_estado", native_enum=False),
         default="activo",

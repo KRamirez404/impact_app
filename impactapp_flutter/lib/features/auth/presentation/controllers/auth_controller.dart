@@ -38,9 +38,6 @@ class AuthController extends GetxController {
 
   @override
   void onClose() {
-    isLoading.close();
-    isUpdatingProfile.close();
-    user.close();
     super.onClose();
   }
 
@@ -113,6 +110,8 @@ class AuthController extends GetxController {
     required String correo,
     required String contrasena,
     String? telefono,
+    String? rol,
+    bool aceptaTratamiento = false,
   }) async {
     try {
       isLoading.value = true;
@@ -122,6 +121,8 @@ class AuthController extends GetxController {
         correo: correo,
         contrasena: contrasena,
         telefono: telefono,
+        rol: rol,
+        aceptaTratamiento: aceptaTratamiento,
       );
       showSuccess('Registro exitoso');
       Get.offAllNamed(AppRoutes.login);
@@ -129,6 +130,24 @@ class AuthController extends GetxController {
       showError(e.toString());
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<bool> deleteAccount() async {
+    try {
+      await repository.deleteAccount();
+      user.value = null;
+      Get.offAllNamed(AppRoutes.login);
+      Get.snackbar(
+        'Cuenta eliminada',
+        'Tus datos personales fueron suprimidos de la plataforma.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return true;
+    } catch (e) {
+      showError(e.toString());
+      return false;
     }
   }
 

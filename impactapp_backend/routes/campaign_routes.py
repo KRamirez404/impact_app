@@ -4,6 +4,8 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from models import CAMPAÑA, CATEGORIA, CIUDAD, DONACION, REACCION, db
+from services.audit_service import registrar
+from services.authorization import require_role
 
 campaign_bp = Blueprint("campaign_bp", __name__, url_prefix="/api")
 
@@ -29,9 +31,15 @@ def list_campaigns():
     estado = request.args.get("estado")
 
     if ciudad:
-        query = query.filter(CAMPAÑA.id_ciudad == int(ciudad))
+        try:
+            query = query.filter(CAMPAÑA.id_ciudad == int(ciudad))
+        except ValueError:
+            return jsonify({"error": "Parámetro 'ciudad' inválido"}), 400
     if categoria:
-        query = query.filter(CAMPAÑA.id_categoria == int(categoria))
+        try:
+            query = query.filter(CAMPAÑA.id_categoria == int(categoria))
+        except ValueError:
+            return jsonify({"error": "Parámetro 'categoria' inválido"}), 400
     if tipo_ayuda:
         query = query.filter(CAMPAÑA.tipo_ayuda_requerida == tipo_ayuda)
     if estado:
@@ -71,6 +79,7 @@ def list_my_campaigns():
 
 @campaign_bp.post("/campaigns")
 @jwt_required()
+@require_role("organizador")
 def create_campaign():
     data = request.get_json() or {}
     required = [
@@ -85,22 +94,44 @@ def create_campaign():
     if missing:
         return jsonify({"error": f"Campos faltantes: {', '.join(missing)}"}), 400
 
+    try:
+        fecha_fin = datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return jsonify({"error": "fecha_fin debe tener el formato YYYY-MM-DD"}), 400
+
+    if fecha_fin <= datetime.utcnow().date():
+        return jsonify({"error": "La fecha fin debe ser futura"}), 400
+
+    try:
+        id_ciudad = int(data["id_ciudad"])
+        id_categoria = int(data["id_categoria"])
+    except (ValueError, TypeError):
+        return jsonify({"error": "id_ciudad e id_categoria deben ser numéricos"}), 400
+
     campaign = CAMPAÑA(
         titulo=data["titulo"],
         descripcion=data["descripcion"],
-        id_ciudad=data["id_ciudad"],
-        id_categoria=data["id_categoria"],
+        id_ciudad=id_ciudad,
+        id_categoria=id_categoria,
         id_creador=int(get_jwt_identity()),
         tipo_ayuda_requerida=data["tipo_ayuda_requerida"],
         meta_monetaria=data.get("meta_monetaria", 0),
         fecha_inicio=datetime.utcnow().date(),
-        fecha_fin=datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date(),
-       # cuenta_recaudo=data.get("cuenta_recaudo"),
+        fecha_fin=fecha_fin,
+        cuenta_recaudo=data.get("cuenta_recaudo"),
         estado="en_verificacion",
         porcentaje_avance=0,
     )
     db.session.add(campaign)
     db.session.commit()
+    registrar(
+        id_usuario=int(get_jwt_identity()),
+        accion="CAMPAÑA_CREADA",
+        descripcion=f"Campaña '{campaign.titulo}' creada",
+        entidad="CAMPAÑA",
+        id_entidad=campaign.id_campania,
+        direccion_ip=request.remote_addr,
+    )
     return jsonify(campaign.to_dict(include_relations=True)), 201
 
 
@@ -166,12 +197,30 @@ def get_campaign_donors(campaign_id: int):
 
 @campaign_bp.put("/campaigns/<int:campaign_id>")
 @jwt_required()
+@require_role("organizador")
 def update_campaign(campaign_id: int):
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
     if campaign.id_creador != int(get_jwt_identity()):
         return jsonify({"error": "Solo el creador puede editar la campaña"}), 403
 
     data = request.get_json() or {}
+    user_id = int(get_jwt_identity())
+
+    if "cuenta_recaudo" in data:
+        if campaign.estado == "activa":
+            return jsonify({"error": "No se puede cambiar la cuenta de recaudo de una campaña aprobada"}), 400
+        new_account = str(data["cuenta_recaudo"] or "").strip() or None
+        if new_account != campaign.cuenta_recaudo:
+            registrar(
+                id_usuario=user_id,
+                accion="CAMBIO_CUENTA_RECAUDO",
+                descripcion=f"Cuenta de recaudo actualizada de '{campaign.cuenta_recaudo or ''}' a '{new_account or ''}'",
+                entidad="CAMPAÑA",
+                id_entidad=campaign.id_campania,
+                direccion_ip=request.remote_addr,
+            )
+            campaign.cuenta_recaudo = new_account
+
     for field in [
         "titulo",
         "descripcion",
@@ -179,12 +228,14 @@ def update_campaign(campaign_id: int):
         "id_categoria",
         "tipo_ayuda_requerida",
         "meta_monetaria",
-        "estado",
     ]:
         if field in data:
             setattr(campaign, field, data[field])
     if "fecha_fin" in data:
-        campaign.fecha_fin = datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
+        try:
+            campaign.fecha_fin = datetime.strptime(data["fecha_fin"], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            return jsonify({"error": "fecha_fin debe tener el formato YYYY-MM-DD"}), 400
 
     db.session.commit()
     return jsonify(campaign.to_dict(include_relations=True)), 200
@@ -192,6 +243,7 @@ def update_campaign(campaign_id: int):
 
 @campaign_bp.delete("/campaigns/<int:campaign_id>")
 @jwt_required()
+@require_role("organizador")
 def delete_campaign(campaign_id: int):
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
     if campaign.id_creador != int(get_jwt_identity()):

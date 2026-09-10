@@ -11,6 +11,8 @@ class RegisterUseCase {
     required String correo,
     required String contrasena,
     String? telefono,
+    String? rol,
+    bool aceptaTratamiento = false,
   }) {
     return repository.register(
       nombre: nombre,
@@ -18,6 +20,8 @@ class RegisterUseCase {
       correo: correo,
       contrasena: contrasena,
       telefono: telefono,
+      rol: rol,
+      aceptaTratamiento: aceptaTratamiento,
     );
   }
 }

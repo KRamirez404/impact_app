@@ -39,7 +39,7 @@ class ProfilePage extends StatelessWidget {
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
-                      _buildHeader(context, fullName, user.correo, user.biografia, user.fotoPerfil),
+                      _buildHeader(context, fullName, user.correo, user.biografia, user.fotoPerfil, user.rol),
                       Obx(() => _buildStatsRow()),
                       const SizedBox(height: 20),
                       const ProfileTabs(),
@@ -112,7 +112,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String name, String email, String? bio, String? fotoPerfil) {
+  Widget _buildHeader(BuildContext context, String name, String email, String? bio, String? fotoPerfil, String rol) {
     final initials = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'I';
     final bioText = (bio == null || bio.trim().isEmpty)
         ? 'Aún no has agregado una biografía.'
@@ -194,6 +194,8 @@ class ProfilePage extends StatelessWidget {
                       Text(name, style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
                       Text(email, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9))),
+                      const SizedBox(height: 8),
+                      _buildRoleBadge(rol),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -236,6 +238,51 @@ class ProfilePage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRoleBadge(String rol) {
+    final rolLower = rol.toLowerCase();
+    final Color bg;
+    final IconData icon;
+    final String label;
+    switch (rolLower) {
+      case 'organizador':
+        bg = const Color(0xFF43A047);
+        icon = Icons.campaign_outlined;
+        label = 'Organizador';
+        break;
+      case 'soporte':
+        bg = const Color(0xFFFF9800);
+        icon = Icons.verified_user_outlined;
+        label = 'Soporte';
+        break;
+      default:
+        bg = const Color(0xFF1976D2);
+        icon = Icons.favorite_outline;
+        label = 'Donante';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -306,6 +353,10 @@ class ProfilePage extends StatelessWidget {
       date: _formatDate(donation.fechaDonacion),
       status: _mapCampaignStatus(donation.campaignEstado),
       imageUrl: donation.campaignImageUrl,
+      campaignId: donation.idCampania,
+      nuevosAvances: donation.nuevosAvances,
+      totalAvances: donation.totalAvances,
+      openCampaignDetail: true,
     );
   }
 

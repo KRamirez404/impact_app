@@ -29,6 +29,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required String correo,
     required String contrasena,
     String? telefono,
+    String? rol,
+    bool aceptaTratamiento = false,
   }) async {
     return dataSource.register(
       nombre: nombre,
@@ -36,7 +38,16 @@ class AuthRepositoryImpl implements AuthRepository {
       correo: correo,
       contrasena: contrasena,
       telefono: telefono,
+      rol: rol,
+      aceptaTratamiento: aceptaTratamiento,
     );
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    await dataSource.deleteAccount();
+    await storage.remove(StorageKeys.token);
+    await storage.remove(StorageKeys.user);
   }
 
   @override

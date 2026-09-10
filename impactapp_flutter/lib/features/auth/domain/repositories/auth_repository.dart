@@ -8,8 +8,11 @@ abstract class AuthRepository {
     required String correo,
     required String contrasena,
     String? telefono,
+    String? rol,
+    bool aceptaTratamiento = false,
   });
   Future<UserEntity> me();
+  Future<void> deleteAccount();
   Future<UserEntity> updateProfile({
     required String nombre,
     required String apellido,

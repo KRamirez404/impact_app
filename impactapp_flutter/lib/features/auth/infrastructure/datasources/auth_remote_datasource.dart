@@ -32,6 +32,8 @@ class AuthRemoteDataSource {
     required String correo,
     required String contrasena,
     String? telefono,
+    String? rol,
+    bool aceptaTratamiento = false,
   }) async {
     final response = await _dio.post(
       ApiConstants.register,
@@ -41,10 +43,16 @@ class AuthRemoteDataSource {
         'correo': correo,
         'contrasena': contrasena,
         'telefono': telefono,
+        'rol': rol,
+        'acepta_tratamiento': aceptaTratamiento,
       },
     );
     final data = _safeData(response.data);
     return UserModel.fromJson(data['user'] as Map<String, dynamic>? ?? {});
+  }
+
+  Future<void> deleteAccount() async {
+    await _dio.delete(ApiConstants.me);
   }
 
   Future<UserModel> me() async {
