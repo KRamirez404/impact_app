@@ -29,6 +29,7 @@ class DONACION(db.Model):
     monto_estimado = db.Column(db.Numeric(12, 2), default=0, nullable=False)
     descripcion = db.Column(db.Text, nullable=True)
     fecha_donacion = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    checksum = db.Column(db.String(64), nullable=True)
 
     donante = db.relationship("USUARIO", backref="donaciones")
     punto = db.relationship("PUNTO_RECOLECCION", backref="donaciones")
@@ -43,5 +44,6 @@ class DONACION(db.Model):
             "monto_estimado": float(self.monto_estimado or 0),
             "descripcion": self.descripcion,
             "fecha_donacion": self.fecha_donacion.isoformat(),
+            "checksum": self.checksum,
         }
 

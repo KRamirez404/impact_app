@@ -12,3 +12,4 @@ from .support import SOPORTE  # noqa: E402,F401
 from .tracking import SEGUIMIENTO  # noqa: E402,F401
 from .collection_point import PUNTO_RECOLECCION  # noqa: E402,F401
 from .reaction import REACCION  # noqa: E402,F401
+from .auditoria import AUDITORIA  # noqa: E402,F401

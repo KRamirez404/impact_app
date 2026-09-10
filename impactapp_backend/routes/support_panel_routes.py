@@ -3,7 +3,8 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from models import CAMPAÑA, USUARIO, db
+from models import CAMPAÑA, SOPORTE, USUARIO, db
+from services.audit_service import registrar
 
 support_panel_bp = Blueprint("support_panel_bp", __name__, url_prefix="/api/support")
 
@@ -73,6 +74,16 @@ def approve_campaign(campaign_id: int):
     data = request.get_json(silent=True) or {}
     note = (data.get("nota_revision") or data.get("nota") or "").strip()
 
+    if campaign.tipo_ayuda_requerida == "economica":
+        has_document = SOPORTE.query.filter(
+            SOPORTE.id_campania == campaign.id_campania,
+            SOPORTE.tipo.in_(["documento_oficial", "certificado_institucional", "rut", "cedula"]),
+        ).first()
+        if has_document is None:
+            return jsonify(
+                {"error": "Una campaña económica requiere un soporte de identidad/documento oficial antes de aprobarse"}
+            ), 400
+
     campaign.estado = "activa"
     campaign.nota_revision = note or None
     campaign.fecha_revision = datetime.utcnow()
@@ -81,6 +92,14 @@ def approve_campaign(campaign_id: int):
         support.validado = True
 
     db.session.commit()
+    registrar(
+        id_usuario=user.id_usuario,
+        accion="CAMPAÑA_APROBADA",
+        descripcion=f"Campaña '{campaign.titulo}' aprobada por soporte",
+        entidad="CAMPAÑA",
+        id_entidad=campaign.id_campania,
+        direccion_ip=request.remote_addr,
+    )
     return jsonify(campaign.to_dict(include_relations=True)), 200
 
 
@@ -105,4 +124,12 @@ def reject_campaign(campaign_id: int):
         support.validado = False
 
     db.session.commit()
+    registrar(
+        id_usuario=user.id_usuario,
+        accion="CAMPAÑA_RECHAZADA",
+        descripcion=f"Campaña '{campaign.titulo}' rechazada: {note}",
+        entidad="CAMPAÑA",
+        id_entidad=campaign.id_campania,
+        direccion_ip=request.remote_addr,
+    )
     return jsonify(campaign.to_dict(include_relations=True)), 200
