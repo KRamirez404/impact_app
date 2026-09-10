@@ -7,28 +7,17 @@ class DangerItem extends StatelessWidget {
     super.key,
     required this.title,
     required this.subtitle,
+    this.onConfirm,
   });
 
   final String title;
   final String subtitle;
+  final Future<bool> Function()? onConfirm;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Get.defaultDialog(
-        title: 'Confirmar',
-        middleText: '¿Deseas eliminar tu cuenta? Esta acción no se puede deshacer.',
-        textCancel: 'Cancelar',
-        textConfirm: 'Eliminar',
-        cancelTextColor: AppColors.subtitle,
-        confirmTextColor: Colors.white,
-        buttonColor: AppColors.dangerText,
-        onConfirm: () {
-          Get.back();
-          Get.snackbar('Eliminado', 'Cuenta marcada para eliminación',
-              snackPosition: SnackPosition.BOTTOM);
-        },
-      ),
+      onTap: () => _showConfirmation(),
       child: Container(
         height: 64,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -72,5 +61,24 @@ class DangerItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _showConfirmation() async {
+    final confirmed = await Get.defaultDialog<bool>(
+      title: 'Confirmar',
+      middleText:
+          '¿Deseas eliminar tu cuenta? Tus datos personales serán suprimidos de la plataforma conforme a la Ley 1581. Esta acción no se puede deshacer.',
+      textCancel: 'Cancelar',
+      textConfirm: 'Eliminar',
+      cancelTextColor: AppColors.subtitle,
+      confirmTextColor: Colors.white,
+      buttonColor: AppColors.dangerText,
+      onConfirm: () => Get.back(result: true),
+      barrierDismissible: false,
+    );
+    if (confirmed != true) return;
+    if (onConfirm != null) {
+      await onConfirm!();
+    }
   }
 }

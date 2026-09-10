@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../controllers/auth_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/settings/settings_section.dart';
 import '../widgets/settings/setting_item.dart';
@@ -15,6 +17,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<SettingsController>();
+    final authController = Get.find<AuthController>();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -117,7 +120,7 @@ class SettingsPage extends StatelessWidget {
                           icon: Icons.privacy_tip_outlined,
                           title: 'Política de privacidad',
                           subtitle: 'Conoce cómo protegemos tu información',
-                          onTap: () {},
+                          onTap: () => Get.toNamed(AppRoutes.privacyPolicy),
                         ),
                         const SettingsDivider(),
                         SettingItem(
@@ -132,10 +135,11 @@ class SettingsPage extends StatelessWidget {
                     SettingsSection(
                       title: 'Zona de peligro',
                       titleColor: AppColors.dangerSubtitle,
-                      children: const [
+                      children: [
                         DangerItem(
                           title: 'Eliminar cuenta',
                           subtitle: 'Elimina permanentemente tu cuenta',
+                          onConfirm: authController.deleteAccount,
                         ),
                       ],
                     ),

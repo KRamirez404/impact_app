@@ -6,6 +6,7 @@ class ApiConstants {
   static const String login = '$baseUrl/auth/login';
   static const String register = '$baseUrl/auth/register';
   static const String me = '$baseUrl/auth/me';
+  static const String privacyPolicy = '$baseUrl/auth/privacy-policy';
   static const String campaigns = '$baseUrl/campaigns';
   static const String myCampaigns = '$baseUrl/campaigns/mine';
   static const String cities = '$baseUrl/cities';

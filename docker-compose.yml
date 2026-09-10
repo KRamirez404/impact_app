@@ -10,8 +10,7 @@
         - ./impactapp_backend:/app
         - db_data:/app/data
       environment:
-        - FLASK_ENV=development
-        - FLASK_DEBUG=1
+        - FLASK_ENV=production
         - JWT_SECRET_KEY=${JWT_SECRET_KEY}
         - DATABASE_URL=sqlite:////app/data/impactapp.db
       networks:

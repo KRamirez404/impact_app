@@ -69,6 +69,8 @@ def seed_database():
             telefono="3000000000",
             estado="activo",
             rol="soporte",
+            acepta_tratamiento=True,
+            fecha_aceptacion=datetime.utcnow(),
         )
         db.session.add(admin)
         db.session.commit()
@@ -138,6 +140,14 @@ def ensure_user_schema():
     if "foto_perfil" not in columns:
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN foto_perfil TEXT'))
         db.session.commit()
+    if "acepta_tratamiento" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "USUARIO" ADD COLUMN acepta_tratamiento BOOLEAN NOT NULL DEFAULT 0')
+        )
+        db.session.commit()
+    if "fecha_aceptacion" not in columns:
+        db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN fecha_aceptacion DATETIME'))
+        db.session.commit()
 
 
 def ensure_campaign_schema():
@@ -149,7 +159,17 @@ def ensure_campaign_schema():
         db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN fecha_revision DATETIME'))
     if "id_auditor" not in columns:
         db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN id_auditor INTEGER'))
+    if "cuenta_recaudo" not in columns:
+        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN cuenta_recaudo VARCHAR(100)'))
     db.session.commit()
+
+
+def ensure_donation_schema():
+    inspector = inspect(db.engine)
+    columns = {column["name"] for column in inspector.get_columns("DONACION")}
+    if "checksum" not in columns:
+        db.session.execute(text('ALTER TABLE "DONACION" ADD COLUMN checksum VARCHAR(64)'))
+        db.session.commit()
 
 
 def create_app():
@@ -158,7 +178,18 @@ def create_app():
 
     db.init_app(app)
     JWTManager(app)
-    CORS(app, origins=["http://localhost:8080", "http://localhost:3000"])
+    CORS(
+        app,
+        resources={
+            r"/api/*": {
+                "origins": [
+                    r"https?://localhost:\d+",
+                    r"https?://127.0.0.1:\d+",
+                    "http://10.0.2.2:5000",
+                ]
+            }
+        },
+    )
 
     upload_abs_path = os.path.join(app.root_path, app.config["UPLOAD_FOLDER"])
     os.makedirs(upload_abs_path, exist_ok=True)
@@ -178,6 +209,7 @@ def create_app():
         db.create_all()
         ensure_user_schema()
         ensure_campaign_schema()
+        ensure_donation_schema()
         seed_database()
 
     return app
@@ -187,4 +219,5 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    app.run(host="0.0.0.0", port=5000, debug=debug)

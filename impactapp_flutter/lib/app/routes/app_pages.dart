@@ -5,6 +5,7 @@ import '../../features/auth/presentation/bindings/settings_binding.dart';
 import '../../features/auth/presentation/pages/edit_profile_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
+import '../../features/auth/presentation/pages/privacy_policy_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/settings_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
@@ -106,7 +107,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.settings,
       page: () => const SettingsPage(),
-      bindings: [SettingsBinding()],
+      bindings: [SettingsBinding(), AuthBinding()],
+    ),
+    GetPage(
+      name: AppRoutes.privacyPolicy,
+      page: () => const PrivacyPolicyPage(),
     ),
     GetPage(
       name: AppRoutes.donors,

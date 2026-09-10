@@ -13,6 +13,7 @@ abstract class AppRoutes {
   static const profile = '/profile';
   static const editProfile = '/edit-profile';
   static const settings = '/settings';
+  static const privacyPolicy = '/privacy-policy';
   static const donors = '/donors';
   static const supportHome = '/support';
   static const supportCampaignDetail = '/support/campaign';

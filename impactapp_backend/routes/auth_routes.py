@@ -2,9 +2,20 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from models import USUARIO, db
-from services.auth_service import login_user, register_user
+from services.audit_service import registrar
+from services.auth_service import (
+    PRIVACY_POLICY,
+    anonymize_user,
+    login_user,
+    register_user,
+)
 
 auth_bp = Blueprint("auth_bp", __name__, url_prefix="/api/auth")
+
+
+@auth_bp.get("/privacy-policy")
+def privacy_policy():
+    return jsonify(PRIVACY_POLICY), 200
 
 
 @auth_bp.post("/register")
@@ -17,6 +28,14 @@ def register():
 
     try:
         user = register_user(data)
+        registrar(
+            id_usuario=user.id_usuario,
+            accion="REGISTRO",
+            descripcion=f"Nuevo usuario registrado con rol '{user.rol}'",
+            entidad="USUARIO",
+            id_entidad=user.id_usuario,
+            direccion_ip=request.remote_addr,
+        )
         return jsonify({"message": "Usuario registrado", "user": user.to_dict()}), 201
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
@@ -32,6 +51,14 @@ def login():
 
     try:
         token, user = login_user(correo, contrasena)
+        registrar(
+            id_usuario=user.id_usuario,
+            accion="LOGIN",
+            descripcion="Inicio de sesión exitoso",
+            entidad="USUARIO",
+            id_entidad=user.id_usuario,
+            direccion_ip=request.remote_addr,
+        )
         return jsonify({"access_token": token, "user": user.to_dict()}), 200
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 401
@@ -92,3 +119,14 @@ def update_me():
 
     db.session.commit()
     return jsonify(user.to_dict()), 200
+
+
+@auth_bp.delete("/me")
+@jwt_required()
+def delete_me():
+    user_id = int(get_jwt_identity())
+    user = USUARIO.query.get_or_404(user_id)
+
+    anonymize_user(user)
+
+    return jsonify({"message": "Tus datos personales fueron suprimidos/anonimizados"}), 200
