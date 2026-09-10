@@ -9,8 +9,11 @@ Aplicación full-stack de donaciones solidarias para Colombia. Conecta donantes 
 | Capa | Tecnología |
 |---|---|
 | **Backend** | Flask + SQLAlchemy + SQLite + JWT + bcrypt + Flask-CORS |
-| **Frontend** | Flutter 3.41 + GetX (state, routes) + Dio (HTTP) + GetStorage (local) |
-| **Infra** | Docker Compose, Python 3.12, Linux Desktop |
+| **Frontend** | Flutter 3.47+ (Android/iOS/Web/Linux) + GetX (state, routes) + Dio (HTTP) + GetStorage (local) |
+| **Infra** | Docker Compose, Python 3.12 |
+| **Pruebas** | pytest (backend) |
+
+> Roles de usuario: `donante`, `organizador` y `soporte`. `donante` apoya campañas; `organizador` crea campañas; `soporte` (asignado centralmente) verifica y aprueba campañas en el panel de soporte.
 
 ---
 
@@ -29,6 +32,8 @@ Interfaz inspirada en diseño mobile-first (412×917px) con los siguientes scree
 ### Registro
 - Mismo estilo que Login
 - Campos: Nombre, Apellido, Correo, Teléfono, Contraseña
+- Selector de rol: **Donante** / **Organizador**
+- Checkbox obligatorio de aceptación de la Política de Tratamiento de Datos (Ley 1581)
 - Navegación por teclado con `TextInputAction.next`
 
 ### Home
@@ -53,9 +58,10 @@ Interfaz inspirada en diseño mobile-first (412×917px) con los siguientes scree
 ## Requisitos
 
 - Docker y Docker Compose
-- Flutter 3.41+ (`flutter --version`)
+- Flutter 3.47+ (`flutter --version`)
 - `lld` linker (`sudo apt install lld-18`)
 - Python 3.12+ (solo para backend local)
+- Android SDK + Java 17+ (solo para compilar el APK)
 
 ---
 
@@ -71,11 +77,50 @@ docker compose up --build -d
 # 3. Verificar
 curl http://localhost:5000/api/health
 
-# 4. Frontend Flutter
+# 4. Frontend Flutter (escritorio Linux)
 cd impactapp_flutter
 mkdir -p build/native_assets/linux
 flutter run -d linux --dart-define=API_BASE_URL=http://localhost:5000/api
+
+# 5. Frontend Flutter (Android - emulador)
+flutter run -d android --dart-define=API_BASE_URL=http://10.0.2.2:5000/api
 ```
+
+> **Importante:** el emulador Android accede al backend de tu máquina por `10.0.2.2`; en un dispositivo físico usa la IP LAN del equipo.
+
+---
+
+## Pruebas (backend)
+
+La suite `pytest` valida registro, autenticación, asignación de roles, control de acceso, verificación de identidad, cuenta de recaudo, privacidad (Ley 1581) y auditoría/checksum.
+
+```bash
+make test                        # dentro del contenedor
+docker compose exec backend python -m pytest tests -q   # alternativa
+```
+
+Anexos: [`docs/trazabilidad_requisitos.md`](docs/trazabilidad_requisitos.md) y [`docs/informe_seguridad_usabilidad.md`](docs/informe_seguridad_usabilidad.md).
+
+---
+
+## Generación del APK (Android)
+
+Requisito: Android SDK y Java configurados (`flutter doctor` sin errores en la sección Android).
+
+```bash
+cd impactapp_flutter
+
+# APK debug (demostración / instalación directa)
+flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:5000/api
+# Salida: build/app/outputs/flutter-apk/app-debug.apk
+
+# APK release (firma con keystore propio)
+flutter build apk --release --dart-define=API_BASE_URL=https://TU_BACKEND/api
+```
+
+> Para conectar un dispositivo físico al backend durante la demo, reemplaza `10.0.2.2` por la IP local del equipo (p. ej. `http://192.168.1.10:5000/api`).
+
+---
 
 ### Usuario admin precargado
 
@@ -155,20 +200,30 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
 | `GET` | `/api/health` | — | Health check |
-| `POST` | `/api/auth/register` | — | Registrar usuario |
+| `GET` | `/api/auth/privacy-policy` | — | Política de tratamiento de datos (Ley 1581) |
+| `POST` | `/api/auth/register` | — | Registrar usuario (rol `donante`/`organizador`, acepta `acepta_tratamiento`) |
 | `POST` | `/api/auth/login` | — | Iniciar sesión |
 | `GET` | `/api/auth/profile` | JWT | Perfil del usuario |
+| `PUT` | `/api/auth/me` | JWT | Actualizar perfil |
+| `DELETE` | `/api/auth/me` | JWT | Suprimir/anonimizar datos personales |
 | `GET` | `/api/campaigns` | — | Listar campañas (filtros: ciudad, categoria, tipo_ayuda, estado) |
-| `POST` | `/api/campaigns` | JWT | Crear campaña |
+| `POST` | `/api/campaigns` | JWT* | Crear campaña (*rol `organizador`) |
 | `GET` | `/api/campaigns/:id` | — | Detalle de campaña |
-| `PUT` | `/api/campaigns/:id` | JWT | Actualizar campaña |
-| `DELETE` | `/api/campaigns/:id` | JWT | Eliminar campaña |
+| `PUT` | `/api/campaigns/:id` | JWT* | Actualizar campaña (*rol `organizador`) |
+| `DELETE` | `/api/campaigns/:id` | JWT* | Eliminar campaña (*rol `organizador`) |
 | `GET` | `/api/cities` | — | Listar ciudades |
 | `GET` | `/api/categories` | — | Listar categorías |
 | `GET` | `/api/donations` | — | Listar donaciones |
-| `POST` | `/api/donations` | JWT | Crear donación |
+| `POST` | `/api/donations` | JWT* | Crear donación (*rol `donante`) |
+| `GET` | `/api/donations/mine` | JWT | Mis donaciones (con avances/nuevos avances de cada campaña) |
 | `GET` | `/api/donations/top` | — | Top donadores |
+| `GET` | `/api/supports/campaign/:id` | — | Soportes de campaña |
+| `POST` | `/api/supports` | JWT | Subir soporte (solo creador de la campaña) |
+| `GET` | `/api/support/summary` | JWT* | Resumen panel soporte (*rol `soporte`) |
+| `POST` | `/api/support/campaigns/:id/approve` | JWT* | Aprobar campaña (*rol `soporte`) |
+| `POST` | `/api/support/campaigns/:id/reject` | JWT* | Rechazar campaña (*rol `soporte`) |
 | `GET` | `/api/tracking/:campaign_id` | — | Seguimiento de campaña |
+| `POST` | `/api/tracking` | JWT | Publicar avance (solo creador) |
 | `GET` | `/api/ratings/:campaign_id` | — | Valoraciones |
 | `POST` | `/api/ratings` | JWT | Crear valoración |
 | `GET` | `/api/collection-points/:campaign_id` | — | Puntos de recolección |
@@ -362,3 +417,20 @@ flutter run -d ios         # iOS (requiere macOS + Xcode)
 ## Nota
 
 No ejecutar `flutter run` desde la raíz del repositorio. Siempre hacer `cd impactapp_flutter` primero.
+
+---
+
+## Trabajo futuro
+
+Limitaciones asumidas para la entrega del prototipo y su justificación académica:
+
+| Pendiente | Justificación |
+|---|---|
+| **Migración a PostgreSQL** | La base en SQLite es suficiente para la demostración, pero el modelo ya es portable a SQLAlchemy+PostgreSQL sin cambios de código. |
+| **Pasarela de pago real** (PSE, Stripe, Wompi) | El flujo actual registra donaciones simuladas; una pasarela real exige contratos comerciales y certificaciones PCI-DSS fuera del alcance. |
+| **Cifrado en reposo de la base de datos** | Requiere administración de claves (KMS) y no afecta el funcionamiento del prototipo. |
+| **TLS / HTTPS en producción** | Depende del despliegue (VPS/Cloud); en local se usa HTTP. |
+| **Auditoría de dependencias** (`pip-audit`, Dependabot) | Los `requirements.txt` y `pubspec.lock` están fijados; la revisión continua se hará al publicar. |
+| **Notificaciones push** (FCM) | Requiere proyecto Firebase y certificados de aplicación móvil firmada. |
+| **Verificación documental automática** | La validación de identidad hoy es lógica/por soporte; integrar validación con entidades estatales queda fuera de alcance. |
+| **Firma del APK release** | El APK de demostración se compila en modo debug; la firma de producción necesita un keystore institucional. |

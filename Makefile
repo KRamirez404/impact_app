@@ -1,4 +1,4 @@
-.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux
+.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test
 
 up:
 	docker compose up --build
@@ -19,6 +19,8 @@ backend-shell:
 reset-db:
 	docker compose down -v
 	docker compose up --build
+test:
+	docker compose exec backend python -m pytest tests -q
 flutter-clean:
 	cd impactapp_flutter && flutter clean && flutter pub get
 run-linux:

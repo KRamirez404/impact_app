@@ -27,6 +27,16 @@ impactapp_backend/data/
 impactapp_backend/uploads/*
 !impactapp_backend/uploads/.gitkeep
 
+# Documentos privados / académicos (no se publican)
+Plan.txt
+Anteproyecto*.docx
+*.docx
+*.doc
+~$*.docx
+~$*.doc
+.~lock.*#
+~*.tmp
+
 # Flutter/Dart
 .dart_tool/
 .flutter-plugins
