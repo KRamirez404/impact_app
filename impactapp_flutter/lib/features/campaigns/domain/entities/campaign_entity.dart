@@ -22,6 +22,9 @@ class CampaignEntity {
   final String? auditorNombre;
   final String? auditorApellido;
   final String? auditorCorreo;
+  final bool eliminada;
+  final String? motivoEliminacion;
+  final String? fechaEliminacion;
   final int donantesCount;
   final int puntosCount;
   final int vistasCount;
@@ -56,6 +59,9 @@ class CampaignEntity {
     this.auditorNombre,
     this.auditorApellido,
     this.auditorCorreo,
+    this.eliminada = false,
+    this.motivoEliminacion,
+    this.fechaEliminacion,
     this.donantesCount = 0,
     this.puntosCount = 0,
     this.vistasCount = 0,
@@ -91,6 +97,9 @@ class CampaignEntity {
     String? auditorNombre,
     String? auditorApellido,
     String? auditorCorreo,
+    bool? eliminada,
+    String? motivoEliminacion,
+    String? fechaEliminacion,
     int? donantesCount,
     int? puntosCount,
     int? vistasCount,
@@ -125,6 +134,9 @@ class CampaignEntity {
       auditorNombre: auditorNombre ?? this.auditorNombre,
       auditorApellido: auditorApellido ?? this.auditorApellido,
       auditorCorreo: auditorCorreo ?? this.auditorCorreo,
+      eliminada: eliminada ?? this.eliminada,
+      motivoEliminacion: motivoEliminacion ?? this.motivoEliminacion,
+      fechaEliminacion: fechaEliminacion ?? this.fechaEliminacion,
       donantesCount: donantesCount ?? this.donantesCount,
       puntosCount: puntosCount ?? this.puntosCount,
       vistasCount: vistasCount ?? this.vistasCount,

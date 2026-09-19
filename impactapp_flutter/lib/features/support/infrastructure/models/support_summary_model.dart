@@ -5,6 +5,7 @@ class SupportSummaryModel extends SupportSummaryEntity {
     required super.pendientes,
     required super.aprobadas,
     required super.rechazadas,
+    super.eliminadas = 0,
   });
 
   factory SupportSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -12,6 +13,7 @@ class SupportSummaryModel extends SupportSummaryEntity {
       pendientes: (json['pendientes'] ?? 0) as int,
       aprobadas: (json['aprobadas'] ?? 0) as int,
       rechazadas: (json['rechazadas'] ?? 0) as int,
+      eliminadas: (json['eliminadas'] ?? 0) as int,
     );
   }
 }

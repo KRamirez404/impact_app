@@ -161,6 +161,16 @@ def ensure_campaign_schema():
         db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN id_auditor INTEGER'))
     if "cuenta_recaudo" not in columns:
         db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN cuenta_recaudo VARCHAR(100)'))
+    if "eliminada" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "CAMPAÑA" ADD COLUMN eliminada BOOLEAN NOT NULL DEFAULT false')
+        )
+    if "motivo_eliminacion" not in columns:
+        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN motivo_eliminacion TEXT'))
+    if "fecha_eliminacion" not in columns:
+        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN fecha_eliminacion TIMESTAMP'))
+    if "id_eliminador" not in columns:
+        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN id_eliminador INTEGER'))
     db.session.commit()
 
 

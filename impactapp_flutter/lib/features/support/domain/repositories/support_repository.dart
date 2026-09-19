@@ -6,4 +6,7 @@ abstract class SupportRepository {
   Future<List<CampaignEntity>> getCampaigns();
   Future<void> approve(int campaignId);
   Future<void> reject(int campaignId, String note);
+  Future<void> invalidate(int campaignId, String motivo);
+  Future<void> delete(int campaignId, String motivo);
+  Future<void> restore(int campaignId);
 }

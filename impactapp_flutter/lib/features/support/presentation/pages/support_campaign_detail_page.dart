@@ -49,7 +49,7 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildHeader(c.titulo, c.estado, c.categoriaNombre),
+                      _buildHeader(c.titulo, c.estado, c.categoriaNombre, c.eliminada),
                       _buildImagesSection(c.soportes),
                       _buildDivider(),
                       _buildDescriptionSection(c.descripcion),
@@ -67,7 +67,12 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
                   ),
                 ),
               ),
-              if (c.estado == 'en_verificacion') _buildActionButtons(),
+              if (c.eliminada)
+                _buildRestoreButton()
+              else ...[
+                if (c.estado == 'en_verificacion') _buildActionButtons(),
+                _buildAdminActions(),
+              ],
             ],
           );
         }),
@@ -75,7 +80,12 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
     );
   }
 
-  Widget _buildHeader(String titulo, String estado, String categoria) {
+  Widget _buildHeader(
+    String titulo,
+    String estado,
+    String categoria,
+    bool eliminada,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
@@ -112,7 +122,7 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildStatusBadge(estado),
+              _buildStatusBadge(estado, eliminada),
               const SizedBox(width: 8),
               _buildCategoryBadge(categoria),
             ],
@@ -122,7 +132,14 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
     );
   }
 
-  Widget _buildStatusBadge(String estado) {
+  Widget _buildStatusBadge(String estado, bool eliminada) {
+    if (eliminada) {
+      return _buildStatusChip(
+        const Color(0xFF6B7280),
+        'Eliminada',
+        Icons.delete_outline,
+      );
+    }
     Color bgColor;
     String label;
     IconData icon;
@@ -149,6 +166,10 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
         icon = Icons.schedule;
     }
 
+    return _buildStatusChip(bgColor, label, icon);
+  }
+
+  Widget _buildStatusChip(Color bgColor, String label, IconData icon) {
     return Container(
       height: 20,
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -725,6 +746,132 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
 
   Widget _buildBottomPadding() {
     return const SizedBox(height: 100);
+  }
+
+  Widget _buildAdminActions() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0x1A000000), width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _promptReason(
+                title: 'Invalidar campaña',
+                hint: 'Motivo de la invalidación (opcional)',
+                actionLabel: 'Invalidar',
+                onSubmit: (motivo) => controller.invalidateCampaign(_id, motivo),
+              ),
+              icon: const Icon(Icons.block, size: 16),
+              label: const Text('Invalidar'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFF0B100),
+                side: const BorderSide(color: Color(0xFFF0B100)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _promptReason(
+                title: 'Eliminar campaña',
+                hint: 'Motivo de la eliminación (opcional)',
+                actionLabel: 'Eliminar',
+                onSubmit: (motivo) => controller.deleteCampaign(_id, motivo),
+              ),
+              icon: const Icon(Icons.delete_outline, size: 16),
+              label: const Text('Eliminar'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFFB2C36),
+                side: const BorderSide(color: Color(0xFFFB2C36)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRestoreButton() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0x1A000000), width: 1),
+        ),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () async {
+            await controller.restoreCampaign(_id);
+            Get.offAllNamed(AppRoutes.supportHome);
+          },
+          icon: const Icon(Icons.restore, size: 16),
+          label: const Text('Restaurar campaña'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00A63E),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _promptReason({
+    required String title,
+    required String hint,
+    required String actionLabel,
+    required Future<void> Function(String motivo) onSubmit,
+  }) async {
+    final textController = TextEditingController();
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: textController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: Text(actionLabel),
+          ),
+        ],
+      ),
+    );
+    final motivo = textController.text.trim();
+    textController.dispose();
+    if (confirmed == true) {
+      await onSubmit(motivo);
+      Get.offAllNamed(AppRoutes.supportHome);
+    }
   }
 
   String _mapTipoLabel(String tipo) {

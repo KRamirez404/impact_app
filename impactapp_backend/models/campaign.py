@@ -47,6 +47,12 @@ class CAMPAÑA(db.Model):
     fecha_revision = db.Column(db.DateTime, nullable=True)
     id_auditor = db.Column(db.Integer, db.ForeignKey("USUARIO.id_usuario"), nullable=True)
     porcentaje_avance = db.Column(db.Numeric(5, 2), default=0, nullable=False)
+    eliminada = db.Column(db.Boolean, default=False, nullable=False)
+    motivo_eliminacion = db.Column(db.Text, nullable=True)
+    fecha_eliminacion = db.Column(db.DateTime, nullable=True)
+    id_eliminador = db.Column(
+        db.Integer, db.ForeignKey("USUARIO.id_usuario"), nullable=True
+    )
 
     ciudad = db.relationship("CIUDAD", backref="campañas")
     categoria = db.relationship("CATEGORIA", backref="campañas")
@@ -57,6 +63,7 @@ class CAMPAÑA(db.Model):
     puntos_recoleccion = db.relationship("PUNTO_RECOLECCION", backref="campania", lazy=True)
     reacciones = db.relationship("REACCION", backref="campania", lazy=True)
     auditor = db.relationship("USUARIO", foreign_keys=[id_auditor], lazy=True)
+    eliminador = db.relationship("USUARIO", foreign_keys=[id_eliminador], lazy=True)
 
     def to_dict(self, include_relations=False):
         data = {
@@ -75,10 +82,14 @@ class CAMPAÑA(db.Model):
             "nota_revision": self.nota_revision,
             "fecha_revision": self.fecha_revision.isoformat() if self.fecha_revision else None,
             "porcentaje_avance": float(self.porcentaje_avance or 0),
+            "eliminada": bool(self.eliminada),
+            "motivo_eliminacion": self.motivo_eliminacion,
+            "fecha_eliminacion": self.fecha_eliminacion.isoformat() if self.fecha_eliminacion else None,
         }
         if include_relations:
             data["ciudad"] = self.ciudad.to_dict() if self.ciudad else None
             data["categoria"] = self.categoria.to_dict() if self.categoria else None
             data["creador"] = self.creador.to_dict() if self.creador else None
             data["auditor"] = self.auditor.to_dict() if self.auditor else None
+            data["eliminador"] = self.eliminador.to_dict() if self.eliminador else None
         return data

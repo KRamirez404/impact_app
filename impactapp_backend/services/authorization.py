@@ -6,6 +6,18 @@ from flask_jwt_extended import get_jwt_identity
 from models import USUARIO
 
 
+def current_user():
+    user_id = get_jwt_identity()
+    if user_id is None:
+        return None
+    return USUARIO.query.get(int(user_id))
+
+
+def is_support():
+    user = current_user()
+    return user is not None and user.rol == "soporte"
+
+
 def require_role(*allowed_roles: str):
     allowed = set(allowed_roles)
 

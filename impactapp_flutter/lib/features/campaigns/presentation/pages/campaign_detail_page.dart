@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../ratings/domain/usecases/rate_campaign_usecase.dart';
 import '../controllers/campaign_detail_controller.dart';
 import '../widgets/tabs/info_tab.dart';
@@ -133,6 +134,10 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
         }
         final isVerified =
             campaign.estado == 'activa' || campaign.estado == 'finalizada';
+        final authUser = Get.isRegistered<AuthController>()
+            ? Get.find<AuthController>().user.value
+            : null;
+        final canDonate = authUser == null || authUser.rol == 'donante';
         final badges = <Widget>[
           CategoryBadge(label: campaign.categoriaNombre),
           if (isVerified) const VerifiedBadge(),
@@ -280,6 +285,36 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                           const Text(
                             'Esta campaña ya no acepta nuevas contribuciones',
                             style: TextStyle(fontSize: 12, color: Color(0xFF717182)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else if (!canDonate) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F4F6),
+                        border: Border.all(
+                          color: const Color(0x1A000000),
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 20, color: Color(0xFF717182)),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Solo las cuentas con rol de donante pueden contribuir a las campañas.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF717182),
+                                height: 1.4,
+                              ),
+                            ),
                           ),
                         ],
                       ),

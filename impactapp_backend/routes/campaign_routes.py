@@ -5,7 +5,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from models import CAMPAÑA, CATEGORIA, CIUDAD, DONACION, REACCION, db
 from services.audit_service import registrar
-from services.authorization import require_role
+from services.authorization import is_support, require_role
 
 campaign_bp = Blueprint("campaign_bp", __name__, url_prefix="/api")
 
@@ -24,7 +24,7 @@ def list_categories():
 
 @campaign_bp.get("/campaigns")
 def list_campaigns():
-    query = CAMPAÑA.query
+    query = CAMPAÑA.query.filter(CAMPAÑA.eliminada.is_(False))
     ciudad = request.args.get("ciudad")
     categoria = request.args.get("categoria")
     tipo_ayuda = request.args.get("tipo_ayuda")
@@ -66,6 +66,7 @@ def list_my_campaigns():
     current_user_id = int(get_jwt_identity())
     campaigns = (
         CAMPAÑA.query.filter(CAMPAÑA.id_creador == current_user_id)
+        .filter(CAMPAÑA.eliminada.is_(False))
         .order_by(CAMPAÑA.id_campania.desc())
         .all()
     )
@@ -139,6 +140,8 @@ def create_campaign():
 @jwt_required(optional=True)
 def get_campaign(campaign_id: int):
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
+    if campaign.eliminada and not is_support():
+        return jsonify({"error": "Campaña no encontrada"}), 404
     current_user_id = get_jwt_identity()
     payload = campaign.to_dict(include_relations=True)
     payload["valoraciones"] = [r.to_dict() for r in campaign.valoraciones if r.visible]
@@ -173,6 +176,9 @@ def get_campaign_donors(campaign_id: int):
     current_user_id = int(get_jwt_identity())
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
 
+    if campaign.eliminada:
+        return jsonify({"error": "La campaña no está disponible"}), 404
+
     if campaign.estado in ("pausada", "rechazada"):
         return jsonify({"error": "La campaña está rechazada"}), 403
 
@@ -200,6 +206,8 @@ def get_campaign_donors(campaign_id: int):
 @require_role("organizador")
 def update_campaign(campaign_id: int):
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
+    if campaign.eliminada:
+        return jsonify({"error": "La campaña no está disponible"}), 404
     if campaign.id_creador != int(get_jwt_identity()):
         return jsonify({"error": "Solo el creador puede editar la campaña"}), 403
 
@@ -246,9 +254,24 @@ def update_campaign(campaign_id: int):
 @require_role("organizador")
 def delete_campaign(campaign_id: int):
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
-    if campaign.id_creador != int(get_jwt_identity()):
+    user_id = int(get_jwt_identity())
+    if campaign.id_creador != user_id:
         return jsonify({"error": "Solo el creador puede eliminar la campaña"}), 403
 
-    db.session.delete(campaign)
+    data = request.get_json(silent=True) or {}
+    motivo = (data.get("motivo") or data.get("motivo_eliminacion") or "").strip() or None
+
+    campaign.eliminada = True
+    campaign.motivo_eliminacion = motivo
+    campaign.fecha_eliminacion = datetime.utcnow()
+    campaign.id_eliminador = user_id
     db.session.commit()
+    registrar(
+        id_usuario=user_id,
+        accion="CAMPAÑA_ELIMINADA",
+        descripcion=f"Campaña '{campaign.titulo}' eliminada (borrado lógico)",
+        entidad="CAMPAÑA",
+        id_entidad=campaign.id_campania,
+        direccion_ip=request.remote_addr,
+    )
     return jsonify({"message": "Campaña eliminada"}), 200

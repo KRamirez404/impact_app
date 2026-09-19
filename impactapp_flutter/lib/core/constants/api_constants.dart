@@ -20,6 +20,9 @@ class ApiConstants {
   static const String supportCampaigns = '$baseUrl/support/campaigns';
   static String supportApprove(int campaignId) => '$baseUrl/support/campaigns/$campaignId/approve';
   static String supportReject(int campaignId) => '$baseUrl/support/campaigns/$campaignId/reject';
+  static String supportInvalidate(int campaignId) => '$baseUrl/support/campaigns/$campaignId/invalidate';
+  static String supportDelete(int campaignId) => '$baseUrl/support/campaigns/$campaignId/delete';
+  static String supportRestore(int campaignId) => '$baseUrl/support/campaigns/$campaignId/restore';
   static const String tracking = '$baseUrl/tracking';
   static const String collectionPoints = '$baseUrl/collection-points';
   static const String ratings = '$baseUrl/ratings';

@@ -42,4 +42,22 @@ class SupportRemoteDataSource {
       data: {'nota': note},
     );
   }
+
+  Future<void> invalidate(int campaignId, String motivo) async {
+    await _dio.post(
+      ApiConstants.supportInvalidate(campaignId),
+      data: {'motivo': motivo},
+    );
+  }
+
+  Future<void> delete(int campaignId, String motivo) async {
+    await _dio.post(
+      ApiConstants.supportDelete(campaignId),
+      data: {'motivo': motivo},
+    );
+  }
+
+  Future<void> restore(int campaignId) async {
+    await _dio.post(ApiConstants.supportRestore(campaignId));
+  }
 }

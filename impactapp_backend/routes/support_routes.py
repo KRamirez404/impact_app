@@ -23,6 +23,8 @@ def create_support():
         return jsonify({"error": "id_campania y tipo son requeridos"}), 400
 
     campaign = CAMPAÑA.query.get_or_404(int(id_campania))
+    if campaign.eliminada:
+        return jsonify({"error": "La campaña no está disponible"}), 404
     if campaign.id_creador != int(get_jwt_identity()):
         return jsonify({"error": "Solo el creador puede cargar soportes"}), 403
 

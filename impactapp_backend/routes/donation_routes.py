@@ -22,6 +22,8 @@ def create_donation():
         return jsonify({"error": f"Campos faltantes: {', '.join(missing)}"}), 400
 
     campaign = CAMPAÑA.query.get_or_404(data["id_campania"])
+    if campaign.eliminada:
+        return jsonify({"error": "La campaña no está disponible"}), 404
     point_id = data.get("id_punto")
     if point_id:
         point = PUNTO_RECOLECCION.query.get(point_id)

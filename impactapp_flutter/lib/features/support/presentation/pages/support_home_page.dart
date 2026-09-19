@@ -187,6 +187,14 @@ class SupportHomePage extends GetView<SupportController> {
                 onTap: () => controller.setTab(3),
               ),
             ),
+            const SizedBox(width: 12),
+            Obx(
+              () => _buildFlatTab(
+                label: 'Eliminadas (${controller.eliminadasCount.value})',
+                isSelected: controller.selectedTab.value == 4,
+                onTap: () => controller.setTab(4),
+              ),
+            ),
           ],
         ),
       ),
@@ -286,10 +294,13 @@ class SupportHomePage extends GetView<SupportController> {
         );
       }
 
-      return ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-        itemCount: campaigns.length,
-        itemBuilder: (_, i) => _buildCampaignCard(campaigns[i]),
+      return RefreshIndicator(
+        onRefresh: controller.refreshData,
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+          itemCount: campaigns.length,
+          itemBuilder: (_, i) => _buildCampaignCard(campaigns[i]),
+        ),
       );
     });
   }
@@ -358,7 +369,7 @@ class SupportHomePage extends GetView<SupportController> {
             Positioned(
               top: 14,
               left: 16,
-              child: _buildStatusBadge(campaign.estado),
+              child: _buildStatusBadge(campaign),
             ),
             Positioned(
               top: 14,
@@ -371,7 +382,15 @@ class SupportHomePage extends GetView<SupportController> {
     );
   }
 
-  Widget _buildStatusBadge(String estado) {
+  Widget _buildStatusBadge(CampaignEntity campaign) {
+    if (campaign.eliminada) {
+      return _buildBadge(
+        const Color(0xFF6B7280),
+        'Eliminada',
+        Icons.delete_outline,
+      );
+    }
+    final estado = campaign.estado;
     Color bgColor;
     String label;
     IconData icon;
@@ -398,6 +417,10 @@ class SupportHomePage extends GetView<SupportController> {
         icon = Icons.schedule;
     }
 
+    return _buildBadge(bgColor, label, icon);
+  }
+
+  Widget _buildBadge(Color bgColor, String label, IconData icon) {
     return Container(
       height: 20,
       padding: const EdgeInsets.symmetric(horizontal: 8),

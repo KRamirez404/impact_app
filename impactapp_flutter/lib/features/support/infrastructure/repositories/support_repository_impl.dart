@@ -26,4 +26,19 @@ class SupportRepositoryImpl implements SupportRepository {
   Future<void> reject(int campaignId, String note) {
     return dataSource.reject(campaignId, note);
   }
+
+  @override
+  Future<void> invalidate(int campaignId, String motivo) {
+    return dataSource.invalidate(campaignId, motivo);
+  }
+
+  @override
+  Future<void> delete(int campaignId, String motivo) {
+    return dataSource.delete(campaignId, motivo);
+  }
+
+  @override
+  Future<void> restore(int campaignId) {
+    return dataSource.restore(campaignId);
+  }
 }

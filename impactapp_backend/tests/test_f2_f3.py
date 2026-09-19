@@ -92,6 +92,26 @@ def test_approve_economic_campaign_requires_document(client):
     assert resp.get_json()["estado"] == "activa"
 
 
+def test_approve_non_economic_campaign_requires_document(client):
+    correo = _new_email("org")
+    register_user(client, rol="organizador", correo=correo)
+    org_token = get_token(client, correo)
+    resp = client.post(
+        "/api/campaigns", json=_campaign_payload("alimentos"),
+        headers={"Authorization": f"Bearer {org_token}"},
+    )
+    campaign_id = resp.get_json()["id_campania"]
+    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+
+    resp = client.post(
+        f"/api/support/campaigns/{campaign_id}/approve",
+        json={"nota": "aprobada"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 400
+    assert "documento" in resp.get_json()["error"].lower()
+
+
 def test_bank_account_locked_after_approval(client):
     correo, org_token, campaign_id = _create_economic_campaign(client)
     admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
@@ -167,3 +187,86 @@ def test_donation_checksum_detects_tampering(client):
     listing = client.get("/api/donations/campaign/1").get_json()
     item = next(d for d in listing if d["id_donacion"] == donation_id)
     assert item["integridad"] is False
+
+
+def _create_campaign(client, tipo="alimentos"):
+    correo = _new_email("org")
+    register_user(client, rol="organizador", correo=correo)
+    org_token = get_token(client, correo)
+    resp = client.post(
+        "/api/campaigns", json=_campaign_payload(tipo),
+        headers={"Authorization": f"Bearer {org_token}"},
+    )
+    return org_token, resp.get_json()["id_campania"]
+
+
+def test_support_soft_delete_and_restore_campaign(client):
+    org_token, campaign_id = _create_campaign(client)
+    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+
+    public = client.get("/api/campaigns").get_json()
+    assert any(c["id_campania"] == campaign_id for c in public)
+
+    resp = client.post(
+        f"/api/support/campaigns/{campaign_id}/delete",
+        json={"motivo": "Información fraudulenta"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["eliminada"] is True
+
+    public = client.get("/api/campaigns").get_json()
+    assert not any(c["id_campania"] == campaign_id for c in public)
+
+    detail = client.get(f"/api/campaigns/{campaign_id}")
+    assert detail.status_code == 404
+
+    support_list = client.get(
+        "/api/support/campaigns",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    ).get_json()
+    item = next(c for c in support_list if c["id_campania"] == campaign_id)
+    assert item["eliminada"] is True
+    assert item["motivo_eliminacion"] == "Información fraudulenta"
+
+    mine = client.get(
+        "/api/campaigns/mine",
+        headers={"Authorization": f"Bearer {org_token}"},
+    ).get_json()
+    assert not any(c["id_campania"] == campaign_id for c in mine)
+
+    resp = client.post(
+        f"/api/support/campaigns/{campaign_id}/restore",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["eliminada"] is False
+
+    public = client.get("/api/campaigns").get_json()
+    assert any(c["id_campania"] == campaign_id for c in public)
+
+
+def test_support_invalidate_campaign_hides_it(client):
+    _, campaign_id = _create_campaign(client)
+    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+
+    resp = client.post(
+        f"/api/support/campaigns/{campaign_id}/invalidate",
+        json={"motivo": "Documentos inválidos"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["eliminada"] is True
+
+    public = client.get("/api/campaigns").get_json()
+    assert not any(c["id_campania"] == campaign_id for c in public)
+
+
+def test_non_support_cannot_delete_campaign(client):
+    org_token, campaign_id = _create_campaign(client)
+    resp = client.post(
+        f"/api/support/campaigns/{campaign_id}/delete",
+        headers={"Authorization": f"Bearer {org_token}"},
+    )
+    assert resp.status_code == 403
+
