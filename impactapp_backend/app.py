@@ -135,18 +135,18 @@ def ensure_user_schema():
         db.session.commit()
     if "rol" not in columns:
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN rol TEXT'))
-        db.session.execute(text('UPDATE "USUARIO" SET rol = "usuario" WHERE rol IS NULL'))
+        db.session.execute(text("UPDATE \"USUARIO\" SET rol = 'usuario' WHERE rol IS NULL"))
         db.session.commit()
     if "foto_perfil" not in columns:
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN foto_perfil TEXT'))
         db.session.commit()
     if "acepta_tratamiento" not in columns:
         db.session.execute(
-            text('ALTER TABLE "USUARIO" ADD COLUMN acepta_tratamiento BOOLEAN NOT NULL DEFAULT 0')
+            text('ALTER TABLE "USUARIO" ADD COLUMN acepta_tratamiento BOOLEAN NOT NULL DEFAULT false')
         )
         db.session.commit()
     if "fecha_aceptacion" not in columns:
-        db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN fecha_aceptacion DATETIME'))
+        db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN fecha_aceptacion TIMESTAMP'))
         db.session.commit()
 
 
@@ -156,7 +156,7 @@ def ensure_campaign_schema():
     if "nota_revision" not in columns:
         db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN nota_revision TEXT'))
     if "fecha_revision" not in columns:
-        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN fecha_revision DATETIME'))
+        db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN fecha_revision TIMESTAMP'))
     if "id_auditor" not in columns:
         db.session.execute(text('ALTER TABLE "CAMPAÑA" ADD COLUMN id_auditor INTEGER'))
     if "cuenta_recaudo" not in columns:

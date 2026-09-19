@@ -1,4 +1,4 @@
-.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test
+.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test test-postgres
 
 up:
 	docker compose up --build
@@ -21,6 +21,9 @@ reset-db:
 	docker compose up --build
 test:
 	docker compose exec backend python -m pytest tests -q
+test-postgres:
+	@docker compose exec -T db psql -U impactapp -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='impactapp_test'" | grep -q 1 || docker compose exec -T db psql -U impactapp -d postgres -c "CREATE DATABASE impactapp_test"
+	docker compose exec -T -e TEST_DATABASE_URL=postgresql+psycopg2://impactapp:impactapp@db:5432/impactapp_test backend python -m pytest tests -q
 flutter-clean:
 	cd impactapp_flutter && flutter clean && flutter pub get
 run-linux:

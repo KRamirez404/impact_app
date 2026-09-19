@@ -8,9 +8,9 @@ Aplicación full-stack de donaciones solidarias para Colombia. Conecta donantes 
 
 | Capa | Tecnología |
 |---|---|
-| **Backend** | Flask + SQLAlchemy + SQLite + JWT + bcrypt + Flask-CORS |
+| **Backend** | Flask + SQLAlchemy + PostgreSQL + JWT + bcrypt + Flask-CORS |
 | **Frontend** | Flutter 3.47+ (Android/iOS/Web/Linux) + GetX (state, routes) + Dio (HTTP) + GetStorage (local) |
-| **Infra** | Docker Compose, Python 3.12 |
+| **Infra** | Docker Compose, PostgreSQL 16, Python 3.12 |
 | **Pruebas** | pytest (backend) |
 
 > Roles de usuario: `donante`, `organizador` y `soporte`. `donante` apoya campañas; `organizador` crea campañas; `soporte` (asignado centralmente) verifica y aprueba campañas en el panel de soporte.
@@ -342,7 +342,7 @@ La inyección de dependencias respeta el principio de inversión: `domain` nunca
 - **Cliente HTTP:** `Dio` con singleton `DioClient` (`lib/core/network/dio_client.dart`)
 - **Interceptor:** Agrega `Bearer token` automáticamente desde `GetStorage`
 - **Error handling:** Redirige a login en 401
-- **Backend:** Flask + SQLAlchemy + SQLite corriendo en `localhost:5000`
+- **Backend:** Flask + SQLAlchemy + PostgreSQL corriendo en `localhost:5000`
 
 ### Almacenamiento Local (GetStorage) ✅
 
@@ -426,7 +426,6 @@ Limitaciones asumidas para la entrega del prototipo y su justificación académi
 
 | Pendiente | Justificación |
 |---|---|
-| **Migración a PostgreSQL** | La base en SQLite es suficiente para la demostración, pero el modelo ya es portable a SQLAlchemy+PostgreSQL sin cambios de código. |
 | **Pasarela de pago real** (PSE, Stripe, Wompi) | El flujo actual registra donaciones simuladas; una pasarela real exige contratos comerciales y certificaciones PCI-DSS fuera del alcance. |
 | **Cifrado en reposo de la base de datos** | Requiere administración de claves (KMS) y no afecta el funcionamiento del prototipo. |
 | **TLS / HTTPS en producción** | Depende del despliegue (VPS/Cloud); en local se usa HTTP. |

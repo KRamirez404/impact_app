@@ -1,10 +1,13 @@
 import os
 import tempfile
 
-_test_db = os.path.join(tempfile.gettempdir(), "impactapp_pytest.db")
-if os.path.exists(_test_db):
-    os.remove(_test_db)
-os.environ["DATABASE_URL"] = f"sqlite:///{_test_db}"
+if os.getenv("TEST_DATABASE_URL"):
+    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
+else:
+    _test_db = os.path.join(tempfile.gettempdir(), "impactapp_pytest.db")
+    if os.path.exists(_test_db):
+        os.remove(_test_db)
+    os.environ["DATABASE_URL"] = f"sqlite:///{_test_db}"
 
 import pytest  # noqa: E402
 
