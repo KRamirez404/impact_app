@@ -1,8 +1,10 @@
 import 'package:get/get.dart';
 import '../../domain/repositories/campaign_repository.dart';
 import '../../domain/usecases/create_campaign_usecase.dart';
+import '../../domain/usecases/create_donation_checkout_usecase.dart';
 import '../../domain/usecases/donate_usecase.dart';
 import '../../domain/usecases/get_campaign_detail_usecase.dart';
+import '../../domain/usecases/get_donation_status_usecase.dart';
 import '../../domain/usecases/get_campaigns_usecase.dart';
 import '../../domain/usecases/get_my_campaigns_usecase.dart';
 import '../../domain/usecases/get_my_donations_usecase.dart';
@@ -29,6 +31,12 @@ class CampaignBinding extends Bindings {
       () => GetCampaignDetailUseCase(Get.find<CampaignRepository>()),
     );
     Get.lazyPut<DonateUseCase>(() => DonateUseCase(Get.find<CampaignRepository>()));
+    Get.lazyPut<CreateDonationCheckoutUseCase>(
+      () => CreateDonationCheckoutUseCase(Get.find<CampaignRepository>()),
+    );
+    Get.lazyPut<GetDonationStatusUseCase>(
+      () => GetDonationStatusUseCase(Get.find<CampaignRepository>()),
+    );
     Get.lazyPut<GetMyCampaignsUseCase>(
       () => GetMyCampaignsUseCase(Get.find<CampaignRepository>()),
     );
@@ -51,6 +59,8 @@ class CampaignBinding extends Bindings {
         getCampaignDetailUseCase: Get.find<GetCampaignDetailUseCase>(),
         donateUseCase: Get.find<DonateUseCase>(),
         toggleLikeUseCase: Get.find<ToggleLikeUseCase>(),
+        createDonationCheckoutUseCase: Get.find<CreateDonationCheckoutUseCase>(),
+        getDonationStatusUseCase: Get.find<GetDonationStatusUseCase>(),
       ),
       fenix: true,
     );

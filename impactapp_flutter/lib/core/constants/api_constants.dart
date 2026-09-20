@@ -12,6 +12,8 @@ class ApiConstants {
   static const String cities = '$baseUrl/cities';
   static const String categories = '$baseUrl/categories';
   static const String donations = '$baseUrl/donations';
+  static const String donationCheckout = '$baseUrl/donations/checkout';
+  static String donationStatus(int donationId) => '$baseUrl/donations/$donationId/status';
   static const String myDonations = '$baseUrl/donations/mine';
   static const String topDonors = '$baseUrl/donations/top';
   static String campaignDonors(int campaignId) => '$baseUrl/campaigns/$campaignId/donors';

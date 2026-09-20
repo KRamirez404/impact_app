@@ -7,6 +7,9 @@ class DonationEntity {
   final double montoEstimado;
   final String? descripcion;
   final String fechaDonacion;
+  final String estadoPago;
+  final String? referenciaPago;
+  final String? metodoPago;
 
   const DonationEntity({
     required this.idDonacion,
@@ -17,6 +20,9 @@ class DonationEntity {
     required this.montoEstimado,
     required this.descripcion,
     required this.fechaDonacion,
+    this.estadoPago = 'aprobada',
+    this.referenciaPago,
+    this.metodoPago,
   });
 }
 

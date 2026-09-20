@@ -5,7 +5,6 @@ from sqlalchemy import func
 from models import CAMPAÑA, DONACION, PUNTO_RECOLECCION, USUARIO, db
 from services.audit_service import registrar
 from services.authorization import require_role
-from services.campaign_service import recalculate_campaign_progress
 from services.donation_integrity import compute_donation_checksum, donation_is_intact
 
 donation_bp = Blueprint("donation_bp", __name__, url_prefix="/api/donations")
@@ -20,6 +19,17 @@ def create_donation():
     missing = [field for field in required if not data.get(field)]
     if missing:
         return jsonify({"error": f"Campos faltantes: {', '.join(missing)}"}), 400
+
+    if data["tipo"] == "economica":
+        return (
+            jsonify(
+                {
+                    "error": "Las donaciones económicas deben realizarse a través de "
+                    "/api/donations/checkout"
+                }
+            ),
+            400,
+        )
 
     campaign = CAMPAÑA.query.get_or_404(data["id_campania"])
     if campaign.eliminada:
@@ -37,6 +47,7 @@ def create_donation():
         tipo=data["tipo"],
         monto_estimado=data.get("monto_estimado", 0),
         descripcion=data.get("descripcion"),
+        estado_pago="aprobada",
     )
     db.session.add(donation)
     db.session.flush()
@@ -44,9 +55,6 @@ def create_donation():
         donation, current_app.config["JWT_SECRET_KEY"]
     )
     db.session.commit()
-
-    if donation.tipo == "economica":
-        recalculate_campaign_progress(campaign)
 
     registrar(
         id_usuario=donation.id_donante,
@@ -122,6 +130,7 @@ def get_top_donors():
             func.count(DONACION.id_donacion).label("donaciones_count"),
         )
         .join(USUARIO, DONACION.id_donante == USUARIO.id_usuario)
+        .filter(DONACION.estado_pago == "aprobada")
         .group_by(DONACION.id_donante, USUARIO.nombre, USUARIO.apellido, USUARIO.foto_perfil)
         .order_by(func.sum(DONACION.monto_estimado).desc())
         .limit(limit)

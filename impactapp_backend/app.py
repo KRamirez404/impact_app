@@ -179,7 +179,38 @@ def ensure_donation_schema():
     columns = {column["name"] for column in inspector.get_columns("DONACION")}
     if "checksum" not in columns:
         db.session.execute(text('ALTER TABLE "DONACION" ADD COLUMN checksum VARCHAR(64)'))
-        db.session.commit()
+    if "estado_pago" not in columns:
+        db.session.execute(
+            text(
+                'ALTER TABLE "DONACION" ADD COLUMN estado_pago VARCHAR(20) '
+                "NOT NULL DEFAULT 'pendiente'"
+            )
+        )
+        db.session.execute(
+            text('UPDATE "DONACION" SET estado_pago = :estado'),
+            {"estado": "aprobada"},
+        )
+    if "referencia_pago" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "DONACION" ADD COLUMN referencia_pago VARCHAR(255)')
+        )
+        db.session.execute(
+            text(
+                'CREATE UNIQUE INDEX IF NOT EXISTS uq_donacion_referencia_pago '
+                'ON "DONACION" (referencia_pago)'
+            )
+        )
+    if "wompi_transaction_id" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "DONACION" ADD COLUMN wompi_transaction_id VARCHAR(120)')
+        )
+    if "metodo_pago" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "DONACION" ADD COLUMN metodo_pago VARCHAR(40)')
+        )
+    if "fecha_pago" not in columns:
+        db.session.execute(text('ALTER TABLE "DONACION" ADD COLUMN fecha_pago TIMESTAMP'))
+    db.session.commit()
 
 
 def create_app():
@@ -188,18 +219,13 @@ def create_app():
 
     db.init_app(app)
     JWTManager(app)
-    CORS(
-        app,
-        resources={
-            r"/api/*": {
-                "origins": [
-                    r"https?://localhost:\d+",
-                    r"https?://127.0.0.1:\d+",
-                    "http://10.0.2.2:5000",
-                ]
-            }
-        },
-    )
+    allowed_origins = [
+        r"https?://localhost:\d+",
+        r"https?://127\.0\.0\.1:\d+",
+        r"http://10\.0\.2\.2:5000",
+    ]
+    allowed_origins.extend(app.config.get("ALLOWED_ORIGINS", []))
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
     upload_abs_path = os.path.join(app.root_path, app.config["UPLOAD_FOLDER"])
     os.makedirs(upload_abs_path, exist_ok=True)

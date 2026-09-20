@@ -2,9 +2,11 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 **/.env
 **/.env.*
 !**/.env.example
+!**/.env.production.example
 
 # Python
 __pycache__/
@@ -19,6 +21,8 @@ ENV/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
+.coverage
+htmlcov/
 
 # Flask/SQLite runtime data
 impactapp_backend/instance/
@@ -29,6 +33,8 @@ impactapp_backend/uploads/*
 
 # Documentos privados / académicos (no se publican)
 Plan.txt
+anteproyecto.txt
+requisitos.txt
 Anteproyecto*.docx
 *.docx
 *.doc

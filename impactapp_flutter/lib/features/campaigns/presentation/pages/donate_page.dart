@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../controllers/campaign_detail_controller.dart';
@@ -48,10 +49,26 @@ class DonatePage extends StatelessWidget {
                 onPressed: controller.isLoading.value
                     ? null
                     : () async {
+                        final monto =
+                            double.tryParse(_montoCtrl.text.trim()) ?? 0;
+                        if (_tipo.value == 'economica') {
+                          final checkout =
+                              await controller.startMoneyDonation(id, monto);
+                          final uri = checkout == null
+                              ? null
+                              : Uri.tryParse(checkout.checkoutUrl);
+                          if (uri != null) {
+                            await launchUrl(
+                              uri,
+                              mode: LaunchMode.externalApplication,
+                            );
+                          }
+                          return;
+                        }
                         await controller.donate({
                           'id_campania': id,
                           'tipo': _tipo.value,
-                          'monto_estimado': double.tryParse(_montoCtrl.text.trim()) ?? 0,
+                          'monto_estimado': monto,
                           'descripcion': _descripcionCtrl.text.trim(),
                         });
                         Get.back();

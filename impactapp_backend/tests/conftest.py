@@ -11,7 +11,12 @@ else:
 
 import pytest  # noqa: E402
 
-from app import ensure_campaign_schema, ensure_user_schema, seed_database  # noqa: E402
+from app import (  # noqa: E402
+    ensure_campaign_schema,
+    ensure_donation_schema,
+    ensure_user_schema,
+    seed_database,
+)
 from models import db  # noqa: E402
 
 from app import app  # noqa: E402
@@ -25,6 +30,7 @@ def client():
         db.create_all()
         ensure_user_schema()
         ensure_campaign_schema()
+        ensure_donation_schema()
         seed_database()
     with app.test_client() as test_client:
         yield test_client

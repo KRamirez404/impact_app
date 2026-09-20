@@ -10,6 +10,9 @@ class DonationModel extends DonationEntity {
     required super.montoEstimado,
     required super.descripcion,
     required super.fechaDonacion,
+    super.estadoPago,
+    super.referenciaPago,
+    super.metodoPago,
   });
 
   factory DonationModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +25,9 @@ class DonationModel extends DonationEntity {
       montoEstimado: (json['monto_estimado'] as num?)?.toDouble() ?? 0,
       descripcion: json['descripcion'],
       fechaDonacion: json['fecha_donacion'] ?? '',
+      estadoPago: json['estado_pago'] ?? 'aprobada',
+      referenciaPago: json['referencia_pago'],
+      metodoPago: json['metodo_pago'],
     );
   }
 }

@@ -68,7 +68,20 @@ def test_organizador_cannot_donate(client):
     assert resp.status_code == 403
 
 
-def test_donante_can_donate(client):
+def test_donante_can_donate_in_kind(client):
+    correo = _new_email("don")
+    register_user(client, rol="donante", correo=correo)
+    token = get_token(client, correo)
+    resp = client.post(
+        "/api/donations",
+        json={"id_campania": 1, "tipo": "alimentos", "monto_estimado": 1000},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201
+    assert resp.get_json()["estado_pago"] == "aprobada"
+
+
+def test_economic_donation_requires_checkout(client):
     correo = _new_email("don")
     register_user(client, rol="donante", correo=correo)
     token = get_token(client, correo)
@@ -77,7 +90,7 @@ def test_donante_can_donate(client):
         json={"id_campania": 1, "tipo": "economica", "monto_estimado": 1000},
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert resp.status_code == 201
+    assert resp.status_code == 400
 
 
 def test_anonymous_cannot_create_campaign(client):

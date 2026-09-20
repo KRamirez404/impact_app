@@ -13,6 +13,7 @@ class DonationWithCampaignEntity {
   final String? campaignImageUrl;
   final int totalAvances;
   final int nuevosAvances;
+  final String estadoPago;
 
   const DonationWithCampaignEntity({
     required this.idDonacion,
@@ -29,5 +30,6 @@ class DonationWithCampaignEntity {
     this.campaignImageUrl,
     this.totalAvances = 0,
     this.nuevosAvances = 0,
+    this.estadoPago = 'aprobada',
   });
 }

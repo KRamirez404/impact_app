@@ -33,6 +33,45 @@ class ActivityCard extends StatelessWidget {
     return const Color(0xFF334155);
   }
 
+  String? _paymentLabel() {
+    switch (item.paymentStatus) {
+      case 'pendiente':
+        return 'Pago pendiente';
+      case 'aprobada':
+        return 'Pago confirmado';
+      case 'rechazada':
+        return 'Pago rechazado';
+      case 'error':
+        return 'Error de pago';
+      case 'anulada':
+        return 'Pago anulado';
+      default:
+        return null;
+    }
+  }
+
+  Color _paymentColor() {
+    switch (item.paymentStatus) {
+      case 'aprobada':
+        return const Color(0xFF008236);
+      case 'pendiente':
+        return const Color(0xFFC2410C);
+      default:
+        return const Color(0xFFDC2626);
+    }
+  }
+
+  IconData _paymentIcon() {
+    switch (item.paymentStatus) {
+      case 'aprobada':
+        return Icons.check_circle_outline;
+      case 'pendiente':
+        return Icons.hourglass_top;
+      default:
+        return Icons.error_outline;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasCampaign = item.campaignId != null;
@@ -131,6 +170,27 @@ class ActivityCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (item.openCampaignDetail && _paymentLabel() != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            _paymentIcon(),
+                            size: 14,
+                            color: _paymentColor(),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _paymentLabel()!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _paymentColor(),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     if (item.openCampaignDetail && item.totalAvances > 0) ...[
                       const SizedBox(height: 8),
                       Row(

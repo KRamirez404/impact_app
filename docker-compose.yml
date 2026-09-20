@@ -30,6 +30,16 @@ services:
       - FLASK_ENV=production
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-impactapp}:${POSTGRES_PASSWORD:-impactapp}@db:5432/${POSTGRES_DB:-impactapp}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost,http://127.0.0.1}
+      - WOMPI_ENV=${WOMPI_ENV:-sandbox}
+      - WOMPI_PUBLIC_KEY=${WOMPI_PUBLIC_KEY:-}
+      - WOMPI_PRIVATE_KEY=${WOMPI_PRIVATE_KEY:-}
+      - WOMPI_INTEGRITY_SECRET=${WOMPI_INTEGRITY_SECRET:-}
+      - WOMPI_EVENTS_SECRET=${WOMPI_EVENTS_SECRET:-}
+      - WOMPI_CHECKOUT_URL=${WOMPI_CHECKOUT_URL:-https://checkout.wompi.co/p/}
+      - WOMPI_API_URL=${WOMPI_API_URL:-https://sandbox.wompi.co/v1}
+      - WOMPI_MIN_AMOUNT=${WOMPI_MIN_AMOUNT:-1000}
+      - DONATION_REDIRECT_URL=${DONATION_REDIRECT_URL:-http://localhost:8080/donacion/resultado}
     depends_on:
       db:
         condition: service_healthy

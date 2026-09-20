@@ -1,4 +1,4 @@
-.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test test-postgres
+.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test prod-up prod-down prod-logs prod-ps test-postgres
 
 up:
 	docker compose up --build
@@ -28,3 +28,11 @@ flutter-clean:
 	cd impactapp_flutter && flutter clean && flutter pub get
 run-linux:
 	cd impactapp_flutter && flutter run -d linux --dart-define=API_BASE_URL=http://localhost:5000/api
+prod-up:
+	docker compose --env-file .env.production -f docker-compose.prod.yml up --build -d
+prod-down:
+	docker compose --env-file .env.production -f docker-compose.prod.yml down
+prod-logs:
+	docker compose --env-file .env.production -f docker-compose.prod.yml logs -f
+prod-ps:
+	docker compose --env-file .env.production -f docker-compose.prod.yml ps

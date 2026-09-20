@@ -90,12 +90,16 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
     }
   }
 
-  Future<void> _showMoneyDonationDialog(int campaignId) {
-    return showMoneyDonationDialog(
+  Future<void> _showMoneyDonationDialog(int campaignId) async {
+    final status = await showMoneyDonationDialog(
       context: context,
       campaignId: campaignId,
-      onDonate: (data) => controller.donate(data),
+      onCheckout: (amount) => controller.startMoneyDonation(campaignId, amount),
+      onCheckStatus: (donationId) => controller.checkDonationStatus(donationId),
     );
+    if (status == 'aprobada') {
+      await controller.loadCampaign(campaignId);
+    }
   }
 
   Future<void> _showPhysicalDonationDialog(

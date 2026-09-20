@@ -1,4 +1,5 @@
 import '../../domain/entities/campaign_entity.dart';
+import '../../domain/entities/donation_checkout_entity.dart';
 import '../../domain/entities/donation_entity.dart';
 import '../../domain/entities/donation_with_campaign_entity.dart';
 import '../../domain/entities/donor_with_donation_entity.dart';
@@ -19,6 +20,16 @@ class CampaignRepositoryImpl implements CampaignRepository {
   @override
   Future<DonationEntity> donate(Map<String, dynamic> payload) {
     return dataSource.donate(payload);
+  }
+
+  @override
+  Future<DonationCheckoutEntity> createDonationCheckout(Map<String, dynamic> payload) {
+    return dataSource.createDonationCheckout(payload);
+  }
+
+  @override
+  Future<DonationEntity> getDonationStatus(int donationId) {
+    return dataSource.getDonationStatus(donationId);
   }
 
   @override

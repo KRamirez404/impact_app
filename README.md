@@ -8,9 +8,10 @@ Aplicación full-stack de donaciones solidarias para Colombia. Conecta donantes 
 
 | Capa | Tecnología |
 |---|---|
-| **Backend** | Flask + SQLAlchemy + PostgreSQL + JWT + bcrypt + Flask-CORS |
+| **Backend** | Flask + SQLAlchemy + PostgreSQL + JWT + bcrypt + Flask-CORS + Gunicorn |
+| **Pagos** | Wompi (Checkout Web: tarjetas, PSE y Nequi) |
 | **Frontend** | Flutter 3.47+ (Android/iOS/Web/Linux) + GetX (state, routes) + Dio (HTTP) + GetStorage (local) |
-| **Infra** | Docker Compose, PostgreSQL 16, Python 3.12 |
+| **Infra** | Docker Compose, PostgreSQL 16, Nginx + Certbot, Python 3.12 |
 | **Pruebas** | pytest (backend) |
 
 > Roles de usuario: `donante`, `organizador` y `soporte`. `donante` apoya campañas; `organizador` crea campañas; `soporte` (asignado centralmente) verifica y aprueba campañas en el panel de soporte.
@@ -214,7 +215,10 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | `GET` | `/api/cities` | — | Listar ciudades |
 | `GET` | `/api/categories` | — | Listar categorías |
 | `GET` | `/api/donations` | — | Listar donaciones |
-| `POST` | `/api/donations` | JWT* | Crear donación (*rol `donante`) |
+| `POST` | `/api/donations` | JWT* | Crear donación en especie (*rol `donante`) |
+| `POST` | `/api/donations/checkout` | JWT* | Iniciar donación económica con Wompi (*rol `donante`) |
+| `GET` | `/api/donations/:id/status` | JWT | Estado de pago de una donación |
+| `POST` | `/api/webhooks/wompi` | — | Webhook de eventos de Wompi (valida firma) |
 | `GET` | `/api/donations/mine` | JWT | Mis donaciones (con avances/nuevos avances de cada campaña) |
 | `GET` | `/api/donations/top` | — | Top donadores |
 | `GET` | `/api/supports/campaign/:id` | — | Soportes de campaña |
@@ -420,15 +424,76 @@ No ejecutar `flutter run` desde la raíz del repositorio. Siempre hacer `cd impa
 
 ---
 
+## Donaciones con Wompi
+
+Las donaciones económicas se procesan con **Wompi Checkout Web**. El flujo es:
+
+1. El donante elige el monto en la app; `POST /api/donations/checkout` crea la donación en estado `pendiente` y devuelve una `checkout_url` firmada con el secreto de integridad.
+2. La app abre la pasarela (`https://checkout.wompi.co/p/`) en el navegador.
+3. Wompi notifica el resultado vía webhook a `POST /api/webhooks/wompi`; el backend valida el checksum del evento (`WOMPI_EVENTS_SECRET`), actualiza `estado_pago` y recalcula el avance de la campaña solo si el pago fue `APPROVED`.
+4. La app consulta `GET /api/donations/:id/status` para mostrar el resultado.
+
+Solo las donaciones económicas con `estado_pago = "aprobada"` cuentan para la meta y el top de donadores. Las donaciones en especie siguen usando `POST /api/donations`.
+
+Variables de entorno (Sandbox):
+
+```bash
+WOMPI_ENV=sandbox
+WOMPI_PUBLIC_KEY=pub_test_...
+WOMPI_PRIVATE_KEY=prv_test_...
+WOMPI_INTEGRITY_SECRET=test_integrity_...
+WOMPI_EVENTS_SECRET=test_events_...
+WOMPI_CHECKOUT_URL=https://checkout.wompi.co/p/
+WOMPI_API_URL=https://sandbox.wompi.co/v1
+```
+
+> Con llaves de Sandbox **no se cobra dinero real**. Para cobros reales se requiere la cuenta de comercio Wompi aprobada y cambiar a llaves `pub_prod_`/`prv_prod_`, `WOMPI_ENV=prod` y `WOMPI_API_URL=https://production.wompi.co/v1`. Registra la URL de eventos de producción en el Dashboard de Wompi.
+
+---
+
+## Despliegue en producción (VPS)
+
+1. Copia `.env.production.example` a `.env.production` y completa dominio, base de datos, JWT y llaves Wompi.
+2. Apunta el DNS del dominio al VPS y asegura los puertos 80/443.
+3. Levanta el stack:
+
+```bash
+make prod-up        # docker compose --env-file .env.production -f docker-compose.prod.yml up --build -d
+make prod-ps        # estado de los servicios
+make prod-logs      # logs
+```
+
+Servicios: `db` (PostgreSQL), `backend` (Gunicorn), `web` (Nginx + Flutter Web) y `certbot`.
+
+Para HTTPS, solicita el certificado con Certbot y habilita el bloque TLS:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml run --rm --entrypoint certbot certbot \
+  certonly --webroot -w /var/www/certbot -d TU_DOMINIO --email TU_CORREO --agree-tos --no-eff-email
+mv deploy/nginx/templates/app.conf.template deploy/nginx/templates/app.conf.template.bak
+cp deploy/nginx/ssl/app.ssl.conf.template.disabled deploy/nginx/templates/app.conf.template
+docker compose --env-file .env.production -f docker-compose.prod.yml restart web
+```
+
+El APK Android se compila apuntando al backend público:
+
+```bash
+cd impactapp_flutter
+flutter build apk --release --dart-define=API_BASE_URL=https://TU_DOMINIO/api
+```
+
+---
+
 ## Trabajo futuro
 
 Limitaciones asumidas para la entrega del prototipo y su justificación académica:
 
 | Pendiente | Justificación |
 |---|---|
-| **Pasarela de pago real** (PSE, Stripe, Wompi) | El flujo actual registra donaciones simuladas; una pasarela real exige contratos comerciales y certificaciones PCI-DSS fuera del alcance. |
+| **Dispersión automática a organizadores** | Wompi recauda en la cuenta del comercio; la transferencia al organizador (Wompi "Pagos a terceros" o dispersión manual) queda pendiente de definir. |
+| **Llaves de producción Wompi** | La integración corre en Sandbox (`pub_test_`); activar la cuenta de comercio y cambiar variables `WOMPI_*` habilita cobros reales. |
 | **Cifrado en reposo de la base de datos** | Requiere administración de claves (KMS) y no afecta el funcionamiento del prototipo. |
-| **TLS / HTTPS en producción** | Depende del despliegue (VPS/Cloud); en local se usa HTTP. |
+| **TLS / HTTPS en producción** | Ya contemplado con Nginx + Certbot en `docker-compose.prod.yml`; requiere dominio apuntando al VPS. |
 | **Auditoría de dependencias** (`pip-audit`, Dependabot) | Los `requirements.txt` y `pubspec.lock` están fijados; la revisión continua se hará al publicar. |
 | **Notificaciones push** (FCM) | Requiere proyecto Firebase y certificados de aplicación móvil firmada. |
 | **Verificación documental automática** | La validación de identidad hoy es lógica/por soporte; integrar validación con entidades estatales queda fuera de alcance. |

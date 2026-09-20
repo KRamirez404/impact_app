@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/entities/campaign_entity.dart';
+import '../../domain/entities/donation_checkout_entity.dart';
+import '../../domain/usecases/create_donation_checkout_usecase.dart';
+import '../../domain/usecases/get_donation_status_usecase.dart';
 import '../../domain/usecases/toggle_like_usecase.dart';
 import '../../domain/usecases/donate_usecase.dart';
 import '../../domain/usecases/get_campaign_detail_usecase.dart';
@@ -12,11 +15,15 @@ class CampaignDetailController extends GetxController {
     required this.getCampaignDetailUseCase,
     required this.donateUseCase,
     required this.toggleLikeUseCase,
+    required this.createDonationCheckoutUseCase,
+    required this.getDonationStatusUseCase,
   });
 
   final GetCampaignDetailUseCase getCampaignDetailUseCase;
   final DonateUseCase donateUseCase;
   final ToggleLikeUseCase toggleLikeUseCase;
+  final CreateDonationCheckoutUseCase createDonationCheckoutUseCase;
+  final GetDonationStatusUseCase getDonationStatusUseCase;
 
   final isLoading = false.obs;
   final isLiking = false.obs;
@@ -57,6 +64,35 @@ class CampaignDetailController extends GetxController {
       _err(e.toString());
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<DonationCheckoutEntity?> startMoneyDonation(
+    int campaignId,
+    double amount,
+  ) async {
+    try {
+      isLoading.value = true;
+      return await createDonationCheckoutUseCase({
+        'id_campania': campaignId,
+        'monto_estimado': amount,
+        'descripcion': 'Donación económica en línea',
+      });
+    } catch (e) {
+      _err(e.toString());
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<String> checkDonationStatus(int donationId) async {
+    try {
+      final donation = await getDonationStatusUseCase(donationId);
+      return donation.estadoPago;
+    } catch (e) {
+      _err(e.toString());
+      return 'pendiente';
     }
   }
 

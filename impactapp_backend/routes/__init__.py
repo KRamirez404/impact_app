@@ -8,12 +8,14 @@ from .support_routes import support_bp
 from .support_panel_routes import support_panel_bp
 from .tracking_routes import tracking_bp
 from .upload_routes import upload_bp
+from .wompi_routes import wompi_bp
 
 
 def register_blueprints(app):
     app.register_blueprint(auth_bp)
     app.register_blueprint(campaign_bp)
     app.register_blueprint(donation_bp)
+    app.register_blueprint(wompi_bp)
     app.register_blueprint(like_bp)
     app.register_blueprint(support_bp)
     app.register_blueprint(support_panel_bp)

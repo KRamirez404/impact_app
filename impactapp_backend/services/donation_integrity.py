@@ -2,6 +2,13 @@ import hashlib
 import hmac
 
 
+def _amount_canonical(value) -> str:
+    try:
+        return f"{float(value or 0):.2f}"
+    except (TypeError, ValueError):
+        return str(value or 0)
+
+
 def donation_canonical(d) -> str:
     return "|".join(
         [
@@ -10,7 +17,7 @@ def donation_canonical(d) -> str:
             str(d.id_donante or ""),
             str(d.id_punto or ""),
             str(d.tipo or ""),
-            str(d.monto_estimado or 0),
+            _amount_canonical(d.monto_estimado),
             (d.descripcion or ""),
             d.fecha_donacion.isoformat() if d.fecha_donacion else "",
         ]

@@ -357,6 +357,7 @@ class ProfilePage extends StatelessWidget {
       nuevosAvances: donation.nuevosAvances,
       totalAvances: donation.totalAvances,
       openCampaignDetail: true,
+      paymentStatus: donation.estadoPago,
     );
   }
 

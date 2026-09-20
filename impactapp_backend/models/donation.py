@@ -30,6 +30,11 @@ class DONACION(db.Model):
     descripcion = db.Column(db.Text, nullable=True)
     fecha_donacion = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     checksum = db.Column(db.String(64), nullable=True)
+    estado_pago = db.Column(db.String(20), default="pendiente", nullable=False)
+    referencia_pago = db.Column(db.String(255), nullable=True, unique=True)
+    wompi_transaction_id = db.Column(db.String(120), nullable=True)
+    metodo_pago = db.Column(db.String(40), nullable=True)
+    fecha_pago = db.Column(db.DateTime, nullable=True)
 
     donante = db.relationship("USUARIO", backref="donaciones")
     punto = db.relationship("PUNTO_RECOLECCION", backref="donaciones")
@@ -45,5 +50,10 @@ class DONACION(db.Model):
             "descripcion": self.descripcion,
             "fecha_donacion": self.fecha_donacion.isoformat(),
             "checksum": self.checksum,
+            "estado_pago": self.estado_pago,
+            "referencia_pago": self.referencia_pago,
+            "wompi_transaction_id": self.wompi_transaction_id,
+            "metodo_pago": self.metodo_pago,
+            "fecha_pago": self.fecha_pago.isoformat() if self.fecha_pago else None,
         }
 

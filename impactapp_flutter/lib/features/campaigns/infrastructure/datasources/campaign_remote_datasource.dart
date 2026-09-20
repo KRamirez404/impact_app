@@ -3,6 +3,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/campaign_model.dart';
+import '../models/donation_checkout_model.dart';
 import '../models/donation_model.dart';
 import '../models/donation_with_campaign_model.dart';
 import '../models/donor_with_donation_model.dart';
@@ -69,6 +70,18 @@ class CampaignRemoteDataSource {
 
   Future<DonationModel> donate(Map<String, dynamic> payload) async {
     final response = await _dio.post(ApiConstants.donations, data: payload);
+    return DonationModel.fromJson(_safeMap(response.data));
+  }
+
+  Future<DonationCheckoutModel> createDonationCheckout(
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _dio.post(ApiConstants.donationCheckout, data: payload);
+    return DonationCheckoutModel.fromJson(_safeMap(response.data));
+  }
+
+  Future<DonationModel> getDonationStatus(int donationId) async {
+    final response = await _dio.get(ApiConstants.donationStatus(donationId));
     return DonationModel.fromJson(_safeMap(response.data));
   }
 

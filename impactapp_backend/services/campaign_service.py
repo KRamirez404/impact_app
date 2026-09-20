@@ -10,7 +10,9 @@ def recalculate_campaign_progress(campania: CAMPAÑA):
         return
 
     total = db.session.query(db.func.sum(DONACION.monto_estimado)).filter(
-        DONACION.id_campania == campania.id_campania, DONACION.tipo == "economica"
+        DONACION.id_campania == campania.id_campania,
+        DONACION.tipo == "economica",
+        DONACION.estado_pago == "aprobada",
     ).scalar() or Decimal("0.00")
 
     progress = (Decimal(total) / Decimal(campania.meta_monetaria)) * Decimal("100")

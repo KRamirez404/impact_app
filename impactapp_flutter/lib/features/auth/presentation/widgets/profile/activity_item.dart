@@ -11,6 +11,7 @@ class ProfileActivityItem {
     this.nuevosAvances = 0,
     this.totalAvances = 0,
     this.openCampaignDetail = false,
+    this.paymentStatus,
   });
 
   final String title;
@@ -24,4 +25,5 @@ class ProfileActivityItem {
   final int nuevosAvances;
   final int totalAvances;
   final bool openCampaignDetail;
+  final String? paymentStatus;
 }

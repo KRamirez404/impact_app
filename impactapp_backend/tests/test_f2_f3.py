@@ -151,7 +151,7 @@ def test_audit_log_created_on_register_login_donation(client):
 
     client.post(
         "/api/donations",
-        json={"id_campania": 1, "tipo": "economica", "monto_estimado": 100},
+        json={"id_campania": 1, "tipo": "alimentos", "monto_estimado": 100},
         headers={"Authorization": f"Bearer {token}"},
     )
 
@@ -169,7 +169,7 @@ def test_donation_checksum_detects_tampering(client):
 
     resp = client.post(
         "/api/donations",
-        json={"id_campania": 1, "tipo": "economica", "monto_estimado": 500},
+        json={"id_campania": 1, "tipo": "alimentos", "monto_estimado": 500},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 201
