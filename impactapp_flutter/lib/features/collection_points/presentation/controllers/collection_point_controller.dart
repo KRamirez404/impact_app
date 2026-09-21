@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/entities/collection_point_entity.dart';
 import '../../domain/usecases/create_collection_point_usecase.dart';
 import '../../domain/usecases/get_collection_points_usecase.dart';
@@ -24,7 +25,7 @@ class CollectionPointController extends GetxController {
       isLoading.value = true;
       points.assignAll(await getCollectionPointsUseCase(campaignId));
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoading.value = false;
     }
@@ -38,7 +39,7 @@ class CollectionPointController extends GetxController {
       await load(payload['id_campania'] as int);
       Get.back();
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoading.value = false;
     }

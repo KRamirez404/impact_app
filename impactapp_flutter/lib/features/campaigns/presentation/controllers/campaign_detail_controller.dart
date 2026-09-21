@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/entities/campaign_entity.dart';
 import '../../domain/entities/donation_checkout_entity.dart';
 import '../../domain/usecases/create_donation_checkout_usecase.dart';
@@ -43,7 +44,7 @@ class CampaignDetailController extends GetxController {
       isLoading.value = true;
       campaign.value = await getCampaignDetailUseCase(id);
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoading.value = false;
     }
@@ -61,7 +62,7 @@ class CampaignDetailController extends GetxController {
       }
       _ok('Donación registrada');
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoading.value = false;
     }
@@ -79,7 +80,7 @@ class CampaignDetailController extends GetxController {
         'descripcion': 'Donación económica en línea',
       });
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
       return null;
     } finally {
       isLoading.value = false;
@@ -91,7 +92,7 @@ class CampaignDetailController extends GetxController {
       final donation = await getDonationStatusUseCase(donationId);
       return donation.estadoPago;
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
       return 'pendiente';
     }
   }
@@ -116,7 +117,7 @@ class CampaignDetailController extends GetxController {
         _syncCampaignLists(updatedCampaign);
       }
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLiking.value = false;
     }

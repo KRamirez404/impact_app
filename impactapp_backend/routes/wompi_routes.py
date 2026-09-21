@@ -18,7 +18,15 @@ wompi_bp = Blueprint("wompi_bp", __name__, url_prefix="/api")
 @require_role("donante")
 def create_donation_checkout():
     if not wompi_service.is_configured():
-        return jsonify({"error": "La pasarela de pagos no está configurada"}), 503
+        return (
+            jsonify(
+                {
+                    "error": "Las donaciones en línea no están disponibles en este "
+                    "momento. Intenta más tarde."
+                }
+            ),
+            503,
+        )
 
     data = request.get_json() or {}
     campaign_id = data.get("id_campania")

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/constants/storage_keys.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
@@ -98,7 +99,7 @@ class AuthController extends GetxController {
       await Get.offAllNamed(nextRoute);
       showSuccess('Bienvenido a ImpactApp');
     } catch (e) {
-      showError(e.toString());
+      showError(friendlyError(e));
     } finally {
       isLoading.value = false;
     }
@@ -127,7 +128,7 @@ class AuthController extends GetxController {
       showSuccess('Registro exitoso');
       Get.offAllNamed(AppRoutes.login);
     } catch (e) {
-      showError(e.toString());
+      showError(friendlyError(e));
     } finally {
       isLoading.value = false;
     }
@@ -146,7 +147,7 @@ class AuthController extends GetxController {
       );
       return true;
     } catch (e) {
-      showError(e.toString());
+      showError(friendlyError(e));
       return false;
     }
   }
@@ -179,7 +180,7 @@ class AuthController extends GetxController {
       user.value = updatedUser;
       return true;
     } catch (e) {
-      showError(e.toString());
+      showError(friendlyError(e));
       return false;
     } finally {
       isUpdatingProfile.value = false;

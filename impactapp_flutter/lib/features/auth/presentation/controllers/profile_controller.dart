@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../../../campaigns/domain/entities/donation_with_campaign_entity.dart';
 import '../../../campaigns/domain/usecases/get_my_campaigns_usecase.dart';
@@ -33,7 +34,7 @@ class ProfileController extends GetxController {
       isLoadingCampaigns.value = true;
       myCampaigns.assignAll(await getMyCampaignsUseCase());
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoadingCampaigns.value = false;
     }
@@ -44,7 +45,7 @@ class ProfileController extends GetxController {
       isLoadingDonations.value = true;
       myDonations.assignAll(await getMyDonationsUseCase());
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoadingDonations.value = false;
     }

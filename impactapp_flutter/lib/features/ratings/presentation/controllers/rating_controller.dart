@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/usecases/rate_campaign_usecase.dart';
 
 class RatingController extends GetxController {
@@ -26,7 +27,7 @@ class RatingController extends GetxController {
       _ok('Valoración registrada');
       Get.back();
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoading.value = false;
     }

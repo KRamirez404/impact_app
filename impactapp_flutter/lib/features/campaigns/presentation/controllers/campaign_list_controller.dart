@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/entities/campaign_entity.dart';
 import '../../domain/usecases/create_campaign_usecase.dart';
 import '../../domain/usecases/get_campaigns_usecase.dart';
@@ -89,7 +90,7 @@ class CampaignListController extends GetxController {
       campaigns.assignAll(result);
       cities.assignAll(result.map((c) => c.ciudadNombre).toSet().toList()..sort());
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoading.value = false;
     }
@@ -110,7 +111,7 @@ class CampaignListController extends GetxController {
       _ok('Campaña creada');
       return campaign;
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
       return null;
     } finally {
       isLoading.value = false;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../campaigns/domain/entities/top_donor_entity.dart';
 import '../../../campaigns/domain/usecases/get_top_donors_usecase.dart';
 
@@ -24,7 +25,7 @@ class HomeController extends GetxController {
       isLoadingTopDonors.value = true;
       topDonors.assignAll(await getTopDonorsUseCase(limit: 5));
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoadingTopDonors.value = false;
     }

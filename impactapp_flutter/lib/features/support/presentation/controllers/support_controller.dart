@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../campaigns/domain/usecases/get_campaign_detail_usecase.dart';
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../../domain/usecases/approve_campaign_usecase.dart';
@@ -53,18 +53,9 @@ class SupportController extends GetxController with WidgetsBindingObserver {
   bool _isRefreshing = false;
 
   void _showError(Object e) {
-    var message = e.toString();
-    if (e is DioException) {
-      final data = e.response?.data;
-      if (data is Map && data['error'] != null) {
-        message = data['error'].toString();
-      } else if (e.response?.statusCode != null) {
-        message = 'No se pudo completar la acción (${e.response?.statusCode})';
-      }
-    }
     Get.snackbar(
       'Error',
-      message,
+      friendlyError(e),
       backgroundColor: const Color(0xFFD32F2F),
       colorText: const Color(0xFFFFFFFF),
     );

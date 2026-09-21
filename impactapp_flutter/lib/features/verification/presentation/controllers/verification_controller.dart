@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/usecases/upload_support_usecase.dart';
 
 class VerificationController extends GetxController {
@@ -30,7 +31,7 @@ class VerificationController extends GetxController {
       _ok('Soporte cargado correctamente');
       Get.back();
     } catch (e) {
-      _err(e.toString());
+      _err(friendlyError(e));
     } finally {
       isLoading.value = false;
     }

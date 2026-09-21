@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/constants/storage_keys.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../domain/repositories/campaign_repository.dart';
 import '../controllers/campaign_list_controller.dart';
@@ -177,7 +178,7 @@ class _CreateCampaignPageState extends State<CreateCampaignPage> {
       Get.offAllNamed(AppRoutes.home);
     } catch (e) {
       Get.snackbar(
-        'Error', e.toString(),
+        'Error', friendlyError(e),
         backgroundColor: Colors.red, colorText: Colors.white,
       );
     } finally {
