@@ -300,3 +300,47 @@ def test_webhook_missing_reference_is_ignored(client, wompi_config):
     payload["data"]["transaction"].pop("reference")
     resp = client.post("/api/webhooks/wompi", json=payload)
     assert resp.status_code == 200
+
+
+def test_compute_event_checksum_matches_manual_hash():
+    properties = ["transaction.id", "transaction.status", "transaction.amount_in_cents"]
+    data = {"transaction": {"id": "T1", "status": "APPROVED", "amount_in_cents": 50000}}
+    timestamp = 1700000000
+    expected = hashlib.sha256(
+        f"T1APPROVED50000{timestamp}{EVENTS_SECRET}".encode("utf-8")
+    ).hexdigest()
+    assert (
+        wompi_service.compute_event_checksum(
+            properties, data, timestamp, EVENTS_SECRET
+        )
+        == expected
+    )
+
+
+def test_build_event_passes_verification(client, wompi_config):
+    event = wompi_service.build_event(
+        reference="REF-1",
+        status="APPROVED",
+        amount_in_cents=50000,
+        secret=EVENTS_SECRET,
+        timestamp=1700000000,
+    )
+    assert event["event"] == "transaction.updated"
+    assert event["environment"] == "test"
+    with app.app_context():
+        assert wompi_service.verify_event_checksum(event) is True
+
+
+def test_build_event_drives_webhook_approval(client, wompi_config):
+    _, token = _token(client)
+    donation = _checkout(client, token, amount=50000).get_json()
+    event = wompi_service.build_event(
+        reference=donation["referencia"],
+        status="APPROVED",
+        amount_in_cents=5000000,
+        secret=EVENTS_SECRET,
+    )
+    resp = client.post("/api/webhooks/wompi", json=event)
+    assert resp.status_code == 200
+    with app.app_context():
+        assert DONACION.query.get(donation["id_donacion"]).estado_pago == "aprobada"

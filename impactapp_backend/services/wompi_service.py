@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import secrets
+import time
 import urllib.error
 import urllib.request
 from urllib.parse import urlencode
@@ -98,6 +99,51 @@ def _extract_value(data: dict, dotted_key: str):
     return value
 
 
+def compute_event_checksum(
+    properties: list[str], data: dict, timestamp, secret: str
+) -> str:
+    parts = []
+    for prop in properties:
+        value = _extract_value(data, prop)
+        parts.append("" if value is None else str(value))
+    parts.append(str(timestamp))
+    parts.append(secret)
+    return hashlib.sha256("".join(parts).encode("utf-8")).hexdigest()
+
+
+def build_event(
+    *,
+    reference: str,
+    status: str,
+    amount_in_cents: int,
+    secret: str,
+    transaction_id: str | None = None,
+    timestamp: int | None = None,
+    environment: str = "test",
+    payment_method_type: str = "CARD",
+) -> dict:
+    timestamp = int(timestamp if timestamp is not None else time.time())
+    transaction_id = transaction_id or f"SIM-{timestamp}-{secrets.token_hex(4)}"
+    properties = ["transaction.id", "transaction.status", "transaction.amount_in_cents"]
+    data = {
+        "transaction": {
+            "id": transaction_id,
+            "status": status.upper(),
+            "amount_in_cents": int(amount_in_cents),
+            "reference": reference,
+            "payment_method_type": payment_method_type,
+        }
+    }
+    checksum = compute_event_checksum(properties, data, timestamp, secret)
+    return {
+        "event": "transaction.updated",
+        "data": data,
+        "environment": environment,
+        "signature": {"properties": properties, "checksum": checksum},
+        "timestamp": timestamp,
+    }
+
+
 def verify_event_checksum(payload: dict) -> bool:
     config = current_app.config
     secret = config.get("WOMPI_EVENTS_SECRET")
@@ -107,14 +153,9 @@ def verify_event_checksum(payload: dict) -> bool:
     if not secret or not checksum:
         return False
 
-    data = payload.get("data") or {}
-    parts = []
-    for prop in properties:
-        value = _extract_value(data, prop)
-        parts.append("" if value is None else str(value))
-    parts.append(str(payload.get("timestamp", "")))
-    parts.append(secret)
-    expected = hashlib.sha256("".join(parts).encode("utf-8")).hexdigest()
+    expected = compute_event_checksum(
+        properties, payload.get("data") or {}, payload.get("timestamp", ""), secret
+    )
     return hmac.compare_digest(expected.lower(), str(checksum).lower())
 
 

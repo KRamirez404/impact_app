@@ -449,6 +449,24 @@ WOMPI_API_URL=https://sandbox.wompi.co/v1
 
 > Con llaves de Sandbox **no se cobra dinero real**. Para cobros reales se requiere la cuenta de comercio Wompi aprobada y cambiar a llaves `pub_prod_`/`prv_prod_`, `WOMPI_ENV=prod` y `WOMPI_API_URL=https://production.wompi.co/v1`. Registra la URL de eventos de producción en el Dashboard de Wompi.
 
+### Probar pagos en local sin túnel ni llaves reales
+
+El script `impactapp_backend/scripts/simulate_wompi_webhook.py` crea una donación de prueba en la BD y envía un evento `transaction.updated` **firmado** con `WOMPI_EVENTS_SECRET`, reemplazando el webhook de Wompi para pruebas locales.
+
+```bash
+# 1. Tener un donante registrado (p. ej. admin@impactapp.co) y una campaña activa (id 1)
+# 2. Crear donación pendiente + simular pago aprobado en un solo paso
+docker compose exec backend python scripts/simulate_wompi_webhook.py run \
+  --campaign-id 1 --donante-correo admin@impactapp.co --amount 50000 --status APPROVED
+
+# Alternativa: aprobar la última donación pendiente (equivalente a make simulate-webhook)
+docker compose exec backend python scripts/simulate_wompi_webhook.py notify --latest --status APPROVED
+```
+
+Estados válidos: `APPROVED`, `DECLINED`, `ERROR`, `VOIDED`, `PENDING`. El script se niega a ejecutarse si `WOMPI_ENV=prod` salvo que uses `--force`.
+
+Para la prueba de UI con la pasarela real (Sandbox) sí se necesitan las llaves `pub_test_`/`test_integrity_`, y el webhook requiere exponer el backend con un túnel (`cloudflared tunnel --url http://localhost:5000`) o desplegar en el VPS.
+
 ---
 
 ## Despliegue en producción (VPS)
