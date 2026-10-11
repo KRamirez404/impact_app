@@ -5,7 +5,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from models import CAMPAÑA, SOPORTE, db
 from services.campaign_service import update_campaign_status_based_on_support
-from services.file_service import is_allowed_file, save_upload
+from services.file_service import save_upload
 
 support_bp = Blueprint("support_bp", __name__, url_prefix="/api/supports")
 
@@ -33,9 +33,10 @@ def create_support():
 
     if file:
         upload_path = os.path.join(current_app.root_path, current_app.config["UPLOAD_FOLDER"])
-        if not is_allowed_file(file.filename or "", file.content_type):
-            return jsonify({"error": "Tipo de archivo no permitido"}), 400
-        url_o_ruta = save_upload(file, upload_path)
+        try:
+            url_o_ruta = save_upload(file, upload_path)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
     elif not url_o_ruta:
         return jsonify({"error": "Debe adjuntar archivo o url_o_ruta"}), 400
 
@@ -57,4 +58,3 @@ def create_support():
 def get_supports(campaign_id: int):
     supports = SOPORTE.query.filter_by(id_campania=campaign_id).all()
     return jsonify([support.to_dict() for support in supports]), 200
-
