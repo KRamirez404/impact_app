@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../domain/entities/campaign_entity.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../ratings/domain/usecases/rate_campaign_usecase.dart';
 import '../controllers/campaign_detail_controller.dart';
@@ -114,6 +117,34 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
     );
   }
 
+  Future<void> _shareCampaign(CampaignEntity campaign) async {
+    final texto = 'Apoya "${campaign.titulo}" en ImpactApp.\n'
+        '${campaign.descripcion}\n'
+        'Meta: ${_formatMoney(campaign.metaMonetaria)} · '
+        '${campaign.ciudadNombre.isNotEmpty ? campaign.ciudadNombre : 'Colombia'}';
+    try {
+      await Share.share(texto, subject: campaign.titulo);
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: texto));
+      Get.snackbar(
+        'Listo',
+        'El texto de la campaña se copió al portapapeles',
+        backgroundColor: const Color(0xFF1976D2),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  String _formatMoney(double amount) {
+    if (amount >= 1000000) {
+      return '\$${(amount / 1000000).toStringAsFixed(1).replaceAll('.', ',')}M';
+    }
+    if (amount >= 1000) {
+      return '\$${(amount / 1000).toStringAsFixed(0)}.000';
+    }
+    return '\$${amount.toStringAsFixed(0)}';
+  }
+
   Future<void> _showRateCampaignDialog(int campaignId) {
     final rateCampaignUseCase = Get.find<RateCampaignUseCase>();
     return showRateCampaignDialog(
@@ -208,6 +239,7 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                     onLike: () => controller.toggleLike(id),
                     onComments: () => _tabController.animateTo(1),
                     onRate: () => _showRateCampaignDialog(id),
+                    onShare: () => _shareCampaign(campaign),
                   ),
                   if (campaign.estado == 'finalizada' || 
                       campaign.porcentajeAvance >= 100 || 

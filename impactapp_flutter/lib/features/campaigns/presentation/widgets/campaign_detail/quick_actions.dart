@@ -11,6 +11,7 @@ class QuickActions extends StatelessWidget {
     required this.onLike,
     required this.onComments,
     required this.onRate,
+    required this.onShare,
   });
 
   final int likesCount;
@@ -20,6 +21,7 @@ class QuickActions extends StatelessWidget {
   final VoidCallback onLike;
   final VoidCallback onComments;
   final VoidCallback onRate;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +51,7 @@ class QuickActions extends StatelessWidget {
         QuickActionButton(
           icon: Icons.share_outlined,
           label: 'Compartir',
-          onTap: () {},
+          onTap: onShare,
         ),
       ],
     );
