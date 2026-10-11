@@ -1,18 +1,25 @@
 # Informe de Seguridad y Usabilidad — ImpactApp
 
-Anexo técnico que respalda los criterios de calidad del prototipo mediante dos instrumentos:
+Anexo de trabajo para los criterios de calidad del prototipo mediante dos instrumentos:
 1. **SUS** (System Usability Scale) sobre la interfaz Flutter.
 2. **Chequeo OWASP Top 10** sobre el backend Flask.
 
-> Nota: los datos de la escala SUS corresponden a una prueba moderada realizada con usuarios representativos del perfil objetivo (estudiantes universitarios entre 18 y 25 años) para fines de sustentación. Los hallazgos OWASP reflejan el estado del código en la rama evaluada.
+> Revisión 11/10/2026: la procedencia de los datos SUS no está acreditada. `Plan.txt`
+> solicitaba un informe ficticio, mientras este documento los presentaba como una
+> prueba real. Se conserva la tabla heredada para revisión, sin certificar que hubo
+> participantes ni utilizarla como resultado de aceptación. La tabla OWASP es una
+> valoración histórica y no acredita el cierre de los hallazgos actuales registrados
+> en `docs/verificacion_plan.md`.
 
 ---
 
 ## 1. System Usability Scale (SUS)
 
 ### Instrumento
-Se aplicó el cuestionario SUS estándar de 10 ítems (escala 1–5) a **10 participantes** tras completar 5 tareas guiadas:
-registro con selección de rol, creación de campaña (organizador), donación (donante), consulta de "Mis Donaciones" y ajuste de perfil.
+La tabla heredada contiene 10 columnas de respuestas SUS (escala 1–5). El escenario
+descrito era registro, creación de campaña, donación, consulta de aportes y perfil.
+La ejecución con participantes, su contexto y observaciones siguen pendientes de
+acreditación. La evaluación final seguirá los perfiles definidos en el anteproyecto.
 
 | Ítem SUS | P1 | P2 | P3 | P4 | P5 | P6 | P7 | P8 | P9 | P10 | Prom. |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -31,9 +38,13 @@ registro con selección de rol, creación de campaña (organizador), donación (
 Puntaje SUS = Σ(contribuciones de cada participante) / N, con contribución por participante =
 (ímpar − 1) + (5 − par), multiplicada por 2.5 (rango 0–100).
 
-Resultado por participante (aprox.): P1=92.5, P2=80.0, P3=82.5, P4=90.0, P5=92.5, P6=80.0, P7=90.0, P8=92.5, P9=85.0, P10=95.0.
+El promedio calculado a partir de la tabla heredada es **91,25/100**, no el 88/100
+declarado anteriormente. Es una corrección aritmética de datos sin procedencia
+acreditada, no un resultado de evaluación real ni una calificación del producto.
 
-**Puntaje SUS promedio = 88.0 / 100** → categoría **"Excelente"** (rango > 80.3 según Bangor et al.), con calificación **A**.
+Para cerrar AC-06: registrar participación voluntaria, tareas por rol, contexto y
+versión evaluada, respuestas anonimizadas, observaciones cualitativas y cálculo
+reproducible. Publicar resultados agregados con las limitaciones de la muestra.
 
 ---
 
@@ -53,5 +64,8 @@ Resultado por participante (aprox.): P1=92.5, P2=80.0, P3=82.5, P4=90.0, P5=92.5
 | **A10 – Falsificación de solicitudes del lado del servidor (SSRF)** | ✅ No aplica en flujos actuales | Las URL de soportes son referenciales; la subida de archivos valida MIME/extensión real (`file_service.py`). |
 
 ### Resumen
-- **Controles implementados:** 8/10 categorías mitigadas, 2 con recomendaciones de trabajo futuro.
+- **Valoración histórica:** el informe anterior declaraba 8/10 categorías mitigadas.
+  Ese conteo no se considera vigente ni demuestra ausencia de vulnerabilidades.
+  Se requieren pruebas de los controles y cierre de hallazgos de acceso, documentos,
+  sesiones, auditoría y pagos conforme a `Plan_Cierre.txt`.
 - **Fortalecimiento adicional recomendado:** cifrado de la base de datos, TLS, auditoría de dependencias y control de versionado de archivos subidos.

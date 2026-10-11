@@ -109,11 +109,13 @@ Prefijo `/api`. Públicas: `GET /health`, `/auth/privacy-policy`, `GET /campaign
 - `uploads/` e `instance/` están en `.gitignore`; no commitear evidencias ni la BD.
 - Donaciones económicas usan Wompi Checkout Web: `POST /api/donations/checkout` + webhook `POST /api/webhooks/wompi`. Solo `estado_pago="aprobada"` cuenta para la meta. Las donaciones en especie siguen por `POST /api/donations`.
 - Wompi corre en Sandbox por defecto (`WOMPI_*` en `.env`); Sandbox no cobra dinero real. Ver `README.md` para el cambio a producción.
-- No hay carpetas `android/`/`ios/` completas en el repo; el diseño no es responsivo (tamaños fijos). Ver plan de migración en `README.md`.
+- Existen proyectos `android/` e `ios/`; la adaptación es parcial y la entrega móvil requiere configuración y verificación en dispositivos. Ver `Plan_Cierre.txt` y `README.md`.
 - `JWT_SECRET_KEY` se autogenera si falta, pero `.env` debe definirla para sesiones estables.
 
 ## Documentación
 
 - `README.md` — stack, endpoints, estructura, troubleshooting, trabajo futuro.
 - `docs/trazabilidad_requisitos.md` — mapeo requisitos → implementación.
+- `requerimientos.pdf` — especificación RF-01..12 y RNF-01..04; los códigos históricos de Plan.txt son distintos.
+- `Plan_Cierre.txt` — avance de cierre; `docs/decisiones_cierre.md` — decisiones financieras pendientes.
 - `docs/informe_seguridad_usabilidad.md` — seguridad y usabilidad.

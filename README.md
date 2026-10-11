@@ -63,6 +63,8 @@ Interfaz inspirada en diseño mobile-first (412×917px) con los siguientes scree
 - `lld` linker (`sudo apt install lld-18`)
 - Python 3.12+ (solo para backend local)
 - Android SDK + Java 17+ (solo para compilar el APK)
+- libmagic para detectar el contenido de archivos (instalado en las imágenes
+  Docker; para backend local en Debian/Ubuntu: `sudo apt install libmagic1`)
 
 ---
 
@@ -93,7 +95,9 @@ flutter run -d android --dart-define=API_BASE_URL=http://10.0.2.2:5000/api
 
 ## Pruebas (backend)
 
-La suite `pytest` valida registro, autenticación, asignación de roles, control de acceso, verificación de identidad, cuenta de recaudo, privacidad (Ley 1581) y auditoría/checksum.
+La suite `pytest` valida registro, autenticación, perfil/ciudad, asignación de roles,
+control de acceso, verificación documental, cuenta de recaudo, anonimización,
+archivos y auditoría/checksum. No sustituye la evaluación integral de privacidad.
 
 ```bash
 make test                        # dentro del contenedor
@@ -101,6 +105,20 @@ docker compose exec backend python -m pytest tests -q   # alternativa
 ```
 
 Anexos: [`docs/trazabilidad_requisitos.md`](docs/trazabilidad_requisitos.md) y [`docs/informe_seguridad_usabilidad.md`](docs/informe_seguridad_usabilidad.md).
+
+Verificación del plan y correcciones de cierre:
+[`docs/verificacion_plan.md`](docs/verificacion_plan.md). El 11/10/2026 se
+ejecutaron **95 casos backend aprobados** con Python 3.12 y SQLite aislado,
+incluyendo **31 casos de validación de archivos**. Posteriormente se construyó
+y levantó Docker Compose y `make test-postgres` aprobó los **95 casos** en
+PostgreSQL 16.15, usando la base aislada `impactapp_test`. Ambos servicios
+quedaron saludables. La imagen de producción no se construyó en esta verificación.
+
+Después de detener los servicios se completaron registro/perfil: **140 casos
+backend aprobados en SQLite** y **45 pruebas Flutter aprobadas**. Estos cambios
+nuevos todavía requieren prueba de integración PostgreSQL/Android. La matriz
+vigente usa los códigos del PDF: [`docs/trazabilidad_requisitos.md`](docs/trazabilidad_requisitos.md).
+Decisiones de pagos pendientes: [`docs/decisiones_cierre.md`](docs/decisiones_cierre.md).
 
 ---
 
@@ -204,7 +222,7 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | `GET` | `/api/auth/privacy-policy` | — | Política de tratamiento de datos (Ley 1581) |
 | `POST` | `/api/auth/register` | — | Registrar usuario (rol `donante`/`organizador`, acepta `acepta_tratamiento`) |
 | `POST` | `/api/auth/login` | — | Iniciar sesión |
-| `GET` | `/api/auth/profile` | JWT | Perfil del usuario |
+| `GET` | `/api/auth/me` | JWT | Perfil del usuario, incluida ciudad |
 | `PUT` | `/api/auth/me` | JWT | Actualizar perfil |
 | `DELETE` | `/api/auth/me` | JWT | Suprimir/anonimizar datos personales |
 | `GET` | `/api/campaigns` | — | Listar campañas (filtros: ciudad, categoria, tipo_ayuda, estado) |
@@ -233,6 +251,11 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | `GET` | `/api/collection-points/:campaign_id` | — | Puntos de recolección |
 | `POST` | `/api/collection-points` | JWT | Crear punto de recolección |
 | `POST` | `/api/likes/toggle` | JWT | Dar o quitar like |
+
+El perfil admite `id_ciudad` opcional, obtenido de `GET /api/cities`; `null`
+elimina la selección. Las respuestas de registro, login y perfil incluyen
+`id_ciudad` y el objeto `ciudad`. La migración añade el campo a bases existentes.
+Nombres y apellidos se editan por separado para conservar nombres compuestos.
 
 ---
 
@@ -356,30 +379,32 @@ Usa `get_storage` en lugar de `shared_preferences` (equivalente funcional, más 
 - Almacena `token` y `user` (JSON) vía `StorageKeys`
 - Usado en: `AuthRepositoryImpl` (persistir sesión), `DioClient` (leer token)
 
-### Optimización para Móvil ❌
+### Estado de compatibilidad móvil
 
-El proyecto **no está optimizado para Android/iOS**:
+El proyecto tiene bases nativas Android/iOS y adaptación parcial; la entrega
+requiere configuración, compilación e instalación verificadas:
 
 | Aspecto | Estado |
 |---|---|
-| Carpetas `android/` e `ios/` | ❌ No existen |
-| Diseño responsivo | ❌ Tamaños fijos (`width: 378.4`, `width: 340`, `height: 36`) |
-| `MediaQuery` / `LayoutBuilder` | ❌ No se usan |
+| Carpetas `android/` e `ios/` | ✅ Existen |
+| Diseño responsivo | ⚠️ Parcial; persisten dimensiones fijas y falta prueba en dispositivos |
+| Medidas relativas / restricciones de ancho | ⚠️ Presentes en parte de la interfaz |
 | Adaptación por plataforma | ❌ Sin `Platform` ni `TargetPlatform` |
 | `SafeArea` / ScrollViews | ✅ Correcto |
 | Touch gestures | ⚠️ Parcial |
 
-> **Nota:** El Dockerfile compila para `web` y la ejecución principal es `linux desktop`. No hay soporte nativo para dispositivos móviles.
+> **Nota:** La presencia de proyectos nativos no acredita un APK funcional.
+> Las pruebas Flutter locales no sustituyen la ejecución Android. Ver etapa 5 de `Plan_Cierre.txt`.
 
 ---
 
 ## Plan de migración a Móvil (Android/iOS)
 
-### 1. Agregar plataformas
+### 1. Verificar herramientas y plataformas existentes
 
 ```bash
 cd impactapp_flutter
-flutter create --platforms=android,ios .
+flutter doctor
 ```
 
 ### 2. Refactorizar a diseño responsivo
