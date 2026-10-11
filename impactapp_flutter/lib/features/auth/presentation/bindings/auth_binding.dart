@@ -4,6 +4,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/update_profile_usecase.dart';
+import '../../domain/usecases/get_profile_cities_usecase.dart';
 import '../../infrastructure/datasources/auth_remote_datasource.dart';
 import '../../infrastructure/repositories/auth_repository_impl.dart';
 import '../controllers/auth_controller.dart';
@@ -25,11 +26,15 @@ class AuthBinding extends Bindings {
     Get.lazyPut<UpdateProfileUseCase>(
       () => UpdateProfileUseCase(Get.find<AuthRepository>()),
     );
+    Get.lazyPut<GetProfileCitiesUseCase>(
+      () => GetProfileCitiesUseCase(Get.find<AuthRepository>()),
+    );
     Get.lazyPut<AuthController>(
       () => AuthController(
         loginUseCase: Get.find<LoginUseCase>(),
         registerUseCase: Get.find<RegisterUseCase>(),
         updateProfileUseCase: Get.find<UpdateProfileUseCase>(),
+        getProfileCitiesUseCase: Get.find<GetProfileCitiesUseCase>(),
         repository: Get.find<AuthRepository>(),
         storage: GetStorage(),
       ),

@@ -12,6 +12,7 @@ class UpdateProfileUseCase {
     String? telefono,
     String? biografia,
     String? fotoPerfil,
+    int? idCiudad,
   }) {
     return repository.updateProfile(
       nombre: nombre,
@@ -20,6 +21,7 @@ class UpdateProfileUseCase {
       telefono: telefono,
       biografia: biografia,
       fotoPerfil: fotoPerfil,
+      idCiudad: idCiudad,
     );
   }
 }

@@ -8,6 +8,8 @@ import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../controllers/auth_controller.dart';
+import '../../domain/entities/city_entity.dart';
+import '../../../../core/error/error_mapper.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -18,33 +20,41 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameCtrl = TextEditingController();
+  final _nombreCtrl = TextEditingController();
+  final _apellidoCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _bioCtrl = TextEditingController();
   final AuthController _controller = Get.find<AuthController>();
   XFile? _selectedImage;
+  List<CityEntity> _cities = [];
+  int? _selectedCityId;
+  bool _loadingCities = true;
+  String? _citiesError;
 
   @override
   void initState() {
     super.initState();
     final user = _controller.user.value;
     if (user != null) {
-      final fullName = '${user.nombre} ${user.apellido}'.trim();
-      _fullNameCtrl.text = fullName;
+      _nombreCtrl.text = user.nombre;
+      _apellidoCtrl.text = user.apellido;
+      _selectedCityId = user.idCiudad;
       _emailCtrl.text = user.correo;
       _phoneCtrl.text = user.telefono ?? '';
       _bioCtrl.text = user.biografia ?? '';
     }
-    _fullNameCtrl.addListener(_onNameChanged);
+    _nombreCtrl.addListener(_onNameChanged);
     _bioCtrl.addListener(_onBioChanged);
+    _loadCities();
   }
 
   @override
   void dispose() {
     _bioCtrl.removeListener(_onBioChanged);
-    _fullNameCtrl.removeListener(_onNameChanged);
-    _fullNameCtrl.dispose();
+    _nombreCtrl.removeListener(_onNameChanged);
+    _nombreCtrl.dispose();
+    _apellidoCtrl.dispose();
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
     _bioCtrl.dispose();
@@ -53,6 +63,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   void _onBioChanged() => setState(() {});
   void _onNameChanged() => setState(() {});
+
+  Future<void> _loadCities() async {
+    setState(() {
+      _loadingCities = true;
+      _citiesError = null;
+    });
+    try {
+      final cities = await _controller.getProfileCities();
+      if (!mounted) return;
+      setState(() => _cities = cities);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _citiesError = friendlyError(error));
+    } finally {
+      if (mounted) setState(() => _loadingCities = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,11 +111,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                                 const SizedBox(height: 16),
                                 _buildInputField(
-                                  controller: _fullNameCtrl,
-                                  label: 'Nombre completo',
-                                  hint: 'María González',
+                                  controller: _nombreCtrl,
+                                  label: 'Nombres',
+                                  hint: 'María Elena',
                                   icon: Icons.person_outline,
-                                  validator: (value) => Validators.requiredField(value, 'Nombre completo'),
+                                  validator: (value) => Validators.requiredField(value, 'Nombres', maxLength: 100),
+                                  isRequired: true,
+                                  textInputAction: TextInputAction.next,
+                                ),
+                                const SizedBox(height: 16),
+                                _buildInputField(
+                                  controller: _apellidoCtrl,
+                                  label: 'Apellidos',
+                                  hint: 'González Ramírez',
+                                  icon: Icons.person_outline,
+                                  validator: (value) => Validators.requiredField(value, 'Apellidos', maxLength: 100),
                                   isRequired: true,
                                   textInputAction: TextInputAction.next,
                                 ),
@@ -118,8 +155,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   hint: '+57 300 123 4567',
                                   icon: Icons.phone_outlined,
                                   keyboardType: TextInputType.phone,
+                                  validator: (value) => Validators.optionalText(value, 'Teléfono', 30),
                                   textInputAction: TextInputAction.next,
                                 ),
+                                const SizedBox(height: 16),
+                                _buildCityField(),
                                 const SizedBox(height: 24),
                                 _buildSectionTitle(
                                   icon: Icons.description_outlined,
@@ -227,8 +267,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             : CircleAvatar(
                                 backgroundColor: Colors.white.withValues(alpha: 0.15),
                                 child: Text(
-                                  _fullNameCtrl.text.isNotEmpty
-                                      ? _fullNameCtrl.text.trim().substring(0, 1).toUpperCase()
+                                  _nombreCtrl.text.trim().isNotEmpty
+                                      ? _nombreCtrl.text.trim().characters.first.toUpperCase()
                                       : 'I',
                                   style: const TextStyle(
                                     fontSize: 28,
@@ -273,12 +313,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
       children: [
         Icon(icon, size: 20, color: AppColors.primary),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
       ],
@@ -335,6 +377,39 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCityField() {
+    if (_loadingCities) {
+      return const LinearProgressIndicator(semanticsLabel: 'Cargando ciudades');
+    }
+    if (_citiesError != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_citiesError!, style: const TextStyle(color: AppColors.textSecondary)),
+          TextButton(onPressed: _loadCities, child: const Text('Reintentar ciudades')),
+        ],
+      );
+    }
+    return DropdownButtonFormField<int>(
+      initialValue: _cities.any((city) => city.idCiudad == _selectedCityId)
+          ? _selectedCityId
+          : 0,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'Ciudad (opcional)',
+        prefixIcon: Icon(Icons.location_city_outlined),
+      ),
+      items: [
+        const DropdownMenuItem(value: 0, child: Text('Sin ciudad')),
+        ..._cities.map((city) => DropdownMenuItem(
+          value: city.idCiudad,
+          child: Text(city.nombre),
+        )),
+      ],
+      onChanged: (value) => setState(() => _selectedCityId = value == 0 ? null : value),
     );
   }
 
@@ -421,13 +496,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Miembro desde',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              const Expanded(
+                child: Text(
+                  'Miembro desde',
+                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                ),
               ),
-              Text(
-                _formatMemberSince(fechaRegistro),
-                style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+              Flexible(
+                child: Text(
+                  _formatMemberSince(fechaRegistro),
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                ),
               ),
             ],
           ),
@@ -498,8 +578,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
-    final fullName = _fullNameCtrl.text.trim();
-    final parts = _splitFullName(fullName);
     final telefono = _phoneCtrl.text.trim();
     final biografia = _bioCtrl.text.trim();
 
@@ -516,26 +594,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
 
     final success = await _controller.updateProfile(
-      nombre: parts.$1,
-      apellido: parts.$2,
+      nombre: _nombreCtrl.text.trim(),
+      apellido: _apellidoCtrl.text.trim(),
       correo: _emailCtrl.text.trim(),
       telefono: telefono.isEmpty ? null : telefono,
       biografia: biografia.isEmpty ? null : biografia,
       fotoPerfil: fotoPerfilUrl,
+      idCiudad: _selectedCityId,
     );
     if (success && mounted) {
       Get.back();
       _controller.showSuccess('Perfil actualizado');
     }
-  }
-
-  (String, String) _splitFullName(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return ('', '');
-    final parts = trimmed.split(RegExp(r'\s+'));
-    final nombre = parts.first;
-    final apellido = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-    return (nombre, apellido);
   }
 
   String _formatMemberSince(String? isoDate) {

@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy.exc import IntegrityError
 
 from models import USUARIO, db
 from services.audit_service import registrar
@@ -8,9 +9,17 @@ from services.auth_service import (
     anonymize_user,
     login_user,
     register_user,
+    update_user_profile,
 )
 
 auth_bp = Blueprint("auth_bp", __name__, url_prefix="/api/auth")
+
+
+def _json_object():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        raise ValueError("Debe enviar un objeto JSON válido")
+    return data
 
 
 @auth_bp.get("/privacy-policy")
@@ -20,13 +29,8 @@ def privacy_policy():
 
 @auth_bp.post("/register")
 def register():
-    data = request.get_json() or {}
-    required = ["nombre", "apellido", "correo", "contrasena"]
-    missing = [field for field in required if not data.get(field)]
-    if missing:
-        return jsonify({"error": f"Campos faltantes: {', '.join(missing)}"}), 400
-
     try:
+        data = _json_object()
         user = register_user(data)
         registrar(
             id_usuario=user.id_usuario,
@@ -39,15 +43,23 @@ def register():
         return jsonify({"message": "Usuario registrado", "user": user.to_dict()}), 201
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "No se pudo registrar el usuario con estos datos"}), 400
 
 
 @auth_bp.post("/login")
 def login():
-    data = request.get_json() or {}
+    try:
+        data = _json_object()
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
     correo = data.get("correo")
     contrasena = data.get("contrasena")
-    if not correo or not contrasena:
+    if not isinstance(correo, str) or not isinstance(contrasena, str) or not correo.strip() or not contrasena:
         return jsonify({"error": "Correo y contraseña son requeridos"}), 400
+    if len(correo) > 150 or len(contrasena.encode("utf-8")) > 72:
+        return jsonify({"error": "Las credenciales superan la longitud permitida"}), 400
 
     try:
         token, user = login_user(correo, contrasena)
@@ -77,47 +89,14 @@ def me():
 def update_me():
     user_id = int(get_jwt_identity())
     user = USUARIO.query.get_or_404(user_id)
-    data = request.get_json() or {}
-
-    if "nombre" in data:
-        nombre = (data.get("nombre") or "").strip()
-        if not nombre:
-            return jsonify({"error": "Nombre es requerido"}), 400
-        user.nombre = nombre
-
-    if "apellido" in data:
-        user.apellido = (data.get("apellido") or "").strip()
-
-    if "correo" in data:
-        correo = (data.get("correo") or "").strip().lower()
-        if not correo:
-            return jsonify({"error": "Correo es requerido"}), 400
-        if correo != user.correo and USUARIO.query.filter_by(correo=correo).first():
-            return jsonify({"error": "El correo ya está registrado"}), 400
-        user.correo = correo
-
-    if "telefono" in data:
-        telefono = data.get("telefono")
-        if isinstance(telefono, str):
-            telefono = telefono.strip() or None
-        user.telefono = telefono
-
-    if "biografia" in data:
-        biografia = data.get("biografia")
-        if isinstance(biografia, str):
-            biografia = biografia.strip()
-            if len(biografia) > 500:
-                return jsonify({"error": "La biografía no puede superar 500 caracteres"}), 400
-            biografia = biografia or None
-        user.biografia = biografia
-
-    if "foto_perfil" in data:
-        foto_perfil = data.get("foto_perfil")
-        if isinstance(foto_perfil, str):
-            foto_perfil = foto_perfil.strip() or None
-        user.foto_perfil = foto_perfil
-
-    db.session.commit()
+    try:
+        data = _json_object()
+        update_user_profile(user, data)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "No se pudo actualizar el perfil con estos datos"}), 400
     return jsonify(user.to_dict()), 200
 
 

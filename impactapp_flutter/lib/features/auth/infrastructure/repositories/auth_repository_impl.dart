@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:get_storage/get_storage.dart';
 import '../../../../core/constants/storage_keys.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../domain/entities/city_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
 
@@ -58,6 +59,9 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<List<CityEntity>> getCities() => dataSource.getCities();
+
+  @override
   Future<UserEntity> updateProfile({
     required String nombre,
     required String apellido,
@@ -65,6 +69,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String? telefono,
     String? biografia,
     String? fotoPerfil,
+    int? idCiudad,
   }) async {
     final user = await dataSource.updateProfile(
       nombre: nombre,
@@ -73,6 +78,7 @@ class AuthRepositoryImpl implements AuthRepository {
       telefono: telefono,
       biografia: biografia,
       fotoPerfil: fotoPerfil,
+      idCiudad: idCiudad,
     );
     await storage.write(StorageKeys.user, jsonEncode(user.toJson()));
     return user;

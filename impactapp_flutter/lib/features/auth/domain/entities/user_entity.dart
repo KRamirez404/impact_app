@@ -4,6 +4,8 @@ class UserEntity {
   final String apellido;
   final String correo;
   final String? telefono;
+  final int? idCiudad;
+  final String? ciudadNombre;
   final String? biografia;
   final String? fotoPerfil;
   final String? fechaRegistro;
@@ -16,6 +18,8 @@ class UserEntity {
     required this.apellido,
     required this.correo,
     this.telefono,
+    this.idCiudad,
+    this.ciudadNombre,
     this.biografia,
     this.fotoPerfil,
     this.fechaRegistro,

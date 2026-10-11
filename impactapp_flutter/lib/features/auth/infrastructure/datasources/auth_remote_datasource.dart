@@ -3,6 +3,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/user_model.dart';
+import '../models/city_model.dart';
 
 class AuthRemoteDataSource {
   final Dio _dio = DioClient.instance.dio;
@@ -60,6 +61,16 @@ class AuthRemoteDataSource {
     return UserModel.fromJson(_safeData(response.data));
   }
 
+  Future<List<CityModel>> getCities() async {
+    final response = await _dio.get(ApiConstants.cities);
+    if (response.data is! List) {
+      throw ServerException('Respuesta inválida del servidor');
+    }
+    return (response.data as List)
+        .map((item) => CityModel.fromJson(_safeData(item)))
+        .toList();
+  }
+
   Future<UserModel> updateProfile({
     required String nombre,
     required String apellido,
@@ -67,6 +78,7 @@ class AuthRemoteDataSource {
     String? telefono,
     String? biografia,
     String? fotoPerfil,
+    int? idCiudad,
   }) async {
     final response = await _dio.put(
       ApiConstants.me,
@@ -77,6 +89,7 @@ class AuthRemoteDataSource {
         'telefono': telefono,
         'biografia': biografia,
         'foto_perfil': fotoPerfil,
+        'id_ciudad': idCiudad,
       },
     );
     return UserModel.fromJson(_safeData(response.data));

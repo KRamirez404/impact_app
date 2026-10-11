@@ -12,6 +12,8 @@ class USUARIO(db.Model):
     correo = db.Column(db.String(150), unique=True, nullable=False)
     contraseña_hash = db.Column(db.String(255), nullable=False)
     telefono = db.Column(db.String(30), nullable=True)
+    id_ciudad = db.Column(db.Integer, db.ForeignKey("CIUDAD.id_ciudad"), nullable=True)
+    ciudad = db.relationship("CIUDAD")
     biografia = db.Column(db.String(500), nullable=True)
     rol = db.Column(
         db.Enum(
@@ -48,6 +50,8 @@ class USUARIO(db.Model):
             "apellido": self.apellido,
             "correo": self.correo,
             "telefono": self.telefono,
+            "id_ciudad": self.id_ciudad,
+            "ciudad": self.ciudad.to_dict() if self.ciudad else None,
             "biografia": self.biografia,
             "foto_perfil": self.foto_perfil,
             "rol": self.rol,

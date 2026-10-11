@@ -133,13 +133,13 @@ class RegisterPage extends StatelessWidget {
         CustomTextField(
           controller: _nombreCtrl,
           label: 'Nombre',
-          validator: (v) => Validators.requiredField(v, 'Nombre'),
+          validator: (v) => Validators.requiredField(v, 'Nombre', maxLength: 100),
         ),
         const SizedBox(height: 16),
         CustomTextField(
           controller: _apellidoCtrl,
           label: 'Apellido',
-          validator: (v) => Validators.requiredField(v, 'Apellido'),
+          validator: (v) => Validators.requiredField(v, 'Apellido', maxLength: 100),
         ),
         const SizedBox(height: 16),
         CustomTextField(
@@ -151,6 +151,7 @@ class RegisterPage extends StatelessWidget {
         CustomTextField(
           controller: _telefonoCtrl,
           label: 'Teléfono',
+          validator: (v) => Validators.optionalText(v, 'Teléfono', 30),
         ),
         const SizedBox(height: 16),
         Obx(
@@ -255,7 +256,7 @@ class RegisterPage extends StatelessWidget {
                         nombre: _nombreCtrl.text.trim(),
                         apellido: _apellidoCtrl.text.trim(),
                         correo: _correoCtrl.text.trim(),
-                        contrasena: _passCtrl.text.trim(),
+                        contrasena: _passCtrl.text,
                         telefono: _telefonoCtrl.text.trim(),
                         rol: _rol.value,
                         aceptaTratamiento: true,

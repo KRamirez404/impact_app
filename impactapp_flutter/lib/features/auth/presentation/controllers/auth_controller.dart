@@ -9,6 +9,8 @@ import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/update_profile_usecase.dart';
+import '../../domain/usecases/get_profile_cities_usecase.dart';
+import '../../domain/entities/city_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../infrastructure/models/user_model.dart';
 
@@ -17,6 +19,7 @@ class AuthController extends GetxController {
     required this.loginUseCase,
     required this.registerUseCase,
     required this.updateProfileUseCase,
+    required this.getProfileCitiesUseCase,
     required this.repository,
     required this.storage,
   });
@@ -24,6 +27,7 @@ class AuthController extends GetxController {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
   final UpdateProfileUseCase updateProfileUseCase;
+  final GetProfileCitiesUseCase getProfileCitiesUseCase;
   final AuthRepository repository;
   final GetStorage storage;
 
@@ -159,6 +163,8 @@ class AuthController extends GetxController {
     Get.offAllNamed(AppRoutes.login);
   }
 
+  Future<List<CityEntity>> getProfileCities() => getProfileCitiesUseCase();
+
   Future<bool> updateProfile({
     required String nombre,
     required String apellido,
@@ -166,6 +172,7 @@ class AuthController extends GetxController {
     String? telefono,
     String? biografia,
     String? fotoPerfil,
+    int? idCiudad,
   }) async {
     try {
       isUpdatingProfile.value = true;
@@ -176,6 +183,7 @@ class AuthController extends GetxController {
         telefono: telefono,
         biografia: biografia,
         fotoPerfil: fotoPerfil,
+        idCiudad: idCiudad,
       );
       user.value = updatedUser;
       return true;

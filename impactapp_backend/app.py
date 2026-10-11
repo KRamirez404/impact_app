@@ -130,6 +130,11 @@ def seed_database():
 def ensure_user_schema():
     inspector = inspect(db.engine)
     columns = {column["name"] for column in inspector.get_columns("USUARIO")}
+    if "id_ciudad" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "USUARIO" ADD COLUMN id_ciudad INTEGER REFERENCES "CIUDAD" (id_ciudad)')
+        )
+        db.session.commit()
     if "biografia" not in columns:
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN biografia TEXT'))
         db.session.commit()

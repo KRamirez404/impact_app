@@ -2,6 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:impactapp_flutter/core/utils/validators.dart';
 
 void main() {
+  test('rechaza límites de campos y contraseña por bytes', () {
+    expect(Validators.requiredField(' ' * 4, 'Nombre', maxLength: 100), isNotNull);
+    expect(Validators.requiredField('N' * 101, 'Nombre', maxLength: 100), isNotNull);
+    expect(Validators.optionalText('1' * 31, 'Teléfono', 30), isNotNull);
+    expect(Validators.email('nombre con espacios@test.co'), isNotNull);
+    expect(Validators.password('A1${'é' * 36}'), isNotNull);
+    expect(Validators.password('Passw0rd!'), isNull);
+  });
   group('Validators.requiredField', () {
     test('rechaza vacío y espacios', () {
       expect(Validators.requiredField(null, 'Nombre'), 'Nombre es obligatorio');

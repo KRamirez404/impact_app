@@ -24,6 +24,18 @@ void main() {
     test('usa rol por defecto si no llega', () {
       expect(UserModel.fromJson({}).rol, 'usuario');
     });
+
+    test('conserva ciudad al serializar y recuperar el perfil de la sesión', () {
+      final user = UserModel.fromJson({
+        'id_usuario': 1,
+        'id_ciudad': 2,
+        'ciudad': {'id_ciudad': 2, 'nombre': 'Bogotá'},
+      });
+      final restored = UserModel.fromJson(user.toJson());
+      expect(restored.idCiudad, 2);
+      expect(restored.ciudadNombre, 'Bogotá');
+      expect(UserModel.fromJson({}).idCiudad, isNull);
+    });
   });
 
   group('DonationWithCampaignModel.fromJson', () {
