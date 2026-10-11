@@ -21,20 +21,32 @@ ENV/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
 
 # Flask/SQLite runtime data
 impactapp_backend/instance/
 impactapp_backend/*.db
+impactapp_backend/*.db-journal
+impactapp_backend/*.db-shm
+impactapp_backend/*.db-wal
+impactapp_backend/*.sqlite
+impactapp_backend/*.sqlite3
+impactapp_backend/*.sqlite*-journal
+impactapp_backend/*.sqlite*-shm
+impactapp_backend/*.sqlite*-wal
 impactapp_backend/data/
 impactapp_backend/uploads/*
 !impactapp_backend/uploads/.gitkeep
 
 # Documentos privados / académicos (no se publican)
 Plan.txt
+Plan_Cierre.txt
 anteproyecto.txt
 requisitos.txt
+requerimientos.pdf
 Anteproyecto*.docx
 *.docx
 *.doc
@@ -52,6 +64,11 @@ Anteproyecto*.docx
 **/build/
 coverage/
 
+# Claves de firma móvil
+*.jks
+*.keystore
+impactapp_flutter/android/key.properties
+
 # IDE and OS
 .idea/
 .vscode/
@@ -62,4 +79,3 @@ Thumbs.db
 # Tool caches and logs
 *.log
 *.tmp
-
