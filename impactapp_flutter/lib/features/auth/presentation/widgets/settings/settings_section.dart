@@ -33,9 +33,12 @@ class SettingsSection extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.cardBorder, width: 1.18),
+            border: Border.all(
+              color: Theme.of(context).dividerColor,
+              width: 1.18,
+            ),
           ),
           child: Column(children: children),
         ),

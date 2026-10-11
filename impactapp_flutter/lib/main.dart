@@ -1,8 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'app/app.dart';
+import 'shared/theme/theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +19,7 @@ Future<void> main() async {
   };
 
   await GetStorage.init();
+  Get.put(ThemeController(), permanent: true);
   runApp(const ImpactApp());
 }
 

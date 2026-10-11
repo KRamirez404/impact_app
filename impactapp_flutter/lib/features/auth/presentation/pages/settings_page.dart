@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/theme/theme_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/settings/settings_section.dart';
@@ -18,16 +19,17 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<SettingsController>();
     final authController = Get.find<AuthController>();
+    final themeController = Get.find<ThemeController>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(),
             Expanded(
               child: Container(
-                color: AppColors.settingsBackground,
+                color: Theme.of(context).colorScheme.surface,
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   children: [
@@ -93,8 +95,8 @@ class SettingsPage extends StatelessWidget {
                           icon: Icons.brightness_6_outlined,
                           title: 'Modo oscuro',
                           subtitle: 'Cambia la apariencia de la app',
-                          value: controller.darkTheme,
-                          onChanged: controller.toggleDarkTheme,
+                          value: themeController.isDark,
+                          onChanged: themeController.setDark,
                         ),
                         const SettingsDivider(),
                         SettingItem(

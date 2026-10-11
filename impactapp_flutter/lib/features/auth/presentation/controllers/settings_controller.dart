@@ -8,7 +8,6 @@ class SettingsController extends GetxController {
   final donationAlerts = true.obs;
   final socialNotifications = true.obs;
   final publicDonations = false.obs;
-  final darkTheme = false.obs;
   final language = 'Español'.obs;
 
   @override
@@ -18,7 +17,6 @@ class SettingsController extends GetxController {
     donationAlerts.value = _storage.read('donation_alerts') ?? true;
     socialNotifications.value = _storage.read('social_notifications') ?? true;
     publicDonations.value = _storage.read('public_donations') ?? false;
-    darkTheme.value = _storage.read('dark_theme') ?? false;
     language.value = _storage.read('language') ?? 'Español';
   }
 
@@ -40,11 +38,6 @@ class SettingsController extends GetxController {
   void togglePublicDonations(bool value) {
     publicDonations.value = value;
     _storage.write('public_donations', value);
-  }
-
-  void toggleDarkTheme(bool value) {
-    darkTheme.value = value;
-    _storage.write('dark_theme', value);
   }
 
   void setLanguage(String lang) {

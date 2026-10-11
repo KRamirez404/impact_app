@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../../shared/theme/app_theme.dart';
 
 class SettingsFooter extends StatelessWidget {
   const SettingsFooter({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Column(
@@ -13,7 +13,7 @@ class SettingsFooter extends StatelessWidget {
           Text(
             'ImpactApp © 2026',
             style: TextStyle(
-              fontFamily: 'Inter', fontSize: 12, color: AppColors.footerText,
+              fontFamily: 'Inter', fontSize: 12, color: color,
             ),
             textAlign: TextAlign.center,
           ),
@@ -21,7 +21,7 @@ class SettingsFooter extends StatelessWidget {
           Text(
             'Donaciones con transparencia y confianza',
             style: TextStyle(
-              fontFamily: 'Inter', fontSize: 12, color: AppColors.footerSubtitle,
+              fontFamily: 'Inter', fontSize: 12, color: color,
             ),
             textAlign: TextAlign.center,
           ),

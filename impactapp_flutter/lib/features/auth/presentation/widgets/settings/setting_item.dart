@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../../shared/theme/app_theme.dart';
 import 'icon_container.dart';
 
 class SettingItem extends StatelessWidget {
@@ -34,23 +33,28 @@ class SettingItem extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter', fontWeight: FontWeight.w500,
-                      fontSize: 14, color: AppColors.textPrimary,
+                      fontSize: 14, color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Inter', fontWeight: FontWeight.w400,
-                      fontSize: 12, color: AppColors.subtitle,
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.chevronColor),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),

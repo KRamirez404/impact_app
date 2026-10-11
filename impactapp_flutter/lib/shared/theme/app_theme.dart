@@ -32,4 +32,14 @@ class AppTheme {
     scaffoldBackgroundColor: AppColors.surface,
     fontFamily: 'Segoe UI Emoji',
   );
+
+  static ThemeData darkTheme = ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.dark,
+    ),
+    useMaterial3: true,
+    scaffoldBackgroundColor: const Color(0xFF0F1115),
+    fontFamily: 'Segoe UI Emoji',
+  );
 }
