@@ -1,5 +1,6 @@
 import hashlib
 import uuid
+from copy import deepcopy
 
 import pytest
 
@@ -12,10 +13,13 @@ EVENTS_SECRET = "test_events_secret"
 INTEGRITY_SECRET = "test_integrity_secret"
 PUBLIC_KEY = "pub_test_000000000000000000000000000000"
 ADMIN = {"correo": "admin@impactapp.co", "contrasena": "Admin123*"}
+TRANSACTIONS = {}
 
 
 @pytest.fixture()
-def wompi_config():
+def wompi_config(monkeypatch):
+    TRANSACTIONS.clear()
+    monkeypatch.setattr(wompi_service, "fetch_transaction", lambda tx: deepcopy(TRANSACTIONS[tx]))
     original = dict(app.config)
     app.config.update(
         WOMPI_PUBLIC_KEY=PUBLIC_KEY,
@@ -60,10 +64,12 @@ def _event(reference, *, tx_id="1234-1610641025-49201", status="APPROVED",
             "status": status,
             "amount_in_cents": amount_in_cents,
             "reference": reference,
+            "currency": "COP",
             "payment_method_type": "CARD",
         }
     }
     concat = tx_id + status + str(amount_in_cents) + str(timestamp) + EVENTS_SECRET
+    TRANSACTIONS[tx_id] = deepcopy(data["transaction"])
     checksum = hashlib.sha256(concat.encode("utf-8")).hexdigest()
     return {
         "event": "transaction.updated",
@@ -295,11 +301,11 @@ def test_status_unknown_donation_returns_404(client, wompi_config):
     assert resp.status_code == 404
 
 
-def test_webhook_missing_reference_is_ignored(client, wompi_config):
+def test_webhook_missing_reference_is_rejected(client, wompi_config):
     payload = _event("X")
     payload["data"]["transaction"].pop("reference")
     resp = client.post("/api/webhooks/wompi", json=payload)
-    assert resp.status_code == 200
+    assert resp.status_code == 409
 
 
 def test_compute_event_checksum_matches_manual_hash():
@@ -340,6 +346,7 @@ def test_build_event_drives_webhook_approval(client, wompi_config):
         amount_in_cents=5000000,
         secret=EVENTS_SECRET,
     )
+    TRANSACTIONS[event["data"]["transaction"]["id"]] = deepcopy(event["data"]["transaction"])
     resp = client.post("/api/webhooks/wompi", json=event)
     assert resp.status_code == 200
     with app.app_context():

@@ -1,7 +1,23 @@
 import os
 import tempfile
+from pathlib import Path
+
+from sqlalchemy.engine import make_url
 
 if os.getenv("TEST_DATABASE_URL"):
+    test_url = make_url(os.environ["TEST_DATABASE_URL"])
+    if test_url.get_backend_name() == "sqlite":
+        if test_url.database != ":memory:" and not (
+            test_url.database
+            and Path(test_url.database).is_absolute()
+            and Path(test_url.database).resolve().is_relative_to(Path(tempfile.gettempdir()).resolve())
+        ):
+            raise RuntimeError("La base SQLite de pruebas debe estar aislada en el directorio temporal")
+    elif test_url.get_backend_name() == "postgresql":
+        if not test_url.database or not test_url.database.endswith("_test"):
+            raise RuntimeError("La base PostgreSQL de pruebas debe terminar en _test")
+    else:
+        raise RuntimeError("Motor de pruebas no permitido")
     os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 else:
     _test_db = os.path.join(tempfile.gettempdir(), "impactapp_pytest.db")

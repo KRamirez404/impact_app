@@ -215,6 +215,23 @@ def ensure_donation_schema():
         )
     if "fecha_pago" not in columns:
         db.session.execute(text('ALTER TABLE "DONACION" ADD COLUMN fecha_pago TIMESTAMP'))
+    if "clave_checkout" not in columns:
+        db.session.execute(text('ALTER TABLE "DONACION" ADD COLUMN clave_checkout VARCHAR(64)'))
+    for column in ("wompi_transaction_id", "clave_checkout"):
+        duplicate = db.session.execute(text(
+            f'SELECT 1 FROM "DONACION" WHERE {column} IS NOT NULL '
+            f'GROUP BY {column} HAVING COUNT(*) > 1 LIMIT 1'
+        )).first()
+        if duplicate:
+            db.session.rollback()
+            raise RuntimeError(
+                f"No se puede asegurar DONACION: valores duplicados en {column}. "
+                "Requiere conciliación manual; no se han eliminado datos."
+            )
+        db.session.execute(text(
+            f'CREATE UNIQUE INDEX IF NOT EXISTS uq_donacion_{column} '
+            f'ON "DONACION" ({column})'
+        ))
     db.session.commit()
 
 

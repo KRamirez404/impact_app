@@ -5,6 +5,10 @@ from . import db
 
 class DONACION(db.Model):
     __tablename__ = "DONACION"
+    __table_args__ = (
+        db.Index("uq_donacion_wompi_transaction_id", "wompi_transaction_id", unique=True),
+        db.Index("uq_donacion_clave_checkout", "clave_checkout", unique=True),
+    )
 
     id_donacion = db.Column(db.Integer, primary_key=True)
     id_campania = db.Column(
@@ -33,6 +37,7 @@ class DONACION(db.Model):
     estado_pago = db.Column(db.String(20), default="pendiente", nullable=False)
     referencia_pago = db.Column(db.String(255), nullable=True, unique=True)
     wompi_transaction_id = db.Column(db.String(120), nullable=True)
+    clave_checkout = db.Column(db.String(64), nullable=True)
     metodo_pago = db.Column(db.String(40), nullable=True)
     fecha_pago = db.Column(db.DateTime, nullable=True)
 
@@ -56,4 +61,3 @@ class DONACION(db.Model):
             "metodo_pago": self.metodo_pago,
             "fecha_pago": self.fecha_pago.isoformat() if self.fecha_pago else None,
         }
-

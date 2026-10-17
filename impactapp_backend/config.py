@@ -1,5 +1,6 @@
 import os
 import secrets
+from decimal import Decimal
 
 
 def _split_env(name: str, default: str = "") -> list[str]:
@@ -36,7 +37,7 @@ class Config:
     WOMPI_CURRENCY = os.getenv("WOMPI_CURRENCY", "COP")
     WOMPI_CHECKOUT_URL = os.getenv("WOMPI_CHECKOUT_URL", "https://checkout.wompi.co/p/")
     WOMPI_API_URL = os.getenv("WOMPI_API_URL", "https://sandbox.wompi.co/v1")
-    WOMPI_MIN_AMOUNT = float(os.getenv("WOMPI_MIN_AMOUNT", "1000"))
+    WOMPI_MIN_AMOUNT = Decimal(os.getenv("WOMPI_MIN_AMOUNT", "1000"))
     DONATION_REDIRECT_URL = os.getenv(
         "DONATION_REDIRECT_URL", "http://localhost:8080/donacion/resultado"
     )

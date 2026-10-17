@@ -9,6 +9,7 @@ def registrar(
     entidad: str | None = None,
     id_entidad: int | None = None,
     direccion_ip: str | None = None,
+    confirmar: bool = True,
 ) -> AUDITORIA:
     registro = AUDITORIA(
         id_usuario=id_usuario,
@@ -19,5 +20,6 @@ def registrar(
         direccion_ip=direccion_ip,
     )
     db.session.add(registro)
-    db.session.commit()
+    if confirmar:
+        db.session.commit()
     return registro
