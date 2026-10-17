@@ -1,11 +1,12 @@
 import hashlib
 import hmac
+from decimal import Decimal, InvalidOperation
 
 
 def _amount_canonical(value) -> str:
     try:
-        return f"{float(value or 0):.2f}"
-    except (TypeError, ValueError):
+        return f"{Decimal(str(value or 0)):.2f}"
+    except (TypeError, ValueError, InvalidOperation):
         return str(value or 0)
 
 

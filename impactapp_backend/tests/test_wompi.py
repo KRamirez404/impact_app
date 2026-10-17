@@ -1,5 +1,6 @@
 import hashlib
 import uuid
+from copy import deepcopy
 
 import pytest
 
@@ -11,10 +12,13 @@ from services import wompi_service
 EVENTS_SECRET = "test_events_secret"
 INTEGRITY_SECRET = "test_integrity_secret"
 PUBLIC_KEY = "pub_test_000000000000000000000000000000"
+TRANSACTIONS = {}
 
 
 @pytest.fixture()
-def wompi_config():
+def wompi_config(monkeypatch):
+    TRANSACTIONS.clear()
+    monkeypatch.setattr(wompi_service, "fetch_transaction", lambda tx: deepcopy(TRANSACTIONS[tx]))
     original = dict(app.config)
     app.config.update(
         WOMPI_PUBLIC_KEY=PUBLIC_KEY,
@@ -52,10 +56,12 @@ def _event(reference, *, tx_id="1234-1610641025-49201", status="APPROVED", amoun
             "status": status,
             "amount_in_cents": amount_in_cents,
             "reference": reference,
+            "currency": "COP",
             "payment_method_type": "CARD",
         }
     }
     timestamp = 1530291411
+    TRANSACTIONS[tx_id] = deepcopy(data["transaction"])
     concat = tx_id + status + str(amount_in_cents) + str(timestamp) + EVENTS_SECRET
     checksum = hashlib.sha256(concat.encode("utf-8")).hexdigest()
     return {

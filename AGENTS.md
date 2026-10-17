@@ -119,3 +119,37 @@ Prefijo `/api`. Públicas: `GET /health`, `/auth/privacy-policy`, `GET /campaign
 - `requerimientos.pdf` — especificación RF-01..12 y RNF-01..04; los códigos históricos de Plan.txt son distintos.
 - `Plan_Cierre.txt` — avance de cierre; `docs/decisiones_cierre.md` — decisiones financieras pendientes.
 - `docs/informe_seguridad_usabilidad.md` — seguridad y usabilidad.
+
+## Reglas de desarrollo de Impactaap
+
+### Uso de Graphify
+- Antes de una modificación que afecte varias partes del proyecto, consulta Graphify para localizar las relaciones relevantes.
+- Utiliza `graphify query`, `graphify explain` y `graphify path` cuando la versión instalada admita esas operaciones.
+- Comprueba las conclusiones del grafo directamente en el código fuente. Las relaciones inferidas no se deben tratar como hechos confirmados.
+- Evita explorar indiscriminadamente todo el repositorio si una consulta específica permite localizar los componentes necesarios.
+- Después de cambios estructurales, actualiza el grafo utilizando el comando compatible con la versión instalada.
+
+### Seguridad y calidad
+- No modifiques funcionalidades ajenas a la tarea sin una justificación clara.
+- No sobrescribas configuraciones, variables de entorno, datos ni migraciones existentes sin revisar sus consecuencias.
+- Mantén las reglas de negocio y validaciones críticas en el backend.
+- Para los pagos, no confíes en montos, estados o confirmaciones enviados únicamente por el frontend.
+- No expongas credenciales, tokens ni secretos en el código o los registros.
+- Antes de modificar archivos, identifica los componentes afectados y presenta un plan breve.
+- Después de los cambios, ejecuta las pruebas pertinentes y revisa los errores y las diferencias de Git.
+- No declares una funcionalidad terminada si no has verificado las pruebas correspondientes.
+- Separa claramente las funciones implementadas, las que dependen de servicios externos y las que todavía no se han probado.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+
+Rules:
+- When graphify-out/graph.json exists, run `graphify query "<question>"` before your first grep, search or source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw files only for lines the graph or an earlier read already located. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.

@@ -1,11 +1,13 @@
 import hashlib
 import hmac
 import json
+import re
 import secrets
 import time
 import urllib.error
 import urllib.request
-from urllib.parse import urlencode
+from decimal import Decimal, InvalidOperation
+from urllib.parse import quote, urlencode
 
 from flask import current_app
 
@@ -19,15 +21,36 @@ STATUS_MAP = {
 }
 
 ENVIRONMENT_MAP = {"sandbox": "test", "prod": "prod", "production": "prod"}
+MAX_AMOUNT = Decimal("9999999999.99")
+
+
+class WompiQueryError(Exception):
+    pass
+
+
+def decimal_amount(amount) -> Decimal:
+    if isinstance(amount, bool) or not isinstance(amount, (str, int, float, Decimal)):
+        raise ValueError("Monto inválido")
+    try:
+        value = Decimal(str(amount))
+        if not value.is_finite() or value <= 0 or value > MAX_AMOUNT:
+            raise ValueError("Monto fuera del rango permitido")
+        if value != value.quantize(Decimal("0.01")):
+            raise ValueError("El monto debe tener como máximo dos decimales")
+        return value
+    except InvalidOperation as exc:
+        raise ValueError("Monto inválido") from exc
 
 
 def is_configured() -> bool:
     config = current_app.config
-    return bool(config.get("WOMPI_PUBLIC_KEY") and config.get("WOMPI_INTEGRITY_SECRET"))
+    return all(config.get(key) for key in (
+        "WOMPI_PUBLIC_KEY", "WOMPI_INTEGRITY_SECRET", "WOMPI_PRIVATE_KEY", "WOMPI_EVENTS_SECRET",
+    ))
 
 
 def amount_to_cents(amount) -> int:
-    return int(round(float(amount) * 100))
+    return int(decimal_amount(amount) * 100)
 
 
 def generate_reference(donation_id: int) -> str:
@@ -84,7 +107,7 @@ def build_checkout_url(
 
 
 def map_status(status: str | None) -> str | None:
-    if not status:
+    if not isinstance(status, str):
         return None
     return STATUS_MAP.get(status.upper())
 
@@ -105,7 +128,9 @@ def compute_event_checksum(
     parts = []
     for prop in properties:
         value = _extract_value(data, prop)
-        parts.append("" if value is None else str(value))
+        if value is None or isinstance(value, (dict, list, bool)):
+            raise ValueError("Propiedad de firma inválida")
+        parts.append(str(value))
     parts.append(str(timestamp))
     parts.append(secret)
     return hashlib.sha256("".join(parts).encode("utf-8")).hexdigest()
@@ -131,6 +156,7 @@ def build_event(
             "status": status.upper(),
             "amount_in_cents": int(amount_in_cents),
             "reference": reference,
+            "currency": "COP",
             "payment_method_type": payment_method_type,
         }
     }
@@ -144,35 +170,49 @@ def build_event(
     }
 
 
-def verify_event_checksum(payload: dict) -> bool:
+def verify_event_checksum(payload: dict, header_checksum: str | None = None) -> bool:
     config = current_app.config
     secret = config.get("WOMPI_EVENTS_SECRET")
-    signature = payload.get("signature") or {}
-    checksum = signature.get("checksum") or payload.get("X-Event-Checksum")
-    properties = signature.get("properties") or []
-    if not secret or not checksum:
+    if not isinstance(payload, dict):
         return False
-
-    expected = compute_event_checksum(
-        properties, payload.get("data") or {}, payload.get("timestamp", ""), secret
-    )
-    return hmac.compare_digest(expected.lower(), str(checksum).lower())
+    signature = payload.get("signature")
+    if not isinstance(signature, dict):
+        return False
+    checksum = signature.get("checksum") or header_checksum
+    properties = signature.get("properties")
+    timestamp = payload.get("timestamp")
+    if (
+        not secret or not isinstance(checksum, str)
+        or not re.fullmatch(r"[a-fA-F0-9]{64}", checksum)
+        or not isinstance(properties, list) or not properties
+        or any(not isinstance(p, str) or not p for p in properties)
+        or type(timestamp) is not int or timestamp < 0
+        or not isinstance(payload.get("data"), dict)
+    ):
+        return False
+    try:
+        expected = compute_event_checksum(properties, payload["data"], timestamp, secret)
+    except ValueError:
+        return False
+    return hmac.compare_digest(expected, checksum.lower())
 
 
 def environment_matches(payload: dict) -> bool:
     configured = ENVIRONMENT_MAP.get(str(current_app.config.get("WOMPI_ENV", "sandbox")).lower())
     received = payload.get("environment")
-    if not configured or not received:
-        return True
-    return configured == received
+    return configured is not None and configured == received
 
 
-def fetch_transaction(transaction_id: str) -> dict | None:
+def valid_transaction_id(transaction_id) -> bool:
+    return isinstance(transaction_id, str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{1,120}", transaction_id))
+
+
+def fetch_transaction(transaction_id: str) -> dict:
     config = current_app.config
     private_key = config.get("WOMPI_PRIVATE_KEY")
-    if not private_key or not transaction_id:
-        return None
-    url = f"{config['WOMPI_API_URL']}/transactions/{transaction_id}"
+    if not private_key or not valid_transaction_id(transaction_id):
+        raise WompiQueryError("consulta_no_configurada")
+    url = f"{config['WOMPI_API_URL'].rstrip('/')}/transactions/{quote(transaction_id, safe='')}"
     request = urllib.request.Request(
         url,
         headers={
@@ -183,6 +223,8 @@ def fetch_transaction(transaction_id: str) -> dict | None:
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
             body = json.loads(response.read().decode("utf-8"))
-            return body.get("data")
-    except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError):
-        return None
+            if not isinstance(body, dict) or not isinstance(body.get("data"), dict):
+                raise WompiQueryError("respuesta_invalida")
+            return body["data"]
+    except (urllib.error.URLError, ValueError, TimeoutError, OSError) as exc:
+        raise WompiQueryError("consulta_no_disponible") from exc
