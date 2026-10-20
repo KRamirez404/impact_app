@@ -1,5 +1,12 @@
 # Wompi: integridad financiera, incremento 1
 
+> Actualización Sandbox: la operación vigente se documenta en
+> [wompi_sandbox.md](wompi_sandbox.md). Se añadieron validación estricta de
+> prefijos/URLs, bloqueo de producción por defecto, registro persistente
+> `PAGO_EVENTO`, idempotencia desde Flutter y saneamiento del listado público.
+> El simulador local con IDs fabricados ya no se usa para aprobar pagos porque
+> el webhook exige consulta autoritativa a Wompi.
+
 Fecha de implementación y pruebas locales: 16/10/2026.
 
 ## Contrato contrastado

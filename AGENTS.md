@@ -108,7 +108,7 @@ Prefijo `/api`. Públicas: `GET /health`, `/auth/privacy-policy`, `GET /campaign
 - El emulador Android usa `10.0.2.2`, no `localhost`.
 - `uploads/` e `instance/` están en `.gitignore`; no commitear evidencias ni la BD.
 - Donaciones económicas usan Wompi Checkout Web: `POST /api/donations/checkout` + webhook `POST /api/webhooks/wompi`. Solo `estado_pago="aprobada"` cuenta para la meta. Las donaciones en especie siguen por `POST /api/donations`.
-- Wompi corre en Sandbox por defecto (`WOMPI_*` en `.env`); Sandbox no cobra dinero real. Ver `README.md` para el cambio a producción.
+- Wompi corre en Sandbox por defecto (`WOMPI_*` en `.env`); producción está bloqueada con `WOMPI_ALLOW_PRODUCTION=0`. Sandbox no cobra dinero real. Ver `docs/wompi_sandbox.md` y `README.md`.
 - Existen proyectos `android/` e `ios/`; la adaptación es parcial y la entrega móvil requiere configuración y verificación en dispositivos. Ver `Plan_Cierre.txt` y `README.md`.
 - `JWT_SECRET_KEY` se autogenera si falta, pero `.env` debe definirla para sesiones estables.
 
