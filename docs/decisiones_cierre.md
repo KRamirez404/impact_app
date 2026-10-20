@@ -3,24 +3,43 @@
 Fecha: 11/10/2026. Fuente principal: `requerimientos.pdf`; alcance complementario:
 `anteproyecto.txt`. Este registro distingue decisiones adoptadas de propuestas.
 
-## D-01 — Flujo económico (pendiente de decisión)
+Actualización: 16/10/2026, por autorización del responsable del proyecto en la
+solicitud de Build de la Etapa 2. Las decisiones siguientes no acreditan su
+implementación ni resultados de pruebas.
 
-El PDF RF-09 exige transferencia externa, comprobante y validación. El código
-implementa checkout Wompi. No se ha autorizado modificar el requisito ni retirar
-Wompi. La etapa 9 queda condicionada a elegir:
+## D-01 — Flujo económico (aprobado; implementación bancaria pendiente)
 
-1. Cumplir el flujo del PDF e implementar transferencias/comprobantes.
-2. Mantener Wompi, actualizar la especificación académica y definir el destino
-   del recaudo para cada organizador.
+Se aprueba incorporar declaraciones de transferencias y comprobantes privados
+como complemento de Wompi, preservando su funcionamiento y las donaciones
+históricas. La primera versión bancaria utiliza COP exclusivamente.
 
-Hasta resolverlo se conserva el comportamiento actual. Perfil, validaciones y
-documentación pueden avanzar porque no dependen de esa decisión.
+Declarar o adjuntar un documento no incrementa el recaudo. Solo una transferencia
+verificada y contabilizada mediante el procedimiento autorizado podrá hacerlo.
+La contabilización real permanecerá deshabilitada mientras no exista una fuente
+bancaria independiente aprobada e implementada. No se convertirán registros
+históricos ni el texto `cuenta_recaudo` en verificaciones bancarias.
 
-## D-02 — Validación de comprobantes (propuesta, no aprobada)
+## D-02 — Doble control y evidencia bancaria (aprobado)
 
-Si se elige transferencia: el organizador confirma recepción en su cuenta;
-soporte supervisa y resuelve inconsistencias. Deben definirse evidencia requerida,
-duplicados, rechazo, anulación y permisos antes de implementar.
+El organizador habilitado confirma recepción; otra persona con rol de soporte y
+asignación financiera explícita vigente autoriza la contabilización. El mismo
+usuario no puede realizar ambos pasos. Tener rol `soporte` o conservar un JWT no
+sustituye la asignación ni la comprobación actual del estado del usuario.
+
+Cada ingreso contabilizado requiere identidad bancaria verificable y única en el
+ámbito real de la fuente. No se permite reutilizar un movimiento ni contabilizar
+sin identificador mediante excepción manual. El comprobante del donante no es
+prueba bancaria independiente.
+
+Las discrepancias permanecen bloqueadas, sin modificar silenciosamente importes,
+hasta aprobar una política de resolución. Una revisión posterior al cierre solo
+es admisible si se acredita recepción bancaria anterior a un cierre verificable;
+la fecha de declaración o carga no sirve para demostrarla. La precisión temporal
+insuficiente también bloquea la contabilización.
+
+Pendientes: fuente y contrato de identificadores, responsable administrativo
+designado, política temporal, resolución de discrepancias y casos de revocación.
+Detalle: [contrato y bloqueos de transferencias](transferencias_bancarias.md).
 
 ## D-03 — Donaciones procesadas (propuesta, no aprobada)
 
@@ -36,7 +55,9 @@ pendientes, anulaciones y campañas restauradas. No cambia el código actual.
   transferencia. No se incluyen en listados/detalles públicos ni en URLs de
   descarga sin autorización.
 - Identidad: acceso del titular y soporte; comprobantes: donante dueño, organizador
-  de la campaña y soporte según finalidad.
+  de la campaña y soporte con asignación explícita vigente según finalidad.
+- Comprobantes: exclusivamente PDF, JPEG y PNG, con validación real y descarga
+  autenticada. Tamaños, páginas y dimensiones siguen pendientes de aprobación.
 - La decisión de publicación de un archivo no se infiere de su extensión ni del
   campo `validado`; deberá representarse expresamente.
 - Pendientes: campaña y soportes consultables por creador y soporte; público y
@@ -53,7 +74,18 @@ cálculo reproducible. Las pruebas automatizadas no sustituyen la evaluación SU
 
 ## Trabajo habilitado y bloqueos
 
-- Habilitado: documentación, registro/perfil, búsqueda y diseño de evidencias.
-- Dependiente de D-01/D-02: desarrollo financiero y validación de aportes.
+- Habilitado para el primer incremento de Etapa 2: documentación de decisiones,
+  contrato, bloqueos y estrategia de pruebas aisladas. Este incremento no añade
+  modelos, endpoints ni altera la inicialización.
+- Las estructuras y controles posteriores podrán implementarse incrementalmente
+  cuando estén definidos, manteniendo restringidas las acciones sin responsable
+  designado y la contabilización sin fuente bancaria verificable.
+- La activación financiera requiere resolver los bloqueos de D-02 y verificar
+  permisos, evidencia, atomicidad, concurrencia y regresión de Wompi.
 - Dependiente de D-03: regla definitiva de eliminación con aportes.
-- La etapa 1 está EN PROGRESO mientras las decisiones financieras sigan pendientes.
+- El estado de Wompi debe acreditarse con sus verificaciones propias; este registro
+  no declara terminada ni probada esa integración.
+- Estado de Etapa 2: Fase A documental completada; Fase B incorpora asignaciones
+  y autorización preparatoria desactivadas por defecto. Ver
+  [esquema y API de Fase B](esquema_financiero_fase_b.md). Fuente bancaria,
+  comprobantes, declaraciones y contabilización siguen pendientes.

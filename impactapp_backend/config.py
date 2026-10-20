@@ -23,6 +23,8 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(32)
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "uploads")
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+    FINANCIAL_ASSIGNMENTS_ENABLED = os.getenv("FINANCIAL_ASSIGNMENTS_ENABLED", "0") == "1"
+    FINANCIAL_ADMIN_USER_ID = os.getenv("FINANCIAL_ADMIN_USER_ID", "")
 
     ALLOWED_ORIGINS = _split_env(
         "ALLOWED_ORIGINS",
