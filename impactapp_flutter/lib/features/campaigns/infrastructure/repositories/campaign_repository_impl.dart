@@ -23,8 +23,14 @@ class CampaignRepositoryImpl implements CampaignRepository {
   }
 
   @override
-  Future<DonationCheckoutEntity> createDonationCheckout(Map<String, dynamic> payload) {
-    return dataSource.createDonationCheckout(payload);
+  Future<DonationCheckoutEntity> createDonationCheckout(
+    Map<String, dynamic> payload, {
+    String? idempotencyKey,
+  }) {
+    return dataSource.createDonationCheckout(
+      payload,
+      idempotencyKey: idempotencyKey,
+    );
   }
 
   @override

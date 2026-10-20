@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/error/error_mapper.dart';
+import '../../../../core/utils/cop_amount.dart';
 import '../../domain/entities/campaign_entity.dart';
 import '../../domain/entities/donation_checkout_entity.dart';
 import '../../domain/usecases/create_donation_checkout_usecase.dart';
@@ -30,8 +31,18 @@ class CampaignDetailController extends GetxController {
   final isLiking = false.obs;
   final campaign = Rxn<CampaignEntity>();
 
-  void _ok(String msg) => Get.snackbar('Éxito', msg, backgroundColor: Colors.green, colorText: Colors.white);
-  void _err(String msg) => Get.snackbar('Error', msg, backgroundColor: Colors.red, colorText: Colors.white);
+  void _ok(String msg) => Get.snackbar(
+    'Éxito',
+    msg,
+    backgroundColor: Colors.green,
+    colorText: Colors.white,
+  );
+  void _err(String msg) => Get.snackbar(
+    'Error',
+    msg,
+    backgroundColor: Colors.red,
+    colorText: Colors.white,
+  );
 
   void _syncCampaignLists(CampaignEntity updatedCampaign) {
     if (!Get.isRegistered<CampaignListController>()) return;
@@ -70,15 +81,16 @@ class CampaignDetailController extends GetxController {
 
   Future<DonationCheckoutEntity?> startMoneyDonation(
     int campaignId,
-    double amount,
-  ) async {
+    int amountCents, {
+    required String idempotencyKey,
+  }) async {
     try {
       isLoading.value = true;
       return await createDonationCheckoutUseCase({
         'id_campania': campaignId,
-        'monto_estimado': amount,
+        'monto_estimado': formatCopAmountForApi(amountCents),
         'descripcion': 'Donación económica en línea',
-      });
+      }, idempotencyKey: idempotencyKey);
     } catch (e) {
       _err(friendlyError(e));
       return null;
@@ -90,7 +102,7 @@ class CampaignDetailController extends GetxController {
   Future<String> checkDonationStatus(int donationId) async {
     try {
       final donation = await getDonationStatusUseCase(donationId);
-      return donation.estadoPago;
+      return donation.estadoPago.trim().toLowerCase();
     } catch (e) {
       _err(friendlyError(e));
       return 'pendiente';
@@ -98,7 +110,8 @@ class CampaignDetailController extends GetxController {
   }
 
   Future<void> toggleLike(int campaignId) async {
-    final authReady = Get.isRegistered<AuthController>() &&
+    final authReady =
+        Get.isRegistered<AuthController>() &&
         Get.find<AuthController>().user.value != null;
     if (!authReady) {
       _err('Debes iniciar sesión para dar like');

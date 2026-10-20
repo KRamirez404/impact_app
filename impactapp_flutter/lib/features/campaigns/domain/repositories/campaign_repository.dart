@@ -17,7 +17,10 @@ abstract class CampaignRepository {
   Future<CampaignEntity> getCampaignDetail(int id);
   Future<CampaignEntity> createCampaign(Map<String, dynamic> payload);
   Future<DonationEntity> donate(Map<String, dynamic> payload);
-  Future<DonationCheckoutEntity> createDonationCheckout(Map<String, dynamic> payload);
+  Future<DonationCheckoutEntity> createDonationCheckout(
+    Map<String, dynamic> payload, {
+    String? idempotencyKey,
+  });
   Future<DonationEntity> getDonationStatus(int donationId);
   Future<List<DonationWithCampaignEntity>> getMyDonations();
   Future<LikeStatusEntity> toggleLike(int campaignId);

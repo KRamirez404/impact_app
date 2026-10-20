@@ -1,31 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../../core/utils/cop_amount.dart';
 import '../../../domain/entities/donation_checkout_entity.dart';
 import 'payment_status_dialog.dart';
 
-String _formatCurrency(double amount) {
-  if (amount >= 1000000) {
-    final millones = (amount / 1000000).toStringAsFixed(1);
-    return '\$${millones.replaceAll('.', ',')}M';
-  }
-  if (amount >= 1000) {
-    final miles = (amount / 1000).toStringAsFixed(0);
-    return '\$$miles.000';
-  }
-  return '\$${amount.toStringAsFixed(0)}';
-}
+String _formatCurrency(int cents) => formatCopAmount(cents);
 
 Future<String?> showPaymentProcessDialog({
   required BuildContext context,
-  required double amount,
-  required Future<DonationCheckoutEntity?> Function(double amount) onCheckout,
+  required int amountCents,
+  required Future<DonationCheckoutEntity?> Function(
+    int amountCents,
+    String idempotencyKey,
+  )
+  onCheckout,
   required Future<String> Function(int donationId) onCheckStatus,
 }) async {
+  final idempotencyKey = newIdempotencyKey();
   var acceptTerms = false;
   var isSaving = false;
   String? checkoutUrl;
   int? donationId;
+  String? checkoutEnvironment;
+  String? checkoutReference;
 
   await showDialog<void>(
     context: context,
@@ -116,7 +114,7 @@ Future<String?> showPaymentProcessDialog({
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            _formatCurrency(amount),
+                            _formatCurrency(amountCents),
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
@@ -171,7 +169,7 @@ Future<String?> showPaymentProcessDialog({
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Wompi',
+                                  'Wompi Sandbox',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -179,7 +177,7 @@ Future<String?> showPaymentProcessDialog({
                                 ),
                                 SizedBox(height: 2),
                                 Text(
-                                  'Tarjetas, PSE y Nequi',
+                                  'Pago de prueba',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Color(0xFF717182),
@@ -260,7 +258,10 @@ Future<String?> showPaymentProcessDialog({
                             ? null
                             : () async {
                                 setState(() => isSaving = true);
-                                final checkout = await onCheckout(amount);
+                                final checkout = await onCheckout(
+                                  amountCents,
+                                  idempotencyKey,
+                                );
                                 if (checkout == null) {
                                   if (dialogContext.mounted) {
                                     setState(() => isSaving = false);
@@ -269,6 +270,8 @@ Future<String?> showPaymentProcessDialog({
                                 }
                                 checkoutUrl = checkout.checkoutUrl;
                                 donationId = checkout.idDonacion;
+                                checkoutEnvironment = checkout.ambiente;
+                                checkoutReference = checkout.referencia;
                                 if (dialogContext.mounted) {
                                   Navigator.of(dialogContext).pop();
                                 }
@@ -334,7 +337,8 @@ Future<String?> showPaymentProcessDialog({
   }
 
   final uri = Uri.tryParse(checkoutUrl!);
-  if (uri == null || !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+  if (uri == null ||
+      !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
     Get.snackbar(
       'Error',
       'No se pudo abrir la pasarela de pago',
@@ -352,5 +356,7 @@ Future<String?> showPaymentProcessDialog({
     context: context,
     donationId: donationId!,
     onCheckStatus: onCheckStatus,
+    environment: checkoutEnvironment,
+    reference: checkoutReference,
   );
 }

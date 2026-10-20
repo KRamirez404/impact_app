@@ -11,8 +11,9 @@ const Map<String, String> _statusLabels = {
 };
 
 const Map<String, String> _statusMessages = {
-  'pendiente': 'Estamos confirmando tu pago con Wompi. Esto puede tardar unos segundos.',
-  'aprobada': '¡Gracias! Tu donación fue confirmada correctamente.',
+  'pendiente':
+      'Todavía no tenemos confirmación de Wompi. Si ya pagaste, no repitas la operación: actualiza el estado en unos segundos.',
+  'aprobada': 'Wompi confirmó el pago y el backend actualizó tu donación.',
   'rechazada': 'El pago no fue aprobado. Puedes intentarlo nuevamente.',
   'error': 'Ocurrió un error procesando el pago. Intenta nuevamente.',
   'anulada': 'El pago fue anulado.',
@@ -38,6 +39,8 @@ Future<String> showPaymentStatusDialog({
   required BuildContext context,
   required int donationId,
   required Future<String> Function(int donationId) onCheckStatus,
+  String? environment,
+  String? reference,
 }) async {
   final result = await showDialog<String>(
     context: context,
@@ -45,6 +48,8 @@ Future<String> showPaymentStatusDialog({
     builder: (_) => _PaymentStatusDialog(
       donationId: donationId,
       onCheckStatus: onCheckStatus,
+      environment: environment,
+      reference: reference,
     ),
   );
   return result ?? 'pendiente';
@@ -54,10 +59,14 @@ class _PaymentStatusDialog extends StatefulWidget {
   const _PaymentStatusDialog({
     required this.donationId,
     required this.onCheckStatus,
+    this.environment,
+    this.reference,
   });
 
   final int donationId;
   final Future<String> Function(int donationId) onCheckStatus;
+  final String? environment;
+  final String? reference;
 
   @override
   State<_PaymentStatusDialog> createState() => _PaymentStatusDialogState();
@@ -110,7 +119,11 @@ class _PaymentStatusDialogState extends State<_PaymentStatusDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_statusIcons[_status] ?? Icons.hourglass_top, color: color, size: 48),
+          Icon(
+            _statusIcons[_status] ?? Icons.hourglass_top,
+            color: color,
+            size: 48,
+          ),
           const SizedBox(height: 12),
           Text(
             _statusLabels[_status] ?? _status,
@@ -123,6 +136,33 @@ class _PaymentStatusDialogState extends State<_PaymentStatusDialog> {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 14, color: Color(0xFF717182)),
           ),
+          if (widget.environment == 'sandbox') ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7ED),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFED7AA)),
+              ),
+              child: const Text(
+                'Wompi Sandbox',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFFC2410C),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+          if (widget.reference != null && widget.reference!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Referencia: ${widget.reference}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF717182)),
+            ),
+          ],
           if (isPending) ...[
             const SizedBox(height: 16),
             const SizedBox(
