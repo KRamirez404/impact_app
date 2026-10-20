@@ -20,12 +20,48 @@ STATUS_MAP = {
     "ERROR": "error",
 }
 
-ENVIRONMENT_MAP = {"sandbox": "test", "prod": "prod", "production": "prod"}
+SANDBOX_API_URL = "https://sandbox.wompi.co/v1"
+PRODUCTION_API_URL = "https://production.wompi.co/v1"
+OFFICIAL_CHECKOUT_URL = "https://checkout.wompi.co/p/"
+ENVIRONMENT_MAP = {
+    "sandbox": "test",
+    "test": "test",
+    "prod": "prod",
+    "production": "prod",
+}
+ENVIRONMENT_LABELS = {"test": "sandbox", "prod": "production"}
+KEY_FIELDS = (
+    "WOMPI_PUBLIC_KEY",
+    "WOMPI_PRIVATE_KEY",
+    "WOMPI_INTEGRITY_SECRET",
+    "WOMPI_EVENTS_SECRET",
+)
+KEY_PREFIXES = {
+    "test": {
+        "WOMPI_PUBLIC_KEY": "pub_test_",
+        "WOMPI_PRIVATE_KEY": "prv_test_",
+        "WOMPI_INTEGRITY_SECRET": "test_integrity_",
+        "WOMPI_EVENTS_SECRET": "test_events_",
+    },
+    "prod": {
+        "WOMPI_PUBLIC_KEY": "pub_prod_",
+        "WOMPI_PRIVATE_KEY": "prv_prod_",
+        "WOMPI_INTEGRITY_SECRET": "prod_integrity_",
+        "WOMPI_EVENTS_SECRET": "prod_events_",
+    },
+}
 MAX_AMOUNT = Decimal("9999999999.99")
 
 
 class WompiQueryError(Exception):
     pass
+
+
+class WompiConfigurationError(Exception):
+    def __init__(self, missing=None, issues=None):
+        super().__init__("configuracion_wompi_invalida")
+        self.missing = list(missing or [])
+        self.issues = list(issues or [])
 
 
 def decimal_amount(amount) -> Decimal:
@@ -42,11 +78,54 @@ def decimal_amount(amount) -> Decimal:
         raise ValueError("Monto inválido") from exc
 
 
-def is_configured() -> bool:
+def configuration_status() -> dict:
     config = current_app.config
-    return all(config.get(key) for key in (
-        "WOMPI_PUBLIC_KEY", "WOMPI_INTEGRITY_SECRET", "WOMPI_PRIVATE_KEY", "WOMPI_EVENTS_SECRET",
-    ))
+    configured_keys = {
+        key: str(config.get(key) or "").strip() for key in KEY_FIELDS
+    }
+    missing = [key for key, value in configured_keys.items() if not value]
+    environment = str(config.get("WOMPI_ENV", "sandbox") or "").strip().lower()
+    event_environment = ENVIRONMENT_MAP.get(environment)
+    issues = []
+    if event_environment is None:
+        issues.append("ambiente_invalido")
+    if event_environment == "prod" and not config.get("WOMPI_ALLOW_PRODUCTION", False):
+        issues.append("produccion_bloqueada")
+    if not missing and event_environment:
+        expected_api = (
+            SANDBOX_API_URL if event_environment == "test" else PRODUCTION_API_URL
+        )
+        for key, prefix in KEY_PREFIXES[event_environment].items():
+            if not configured_keys[key].startswith(prefix):
+                issues.append(f"prefijo_{key.lower()}")
+        if str(config.get("WOMPI_API_URL", "")).rstrip("/") != expected_api:
+            issues.append("url_api")
+    if str(config.get("WOMPI_CURRENCY", "COP")).strip().upper() != "COP":
+        issues.append("moneda_invalida")
+    if str(config.get("WOMPI_CHECKOUT_URL", "")).rstrip("/") != OFFICIAL_CHECKOUT_URL.rstrip("/"):
+        issues.append("url_checkout")
+    return {
+        "ok": not missing and not issues,
+        "environment": ENVIRONMENT_LABELS.get(event_environment, environment or "desconocido"),
+        "event_environment": event_environment,
+        "missing": missing,
+        "issues": issues,
+    }
+
+
+def is_configured() -> bool:
+    return configuration_status()["ok"]
+
+
+def configured_environment() -> str:
+    status = configuration_status()
+    return status["environment"] if status["ok"] else "sandbox"
+
+
+def ensure_configured() -> None:
+    status = configuration_status()
+    if not status["ok"]:
+        raise WompiConfigurationError(status["missing"], status["issues"])
 
 
 def amount_to_cents(amount) -> int:
@@ -88,6 +167,7 @@ def build_integrity_signature(
 def build_checkout_url(
     *, reference: str, amount, customer_email: str | None = None, redirect_url: str | None = None
 ) -> str:
+    ensure_configured()
     config = current_app.config
     params = {
         "public-key": config["WOMPI_PUBLIC_KEY"],
@@ -198,9 +278,8 @@ def verify_event_checksum(payload: dict, header_checksum: str | None = None) -> 
 
 
 def environment_matches(payload: dict) -> bool:
-    configured = ENVIRONMENT_MAP.get(str(current_app.config.get("WOMPI_ENV", "sandbox")).lower())
-    received = payload.get("environment")
-    return configured is not None and configured == received
+    status = configuration_status()
+    return status["ok"] and status["event_environment"] == payload.get("environment")
 
 
 def valid_transaction_id(transaction_id) -> bool:
@@ -208,6 +287,7 @@ def valid_transaction_id(transaction_id) -> bool:
 
 
 def fetch_transaction(transaction_id: str) -> dict:
+    ensure_configured()
     config = current_app.config
     private_key = config.get("WOMPI_PRIVATE_KEY")
     if not private_key or not valid_transaction_id(transaction_id):

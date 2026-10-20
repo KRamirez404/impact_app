@@ -5,9 +5,9 @@ from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from models import AUDITORIA, CAMPAÑA, DONACION, db
+from models import AUDITORIA, CAMPAÑA, DONACION, PAGO_EVENTO, db
 from services import wompi_service
 from services.audit_service import registrar
 from services.authorization import current_user, is_support, require_role
@@ -33,7 +33,9 @@ def _checkout_response(donation, user, status):
         "id_campania": donation.id_campania,
         "referencia": donation.referencia_pago,
         "monto_estimado": float(donation.monto_estimado),
+        "monto_en_centavos": wompi_service.amount_to_cents(donation.monto_estimado),
         "estado_pago": donation.estado_pago,
+        "ambiente": wompi_service.configured_environment(),
         "checkout_url": wompi_service.build_checkout_url(
             reference=donation.referencia_pago,
             amount=donation.monto_estimado,
@@ -46,7 +48,13 @@ def _checkout_response(donation, user, status):
 @jwt_required()
 @require_role("donante")
 def create_donation_checkout():
-    if not wompi_service.is_configured() or current_app.config["WOMPI_CURRENCY"] != "COP":
+    config_status = wompi_service.configuration_status()
+    if not config_status["ok"]:
+        current_app.logger.warning(
+            "Wompi checkout no disponible (faltan=%s, problemas=%s)",
+            ",".join(config_status["missing"]) or "ninguna",
+            ",".join(config_status["issues"]) or "ninguno",
+        )
         return jsonify({"error": "Las donaciones en línea no están disponibles en este momento."}), 503
     try:
         data = json.loads(request.get_data(), parse_float=Decimal) if request.is_json else None
@@ -133,23 +141,37 @@ def get_donation_status(donation_id: int):
             return _payment_error("pago_no_persistido", 503)
     payload = donation.to_dict()
     payload["conciliacion"] = reconciliation if transaction_id else "sin_identificador"
+    payload["ambiente"] = wompi_service.configured_environment()
     return jsonify(payload), 200
 
 
 @wompi_bp.post("/webhooks/wompi")
 def wompi_webhook():
+    config_status = wompi_service.configuration_status()
+    if not config_status["ok"]:
+        current_app.logger.warning(
+            "Wompi webhook no disponible (faltan=%s, problemas=%s)",
+            ",".join(config_status["missing"]) or "ninguna",
+            ",".join(config_status["issues"]) or "ninguno",
+        )
+        return jsonify({"error": "No fue posible procesar el evento"}), 503
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict) or not isinstance(payload.get("event"), str):
         return jsonify({"error": "Evento inválido"}), 400
     if payload["event"] != "transaction.updated":
         return jsonify({"received": True}), 200
+    checksum = _event_checksum(payload)
     if not wompi_service.verify_event_checksum(payload, request.headers.get("X-Event-Checksum")):
         return jsonify({"error": "Firma de evento inválida"}), 401
     if not wompi_service.environment_matches(payload):
         return jsonify({"error": "Ambiente de evento inválido"}), 401
     transaction = payload["data"].get("transaction")
+    fingerprint = _event_fingerprint(payload, checksum)
     try:
         _validate_transaction(transaction)
+        if PAGO_EVENTO.query.filter_by(huella_evento=fingerprint).first():
+            current_app.logger.info("Wompi: evento duplicado %s", fingerprint[:12])
+            return jsonify({"received": True}), 200
         authoritative = wompi_service.fetch_transaction(transaction["id"])
         _validate_transaction(authoritative)
         if any(authoritative[field] != transaction[field] for field in ("id", "reference", "amount_in_cents", "currency")):
@@ -158,9 +180,23 @@ def wompi_webhook():
             current_app.logger.info("Wompi: evento con estado desactualizado; se utiliza consulta autoritativa")
         donation = DONACION.query.filter_by(referencia_pago=authoritative["reference"]).first()
         if donation:
-            _apply_transaction(donation, authoritative)
+            evento = _build_payment_event(payload, checksum, authoritative, "aplicado")
+            resultado = _apply_transaction(donation, authoritative, evento=evento)
+            if resultado != "verificada":
+                evento = _build_payment_event(payload, checksum, authoritative, "ignorado")
+                db.session.add(evento)
+                db.session.commit()
+                current_app.logger.info("Wompi: evento %s ignorado por transición terminal", fingerprint[:12])
         else:
-            current_app.logger.info("Wompi: referencia sin donación local; evento ignorado")
+            evento = _build_payment_event(payload, checksum, authoritative, "sin_donacion")
+            db.session.add(evento)
+            db.session.commit()
+            current_app.logger.info("Wompi: referencia sin donación local; evento %s registrado", fingerprint[:12])
+    except IntegrityError:
+        db.session.rollback()
+        if PAGO_EVENTO.query.filter_by(huella_evento=fingerprint).first():
+            return jsonify({"received": True}), 200
+        return _payment_error("conflicto_persistencia", 503)
     except wompi_service.WompiQueryError:
         return _payment_error("consulta_no_disponible", 503)
     except ConciliationError as exc:
@@ -168,6 +204,50 @@ def wompi_webhook():
     except SQLAlchemyError:
         return _payment_error("pago_no_persistido", 503)
     return jsonify({"received": True}), 200
+
+
+def _event_checksum(payload):
+    signature = payload.get("signature")
+    checksum = signature.get("checksum") if isinstance(signature, dict) else None
+    checksum = checksum or request.headers.get("X-Event-Checksum")
+    return checksum.lower() if isinstance(checksum, str) else None
+
+
+def _event_fingerprint(payload, checksum):
+    transaction = payload.get("data", {}).get("transaction")
+    if not isinstance(transaction, dict):
+        transaction = {}
+    canonical = json.dumps(
+        {
+            "event": payload.get("event"),
+            "timestamp": payload.get("timestamp"),
+            "checksum": checksum,
+            "id": transaction.get("id"),
+            "status": transaction.get("status"),
+            "amount_in_cents": transaction.get("amount_in_cents"),
+            "reference": transaction.get("reference"),
+            "currency": transaction.get("currency"),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _build_payment_event(payload, checksum, transaction, resultado):
+    return PAGO_EVENTO(
+        huella_evento=_event_fingerprint(payload, checksum),
+        tipo_evento=payload["event"],
+        id_donacion=None,
+        referencia=transaction.get("reference"),
+        wompi_transaction_id=transaction.get("id"),
+        estado_wompi=transaction.get("status"),
+        monto_en_centavos=transaction.get("amount_in_cents"),
+        moneda=transaction.get("currency"),
+        ambiente=payload.get("environment"),
+        resultado=resultado,
+    )
 
 
 def _validate_transaction(transaction):
@@ -192,7 +272,7 @@ def _validate_transaction(transaction):
         raise ConciliationError("anulacion_sin_tarjeta")
 
 
-def _apply_transaction(donation: DONACION, transaction: dict) -> str:
+def _apply_transaction(donation: DONACION, transaction: dict, *, evento=None) -> str:
     _validate_transaction(transaction)
     campaign = CAMPAÑA.query.filter_by(id_campania=donation.id_campania).populate_existing().with_for_update().one()
     donation = DONACION.query.filter_by(id_donacion=donation.id_donacion).populate_existing().with_for_update().one()
@@ -248,5 +328,8 @@ def _apply_transaction(donation: DONACION, transaction: dict) -> str:
             descripcion=description, entidad="DONACION", id_entidad=donation.id_donacion,
             direccion_ip=request.remote_addr, confirmar=False,
         )
+    if evento is not None:
+        evento.id_donacion = donation.id_donacion
+        db.session.add(evento)
     db.session.commit()
     return "verificada"

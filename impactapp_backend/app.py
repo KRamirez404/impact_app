@@ -18,6 +18,7 @@ from models import (
     db,
 )
 from routes import register_blueprints
+from services import wompi_service
 from services.auth_service import hash_password
 
 
@@ -269,6 +270,15 @@ def create_app():
         ensure_campaign_schema()
         ensure_donation_schema()
         seed_database()
+        wompi_status = wompi_service.configuration_status()
+        if wompi_status["ok"]:
+            app.logger.info("Wompi: ambiente %s configurado", wompi_status["environment"])
+        else:
+            app.logger.warning(
+                "Wompi: configuración incompleta o inválida (faltan=%s, problemas=%s)",
+                ",".join(wompi_status["missing"]) or "ninguna",
+                ",".join(wompi_status["issues"]) or "ninguno",
+            )
 
     return app
 

@@ -74,9 +74,16 @@ def get_campaign_donations(campaign_id: int):
     donations = DONACION.query.filter_by(id_campania=campaign_id).all()
     payload = []
     for donation in donations:
-        data = donation.to_dict()
-        data["integridad"] = donation_is_intact(donation, secret)
-        payload.append(data)
+        payload.append({
+            "id_donacion": donation.id_donacion,
+            "id_campania": donation.id_campania,
+            "tipo": donation.tipo,
+            "monto_estimado": float(donation.monto_estimado or 0),
+            "descripcion": donation.descripcion,
+            "fecha_donacion": donation.fecha_donacion.isoformat(),
+            "estado_pago": donation.estado_pago,
+            "integridad": donation_is_intact(donation, secret),
+        })
     return jsonify(payload), 200
 
 

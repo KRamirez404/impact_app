@@ -36,10 +36,11 @@ class Config:
     WOMPI_INTEGRITY_SECRET = os.getenv("WOMPI_INTEGRITY_SECRET", "")
     WOMPI_EVENTS_SECRET = os.getenv("WOMPI_EVENTS_SECRET", "")
     WOMPI_ENV = os.getenv("WOMPI_ENV", "sandbox")
+    WOMPI_ALLOW_PRODUCTION = os.getenv("WOMPI_ALLOW_PRODUCTION", "0") == "1"
     WOMPI_CURRENCY = os.getenv("WOMPI_CURRENCY", "COP")
     WOMPI_CHECKOUT_URL = os.getenv("WOMPI_CHECKOUT_URL", "https://checkout.wompi.co/p/")
     WOMPI_API_URL = os.getenv("WOMPI_API_URL", "https://sandbox.wompi.co/v1")
     WOMPI_MIN_AMOUNT = Decimal(os.getenv("WOMPI_MIN_AMOUNT", "1000"))
     DONATION_REDIRECT_URL = os.getenv(
-        "DONATION_REDIRECT_URL", "http://localhost:8080/donacion/resultado"
+        "DONATION_REDIRECT_URL", "https://transaction-redirect.wompi.co/check"
     )

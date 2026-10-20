@@ -236,10 +236,10 @@ def test_webhook_wrong_event_ignored(client, wompi_config):
 
 
 def test_webhook_environment_mismatch_rejected(client, wompi_config):
-    app.config["WOMPI_ENV"] = "prod"
     _, token = _token(client)
     donation = _checkout(client, token).get_json()
-    resp = client.post("/api/webhooks/wompi", json=_event(donation["referencia"]))
+    payload = _event(donation["referencia"], environment="prod")
+    resp = client.post("/api/webhooks/wompi", json=payload)
     assert resp.status_code == 401
 
 
@@ -351,3 +351,42 @@ def test_build_event_drives_webhook_approval(client, wompi_config):
     assert resp.status_code == 200
     with app.app_context():
         assert DONACION.query.get(donation["id_donacion"]).estado_pago == "aprobada"
+
+
+def test_checkout_response_incluye_ambiente_y_centavos(client, wompi_config):
+    _, token = _token(client)
+    body = _checkout(client, token, amount="50000.50").get_json()
+    assert body["ambiente"] == "sandbox"
+    assert body["monto_en_centavos"] == 5000050
+    assert body["monto_estimado"] == 50000.5
+    with app.app_context():
+        assert DONACION.query.get(body["id_donacion"]).monto_estimado == 50000.50
+
+
+def test_checkout_response_no_expone_secretos(client, wompi_config):
+    _, token = _token(client)
+    response = _checkout(client, token)
+    texto = response.get_data(as_text=True)
+    assert app.config["WOMPI_PRIVATE_KEY"] not in texto
+    assert app.config["WOMPI_INTEGRITY_SECRET"] not in texto
+    assert app.config["WOMPI_EVENTS_SECRET"] not in texto
+    assert app.config["WOMPI_PUBLIC_KEY"] in texto
+
+
+def test_listado_publico_no_expone_datos_privados_de_pago(client, wompi_config):
+    _, token = _token(client)
+    donation = _checkout(client, token).get_json()
+    listing = client.get("/api/donations/campaign/1").get_json()
+    item = next(d for d in listing if d["id_donacion"] == donation["id_donacion"])
+    for campo in (
+        "id_donante",
+        "checksum",
+        "referencia_pago",
+        "wompi_transaction_id",
+        "clave_checkout",
+        "metodo_pago",
+        "fecha_pago",
+    ):
+        assert campo not in item
+    assert item["estado_pago"] == "pendiente"
+    assert item["integridad"] is True
