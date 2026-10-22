@@ -129,24 +129,34 @@ Requisito: Android SDK y Java configurados (`flutter doctor` sin errores en la s
 ```bash
 cd impactapp_flutter
 
-# APK debug (demostración / instalación directa)
+# APK debug para emulador (10.0.2.2 = host visto desde el emulador)
 flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:5000/api
 # Salida: build/app/outputs/flutter-apk/app-debug.apk
+
+# APK debug para móvil físico en la misma red Wi-Fi (usa la IP local del equipo)
+flutter build apk --debug --split-per-abi \
+  --dart-define=API_BASE_URL=http://192.168.1.113:5000/api
+# Salida: build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk (la mayoría de móviles)
 
 # APK release (firma con keystore propio)
 flutter build apk --release --dart-define=API_BASE_URL=https://TU_BACKEND/api
 ```
 
-> Para conectar un dispositivo físico al backend durante la demo, reemplaza `10.0.2.2` por la IP local del equipo (p. ej. `http://192.168.1.10:5000/api`).
+> La URL compilada es solo el valor por defecto. En la pantalla de login, la opción **Configurar servidor** permite cambiarla en tiempo de ejecución y probar la conexión (`/api/health`) sin recompilar el APK.
+>
+> El APK debug permite HTTP plano. Un APK release bloquea tráfico HTTP en Android; para pruebas locales usa debug o publica el backend con HTTPS.
 
 ---
 
-### Usuario admin precargado
+### Usuario soporte
 
-| Campo | Valor |
-|---|---|
-| Correo | `admin@impactapp.co` |
-| Contraseña | `Admin123*` |
+El código de inicialización no crea cuentas administrativas ni contraseñas conocidas. Para crear o rotar una cuenta con rol `soporte`, usa una contraseña única y ejecuta dentro del contenedor:
+
+```bash
+docker exec -it impactapp_backend python scripts/rotate_support_password.py
+```
+
+El script solicita correo y contraseña de forma interactiva, valida la política de contraseñas y no imprime el valor ingresado.
 
 ---
 

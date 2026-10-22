@@ -51,9 +51,11 @@ pip install -r requirements.txt && python app.py
 
 Verificación rápida: `curl http://localhost:5000/api/health`.
 
-## Credenciales seed
+## Credenciales de soporte
 
-- Admin soporte: `admin@impactapp.co` / `Admin123*` (se crea en `seed_database()`).
+- No se crean credenciales administrativas por defecto.
+- La rotación se realiza con `docker exec -it impactapp_backend python scripts/rotate_support_password.py`.
+- No documentar contraseñas reales ni reutilizar credenciales de demostración.
 
 ## Arquitectura
 
@@ -84,7 +86,7 @@ features/{modulo}/
 - `domain` NO importa `infrastructure`.
 - `app/routes/app_routes.dart` — constantes de rutas; `app_pages.dart` — mapa GetPage.
 - `core/network/dio_client.dart` — singleton `DioClient.instance`, inyecta `Bearer token` desde GetStorage y redirige a login en 401.
-- `core/constants/api_constants.dart` — URLs; `baseUrl` viene de `--dart-define=API_BASE_URL`.
+- `core/constants/api_constants.dart` — URLs; `baseUrl` viene de `--dart-define=API_BASE_URL` y puede sobrescribirse en runtime desde login (`core/config/server_config.dart` + GetStorage).
 - `shared/` — tema (`app_theme.dart`, `AppColors`) y widgets reutilizables.
 - Features: `auth`, `campaigns`, `collection_points`, `home`, `ratings`, `support` (panel soporte), `verification` (soportes/evidencias).
 
@@ -107,7 +109,7 @@ Prefijo `/api`. Públicas: `GET /health`, `/auth/privacy-policy`, `GET /campaign
 - No ejecutar `flutter run` desde la raíz; siempre `cd impactapp_flutter`.
 - El emulador Android usa `10.0.2.2`, no `localhost`.
 - `uploads/` e `instance/` están en `.gitignore`; no commitear evidencias ni la BD.
-- Donaciones económicas usan Wompi Checkout Web: `POST /api/donations/checkout` + webhook `POST /api/webhooks/wompi`. Solo `estado_pago="aprobada"` cuenta para la meta. Las donaciones en especie siguen por `POST /api/donations`.
+- Donaciones económicas usan Wompi Checkout Web: `POST /api/donations/checkout` + webhook `POST /api/webhooks/wompi`. Solo `estado_pago="aprobada"` cuenta para la meta. Si el webhook no llega (backend en LAN), `GET /api/donations/:id/status` concilia por referencia contra Wompi. Las donaciones en especie siguen por `POST /api/donations`.
 - Wompi corre en Sandbox por defecto (`WOMPI_*` en `.env`); producción está bloqueada con `WOMPI_ALLOW_PRODUCTION=0`. Sandbox no cobra dinero real. Ver `docs/wompi_sandbox.md` y `README.md`.
 - Existen proyectos `android/` e `ios/`; la adaptación es parcial y la entrega móvil requiere configuración y verificación en dispositivos. Ver `Plan_Cierre.txt` y `README.md`.
 - `JWT_SECRET_KEY` se autogenera si falta, pero `.env` debe definirla para sesiones estables.
