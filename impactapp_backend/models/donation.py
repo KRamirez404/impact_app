@@ -61,3 +61,14 @@ class DONACION(db.Model):
             "metodo_pago": self.metodo_pago,
             "fecha_pago": self.fecha_pago.isoformat() if self.fecha_pago else None,
         }
+
+    def to_public_dict(self):
+        return {
+            "id_donacion": self.id_donacion,
+            "id_campania": self.id_campania,
+            "tipo": self.tipo,
+            "monto_estimado": float(self.monto_estimado or 0),
+            "descripcion": self.descripcion,
+            "fecha_donacion": self.fecha_donacion.isoformat(),
+            "estado_pago": self.estado_pago,
+        }

@@ -48,14 +48,18 @@ def list_campaigns():
     campaigns = query.order_by(CAMPAÑA.id_campania.desc()).all()
     payload = []
     for campaign in campaigns:
-        data = campaign.to_dict(include_relations=True)
+        data = campaign.to_public_dict()
         data["donantes_count"] = (
             db.session.query(db.func.count(db.distinct(DONACION.id_donante)))
             .filter(DONACION.id_campania == campaign.id_campania)
             .scalar()
             or 0
         )
-        data["soportes"] = [s.to_dict() for s in campaign.soportes]
+        data["soportes"] = [
+            support.to_public_dict()
+            for support in campaign.soportes
+            if support.validado
+        ]
         payload.append(data)
     return jsonify(payload), 200
 
@@ -143,12 +147,16 @@ def get_campaign(campaign_id: int):
     if campaign.eliminada and not is_support():
         return jsonify({"error": "Campaña no encontrada"}), 404
     current_user_id = get_jwt_identity()
-    payload = campaign.to_dict(include_relations=True)
+    payload = campaign.to_public_dict()
     payload["valoraciones"] = [r.to_dict() for r in campaign.valoraciones if r.visible]
-    payload["soportes"] = [s.to_dict() for s in campaign.soportes]
+    payload["soportes"] = [
+        support.to_public_dict()
+        for support in campaign.soportes
+        if support.validado
+    ]
     payload["seguimientos"] = [s.to_dict() for s in campaign.seguimientos]
     payload["puntos_recoleccion"] = [p.to_dict() for p in campaign.puntos_recoleccion]
-    payload["donaciones"] = [d.to_dict() for d in campaign.donaciones]
+    payload["donaciones"] = [d.to_public_dict() for d in campaign.donaciones]
     payload["donantes_count"] = (
         db.session.query(db.func.count(db.distinct(DONACION.id_donante)))
         .filter(DONACION.id_campania == campaign.id_campania)
@@ -194,7 +202,9 @@ def get_campaign_donors(campaign_id: int):
     result = []
     for donation in donations:
         d = donation.to_dict()
-        d["donante"] = donation.donante.to_dict() if donation.donante else {}
+        d["donante"] = (
+            donation.donante.to_public_dict() if donation.donante else {}
+        )
         d["es_anonimo"] = False
         result.append(d)
 

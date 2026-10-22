@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy.engine import make_url
@@ -33,9 +34,21 @@ from app import (  # noqa: E402
     ensure_user_schema,
     seed_database,
 )
-from models import db  # noqa: E402
+from models import USUARIO, db  # noqa: E402
+from services.auth_service import hash_password  # noqa: E402
+from services.rate_limit import reset_rate_limits  # noqa: E402
 
 from app import app  # noqa: E402
+
+SUPPORT_EMAIL = "soporte@test.co"
+SUPPORT_PASSWORD = "SupportPassw0rd!"
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limits():
+    reset_rate_limits()
+    yield
+    reset_rate_limits()
 
 
 @pytest.fixture()
@@ -47,6 +60,19 @@ def client():
         ensure_user_schema()
         ensure_campaign_schema()
         ensure_donation_schema()
+        seed_database()
+        support = USUARIO(
+            nombre="Soporte",
+            apellido="Pruebas",
+            correo=SUPPORT_EMAIL,
+            contraseña_hash=hash_password(SUPPORT_PASSWORD),
+            estado="activo",
+            rol="soporte",
+            acepta_tratamiento=True,
+            fecha_aceptacion=datetime.utcnow(),
+        )
+        db.session.add(support)
+        db.session.commit()
         seed_database()
     with app.test_client() as test_client:
         yield test_client
@@ -72,3 +98,7 @@ def login(client, correo, contrasena="Passw0rd!"):
 
 def get_token(client, correo, contrasena="Passw0rd!"):
     return login(client, correo, contrasena).get_json()["access_token"]
+
+
+def get_support_token(client):
+    return get_token(client, SUPPORT_EMAIL, SUPPORT_PASSWORD)

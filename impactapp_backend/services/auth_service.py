@@ -169,6 +169,7 @@ def login_user(correo: str, contrasena: str):
 
     token = create_access_token(
         identity=str(user.id_usuario),
+        additional_claims={"token_version": int(user.token_version or 0)},
         expires_delta=timedelta(hours=24),
     )
     return token, user

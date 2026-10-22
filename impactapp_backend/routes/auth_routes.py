@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from models import USUARIO, db
 from services.audit_service import registrar
+from services.rate_limit import client_ip, enforce, too_many_requests
 from services.auth_service import (
     PRIVACY_POLICY,
     anonymize_user,
@@ -29,6 +30,13 @@ def privacy_policy():
 
 @auth_bp.post("/register")
 def register():
+    retry_after = enforce(
+        f"register:{client_ip()}",
+        "RATE_LIMIT_REGISTER_ATTEMPTS",
+        "RATE_LIMIT_REGISTER_WINDOW",
+    )
+    if retry_after:
+        return too_many_requests(retry_after)
     try:
         data = _json_object()
         user = register_user(data)
@@ -60,6 +68,21 @@ def login():
         return jsonify({"error": "Correo y contraseña son requeridos"}), 400
     if len(correo) > 150 or len(contrasena.encode("utf-8")) > 72:
         return jsonify({"error": "Las credenciales superan la longitud permitida"}), 400
+
+    normalized_email = correo.strip().lower()
+    retry_after = enforce(
+        f"login:{client_ip()}:{normalized_email}",
+        "RATE_LIMIT_LOGIN_ATTEMPTS",
+        "RATE_LIMIT_LOGIN_WINDOW",
+    )
+    if not retry_after:
+        retry_after = enforce(
+            f"login-ip:{client_ip()}",
+            "RATE_LIMIT_LOGIN_IP_ATTEMPTS",
+            "RATE_LIMIT_LOGIN_WINDOW",
+        )
+    if retry_after:
+        return too_many_requests(retry_after)
 
     try:
         token, user = login_user(correo, contrasena)

@@ -32,11 +32,13 @@ class InfoTab extends StatelessWidget {
                 organizer.isNotEmpty ? organizer : 'Sin datos',
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 4),
-              Text(
-                campaign.creadorCorreo.isNotEmpty ? campaign.creadorCorreo : 'Sin correo',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF717182)),
-              ),
+              if (campaign.creadorCorreo.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  campaign.creadorCorreo,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF717182)),
+                ),
+              ],
             ],
           ),
         ),

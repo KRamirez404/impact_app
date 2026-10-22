@@ -38,3 +38,13 @@ class SOPORTE(db.Model):
             "validado": self.validado,
         }
 
+    def to_public_dict(self):
+        data = {
+            "tipo": self.tipo,
+            "descripcion": self.descripcion,
+            "validado": self.validado,
+        }
+        if self.validado and self.tipo in ("foto", "imagen"):
+            data["url_o_ruta"] = self.url_o_ruta
+        return data
+

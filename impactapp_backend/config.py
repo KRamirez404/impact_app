@@ -7,6 +7,13 @@ def _split_env(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
 
 
+def _int_env(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
 def _database_uri():
     uri = os.getenv("DATABASE_URL") or "sqlite:///impactapp.db"
     if uri.startswith("postgres://"):
@@ -25,6 +32,16 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     FINANCIAL_ASSIGNMENTS_ENABLED = os.getenv("FINANCIAL_ASSIGNMENTS_ENABLED", "0") == "1"
     FINANCIAL_ADMIN_USER_ID = os.getenv("FINANCIAL_ADMIN_USER_ID", "")
+
+    RATE_LIMIT_LOGIN_ATTEMPTS = _int_env("RATE_LIMIT_LOGIN_ATTEMPTS", 10)
+    RATE_LIMIT_LOGIN_IP_ATTEMPTS = _int_env("RATE_LIMIT_LOGIN_IP_ATTEMPTS", 50)
+    RATE_LIMIT_LOGIN_WINDOW = _int_env("RATE_LIMIT_LOGIN_WINDOW", 900)
+    RATE_LIMIT_REGISTER_ATTEMPTS = _int_env("RATE_LIMIT_REGISTER_ATTEMPTS", 5)
+    RATE_LIMIT_REGISTER_WINDOW = _int_env("RATE_LIMIT_REGISTER_WINDOW", 3600)
+    RATE_LIMIT_UPLOAD_ATTEMPTS = _int_env("RATE_LIMIT_UPLOAD_ATTEMPTS", 30)
+    RATE_LIMIT_UPLOAD_WINDOW = _int_env("RATE_LIMIT_UPLOAD_WINDOW", 3600)
+    RATE_LIMIT_WEBHOOK_ATTEMPTS = _int_env("RATE_LIMIT_WEBHOOK_ATTEMPTS", 600)
+    RATE_LIMIT_WEBHOOK_WINDOW = _int_env("RATE_LIMIT_WEBHOOK_WINDOW", 60)
 
     ALLOWED_ORIGINS = _split_env(
         "ALLOWED_ORIGINS",

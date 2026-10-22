@@ -1,6 +1,6 @@
 import uuid
 
-from conftest import get_token, login, register_user
+from conftest import get_support_token, login, register_user, SUPPORT_EMAIL
 
 
 def test_register_success_defaults_to_donante(client):
@@ -55,8 +55,7 @@ def test_login_success_and_wrong_password(client):
 
 
 def test_login_inactive_user_rejected(client):
-    correo = f"bl_{uuid.uuid4().hex[:8]}@test.co"
-    token = get_token(client, "admin@impactapp.co", "Admin123*")
+    token = get_support_token(client)
     client.delete("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
-    resp = login(client, "admin@impactapp.co", "Admin123*")
+    resp = login(client, SUPPORT_EMAIL, "SupportPassw0rd!")
     assert resp.status_code == 401

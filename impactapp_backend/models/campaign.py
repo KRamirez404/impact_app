@@ -93,3 +93,22 @@ class CAMPAÑA(db.Model):
             data["auditor"] = self.auditor.to_dict() if self.auditor else None
             data["eliminador"] = self.eliminador.to_dict() if self.eliminador else None
         return data
+
+    def to_public_dict(self):
+        return {
+            "id_campania": self.id_campania,
+            "titulo": self.titulo,
+            "descripcion": self.descripcion,
+            "id_ciudad": self.id_ciudad,
+            "id_categoria": self.id_categoria,
+            "id_creador": self.id_creador,
+            "tipo_ayuda_requerida": self.tipo_ayuda_requerida,
+            "meta_monetaria": float(self.meta_monetaria or 0),
+            "fecha_inicio": self.fecha_inicio.isoformat(),
+            "fecha_fin": self.fecha_fin.isoformat(),
+            "estado": self.estado,
+            "porcentaje_avance": float(self.porcentaje_avance or 0),
+            "ciudad": self.ciudad.to_dict() if self.ciudad else None,
+            "categoria": self.categoria.to_dict() if self.categoria else None,
+            "creador": self.creador.to_public_dict() if self.creador else None,
+        }

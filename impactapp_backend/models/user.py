@@ -35,6 +35,9 @@ class USUARIO(db.Model):
         default="activo",
         nullable=False,
     )
+    token_version = db.Column(
+        db.Integer, default=0, server_default="0", nullable=False
+    )
 
     campañas = db.relationship(
         "CAMPAÑA",
@@ -57,4 +60,12 @@ class USUARIO(db.Model):
             "rol": self.rol,
             "fecha_registro": self.fecha_registro.isoformat(),
             "estado": self.estado,
+        }
+
+    def to_public_dict(self):
+        return {
+            "id_usuario": self.id_usuario,
+            "nombre": self.nombre,
+            "apellido": self.apellido,
+            "foto_perfil": self.foto_perfil,
         }

@@ -1,13 +1,19 @@
 import os
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
-from flask import Flask, jsonify, send_from_directory
+from dotenv import load_dotenv
+from flask import Flask, current_app, jsonify, send_from_directory
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import SQLAlchemyError
 
-from config import Config
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
+from config import Config  # noqa: E402
 from models import (
+    ARCHIVO,
     CAMPAÑA,
     CATEGORIA,
     CIUDAD,
@@ -19,7 +25,6 @@ from models import (
 )
 from routes import register_blueprints
 from services import wompi_service
-from services.auth_service import hash_password
 
 
 def seed_database():
@@ -60,26 +65,13 @@ def seed_database():
         db.session.add_all([CATEGORIA(nombre=n, descripcion=d) for n, d in categorias])
         db.session.commit()
 
-    admin = USUARIO.query.filter_by(correo="admin@impactapp.co").first()
-    if not admin:
-        admin = USUARIO(
-            nombre="Admin",
-            apellido="ImpactApp",
-            correo="admin@impactapp.co",
-            contraseña_hash=hash_password("Admin123*"),
-            telefono="3000000000",
-            estado="activo",
-            rol="soporte",
-            acepta_tratamiento=True,
-            fecha_aceptacion=datetime.utcnow(),
-        )
-        db.session.add(admin)
-        db.session.commit()
-    else:
-        admin.rol = "soporte"
-        db.session.commit()
+    support_user = (
+        USUARIO.query.filter_by(rol="soporte", estado="activo")
+        .order_by(USUARIO.id_usuario.asc())
+        .first()
+    )
 
-    if CAMPAÑA.query.count() == 0:
+    if CAMPAÑA.query.count() == 0 and support_user:
         bogota = CIUDAD.query.filter_by(nombre="Bogotá").first()
         salud = CATEGORIA.query.filter_by(nombre="Salud").first()
         campaign = CAMPAÑA(
@@ -87,7 +79,7 @@ def seed_database():
             descripcion="Campaña para comprar medicamentos esenciales para familias en situación crítica.",
             id_ciudad=bogota.id_ciudad,
             id_categoria=salud.id_categoria,
-            id_creador=admin.id_usuario,
+            id_creador=support_user.id_usuario,
             tipo_ayuda_requerida="economica",
             meta_monetaria=5000000,
             fecha_inicio=date.today(),
@@ -126,6 +118,15 @@ def seed_database():
         )
         db.session.add(tracking)
         db.session.commit()
+    elif CAMPAÑA.query.count() == 0:
+        current_app.logger.warning(
+            "No hay usuario soporte activo; no se crea la campaña de demostración"
+        )
+
+
+def database_available():
+    with db.engine.connect() as connection:
+        connection.execute(text("SELECT 1"))
 
 
 def ensure_user_schema():
@@ -153,6 +154,11 @@ def ensure_user_schema():
         db.session.commit()
     if "fecha_aceptacion" not in columns:
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN fecha_aceptacion TIMESTAMP'))
+        db.session.commit()
+    if "token_version" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "USUARIO" ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0')
+        )
         db.session.commit()
 
 
@@ -241,7 +247,22 @@ def create_app():
     app.config.from_object(Config)
 
     db.init_app(app)
-    JWTManager(app)
+    jwt = JWTManager(app)
+
+    @jwt.token_in_blocklist_loader
+    def token_is_revoked(jwt_header, jwt_payload):
+        try:
+            user_id = int(jwt_payload.get("sub"))
+        except (TypeError, ValueError):
+            return True
+        user = db.session.get(USUARIO, user_id)
+        if user is None:
+            return False
+        token_version = jwt_payload.get("token_version", 0)
+        if type(token_version) is not int:
+            return True
+        return token_version != int(user.token_version or 0)
+
     allowed_origins = [
         r"https?://localhost:\d+",
         r"https?://127\.0\.0\.1:\d+",
@@ -258,11 +279,113 @@ def create_app():
 
     @app.get("/api/health")
     def health():
-        return jsonify({"status": "ok", "service": "ImpactApp Backend"}), 200
+        try:
+            database_available()
+        except SQLAlchemyError:
+            current_app.logger.warning("Health: PostgreSQL no disponible")
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "service": "ImpactApp Backend",
+                        "database": "unavailable",
+                    }
+                ),
+                503,
+            )
+        return (
+            jsonify(
+                {
+                    "status": "ok",
+                    "service": "ImpactApp Backend",
+                    "database": "ok",
+                }
+            ),
+            200,
+        )
+
+    def _archive_is_owned_by(file_path, user_id):
+        archive = ARCHIVO.query.filter_by(ruta=file_path).first()
+        return archive is None or archive.id_usuario == user_id
+
+    def _public_upload(file_path):
+        private_reference = SOPORTE.query.filter(
+            SOPORTE.url_o_ruta == file_path,
+            ~SOPORTE.tipo.in_(("foto", "imagen")),
+        ).first()
+        if private_reference:
+            return False
+        profile_user = USUARIO.query.filter_by(foto_perfil=file_path).first()
+        if profile_user and _archive_is_owned_by(file_path, profile_user.id_usuario):
+            return True
+        for tracking in SEGUIMIENTO.query.filter_by(evidencia_url=file_path).all():
+            if (
+                tracking.campania
+                and _archive_is_owned_by(
+                    file_path, tracking.campania.id_creador
+                )
+            ):
+                return True
+        for support in SOPORTE.query.filter_by(url_o_ruta=file_path).all():
+            if support.tipo not in ("foto", "imagen"):
+                continue
+            if (
+                support.campania
+                and _archive_is_owned_by(
+                    file_path, support.campania.id_creador
+                )
+            ):
+                return True
+        return False
+
+    def _can_access_private_upload(user, file_path):
+        if user.rol == "soporte":
+            return True
+        upload = ARCHIVO.query.filter_by(
+            ruta=file_path, id_usuario=user.id_usuario
+        ).first()
+        if upload:
+            return True
+        supports = SOPORTE.query.filter_by(url_o_ruta=file_path).all()
+        return any(
+            support.campania
+            and support.campania.id_creador == user.id_usuario
+            for support in supports
+        )
 
     @app.get("/uploads/<path:filename>")
+    @jwt_required(optional=True)
     def uploaded_file(filename):
-        return send_from_directory(upload_abs_path, filename)
+        if (
+            not filename
+            or "/" in filename
+            or "\\" in filename
+            or filename.startswith(".")
+        ):
+            return jsonify({"error": "Archivo no encontrado"}), 404
+        file_path = f"/uploads/{filename}"
+        current_upload_path = os.path.join(
+            current_app.root_path, current_app.config["UPLOAD_FOLDER"]
+        )
+        if _public_upload(file_path):
+            response = send_from_directory(current_upload_path, filename)
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["Cache-Control"] = "public, max-age=3600"
+            return response
+        identity = get_jwt_identity()
+        if identity is None:
+            return jsonify({"error": "Autenticación requerida"}), 401
+        user = USUARIO.query.get(int(identity))
+        if (
+            user is None
+            or user.estado != "activo"
+            or not _can_access_private_upload(user, file_path)
+        ):
+            return jsonify({"error": "Archivo no encontrado"}), 404
+        response = send_from_directory(current_upload_path, filename)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
 
     with app.app_context():
         db.create_all()
