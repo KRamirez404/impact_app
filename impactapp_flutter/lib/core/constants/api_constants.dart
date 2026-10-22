@@ -27,7 +27,7 @@ class ApiConstants {
     }
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-      return 'URL inválida. Ejemplo: http://192.168.1.113:5000/api';
+      return 'URL inválida. Ejemplo: http://192.168.1.10:5000/api';
     }
     if (uri.scheme != 'http' && uri.scheme != 'https') {
       return 'La URL debe iniciar con http:// o https://';

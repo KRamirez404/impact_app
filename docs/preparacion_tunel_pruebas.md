@@ -1,7 +1,9 @@
 # Preparación de seguridad y APK para pruebas móviles
 
-Fecha: 2026-10-21  
-Rama: `feat/etapa-2-transferencias-comprobantes`  
+Fecha: 2026-10-21
+
+Rama: `feat/etapa-2-transferencias-comprobantes`
+
 HEAD: `47ed2f756384b13eb956a610e063777b7f7c6f49`
 
 ## 1. Estado inicial preservado

@@ -36,7 +36,7 @@ El backend quedó `Up`, healthcheck `healthy` y `GET /api/health` responde `200`
 
 ## 3. Respaldo PostgreSQL
 
-- Ruta: `/home/keith/impactapp_db_pre_recuperacion_20261021_143214.dump`
+- Ruta: `~/impactapp_db_pre_recuperacion_20261021_143214.dump`
 - Tamaño: `52.206` bytes
 - SHA-256: `07a81f62b1ffe2d92917507997f8566148f657093f1c7e56b8c08cfeb53c355c`
 - `pg_dump` salida: `0`
@@ -112,10 +112,10 @@ Instalación en espacio de usuario, sin `sudo`:
 
 | Herramienta | Versión / ruta |
 |---|---|
-| Flutter | 3.47.2 (`/home/keith/fvm/versions/stable`) |
+| Flutter | 3.47.2 (`~/fvm/versions/stable`) |
 | Dart | 3.13.2 |
-| JDK | Temurin 21.0.12.1+1 (`/home/keith/.local/opt/jdk-21`) |
-| Android SDK | `/home/keith/Android/Sdk` |
+| JDK | Temurin 21.0.12.1+1 (`~/.local/opt/jdk-21`) |
+| Android SDK | `~/Android/Sdk` |
 | Platform | android-36 |
 | Build-tools | 36.0.0 |
 | NDK | 28.2.13676358 |
@@ -134,7 +134,7 @@ Gradle instaló automáticamente platforms 34/35 y CMake 3.22.1 requeridos por d
 
 ## 9. APK debug
 
-- Ruta absoluta: `/home/keith/WorkSpace/impact_app/impactapp_flutter/build/app/outputs/apk/debug/app-debug.apk`
+- Ruta absoluta: `~/WorkSpace/impact_app/impactapp_flutter/build/app/outputs/apk/debug/app-debug.apk`
 - Tamaño: `162.592.155` bytes (156 MB)
 - SHA-256: `cee60d62ebcd56189f00be6ba1a588e7220f2977a8dad5d969b6dd9870f03983`
 - ZIP íntegro: `unzip -t` sin errores.
@@ -232,14 +232,14 @@ Instalar el APK cuando haya un dispositivo autorizado:
 
 ```bash
 adb devices -l
-adb install -r /home/keith/WorkSpace/impact_app/impactapp_flutter/build/app/outputs/apk/debug/app-debug.apk
+adb install -r ~/WorkSpace/impact_app/impactapp_flutter/build/app/outputs/apk/debug/app-debug.apk
 adb shell monkey -p co.impactapp.impactapp_flutter -c android.intent.category.LAUNCHER 1
 ```
 
 Recompilar para un backend HTTPS:
 
 ```bash
-cd /home/keith/WorkSpace/impact_app/impactapp_flutter
+cd ~/WorkSpace/impact_app/impactapp_flutter
 flutter build apk --debug --dart-define=API_BASE_URL=https://api.TU_DOMINIO/api
 ```
 
@@ -247,7 +247,7 @@ flutter build apk --debug --dart-define=API_BASE_URL=https://api.TU_DOMINIO/api
 
 | Objetivo | Estado | Evidencia |
 |---|---|---|
-| Respaldo PostgreSQL | COMPLETADO | `/home/keith/impactapp_db_pre_recuperacion_20261021_143214.dump`, 52.206 bytes, SHA-256 `07a81f…355c`, `pg_restore --list` OK |
+| Respaldo PostgreSQL | COMPLETADO | `~/impactapp_db_pre_recuperacion_20261021_143214.dump`, 52.206 bytes, SHA-256 `07a81f…355c`, `pg_restore --list` OK |
 | Backend | COMPLETADO | `Up (healthy)`, `/api/health` 200, restart `unless-stopped` |
 | Integridad de datos | COMPLETADO | Conteos 9/8/10/5/3 sin cambios; `clave_checkout` e índices únicos creados; 0 duplicados |
 | Pruebas backend | COMPLETADO | 13 Wompi, 240+3 SQLite, 38 financieras, 243 PostgreSQL |

@@ -92,7 +92,7 @@ class _ServerConfigDialogState extends State<_ServerConfigDialog> {
             autocorrect: false,
             decoration: const InputDecoration(
               labelText: 'URL del backend',
-              hintText: 'http://192.168.1.113:5000/api',
+              hintText: 'http://192.168.1.10:5000/api',
             ),
           ),
           const SizedBox(height: 8),

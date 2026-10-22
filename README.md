@@ -135,7 +135,7 @@ flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:5000/api
 
 # APK debug para móvil físico en la misma red Wi-Fi (usa la IP local del equipo)
 flutter build apk --debug --split-per-abi \
-  --dart-define=API_BASE_URL=http://192.168.1.113:5000/api
+  --dart-define=API_BASE_URL=http://192.168.1.10:5000/api
 # Salida: build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk (la mayoría de móviles)
 
 # APK release (firma con keystore propio)
