@@ -163,7 +163,7 @@ class ProfilePage extends StatelessWidget {
                   child: ClipOval(
                     child: fotoPerfil != null
                         ? Image.network(
-                            '${ApiConstants.baseUrl.replaceAll('/api', '')}$fotoPerfil',
+                            '${ApiConstants.originUrl}$fotoPerfil',
                             fit: BoxFit.cover,
                             width: 80,
                             height: 80,

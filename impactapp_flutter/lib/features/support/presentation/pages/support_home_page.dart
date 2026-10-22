@@ -357,7 +357,7 @@ class SupportHomePage extends GetView<SupportController> {
               ? DecorationImage(
                   image: NetworkImage(
                     mainImageUrl.startsWith('/')
-                        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$mainImageUrl'
+                        ? '${ApiConstants.originUrl}$mainImageUrl'
                         : mainImageUrl,
                   ),
                   fit: BoxFit.cover,

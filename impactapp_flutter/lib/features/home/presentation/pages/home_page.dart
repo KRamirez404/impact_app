@@ -301,7 +301,7 @@ class HomePage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(19),
                       image: donor.fotoPerfil != null
                           ? DecorationImage(
-                              image: NetworkImage('${ApiConstants.baseUrl.replaceAll('/api', '')}${donor.fotoPerfil}'),
+                              image: NetworkImage('${ApiConstants.originUrl}${donor.fotoPerfil}'),
                               fit: BoxFit.cover,
                             )
                           : null,

@@ -190,7 +190,7 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
         final rawImageUrl = _imageSupportUrl(campaign.soportes);
         final headerImageUrl = rawImageUrl != null
             ? (rawImageUrl.startsWith('/')
-                  ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$rawImageUrl'
+                  ? '${ApiConstants.originUrl}$rawImageUrl'
                   : rawImageUrl)
             : null;
 

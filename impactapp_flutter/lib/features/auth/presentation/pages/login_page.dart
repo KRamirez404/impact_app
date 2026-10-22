@@ -4,6 +4,7 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
+import '../../../../shared/widgets/server_config_dialog.dart';
 import '../controllers/auth_controller.dart';
 
 class LoginPage extends StatelessWidget {
@@ -40,7 +41,9 @@ class LoginPage extends StatelessWidget {
                       _buildHeader(),
                       const SizedBox(height: 40),
                       _buildCard(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
+                      _buildServerConfigLink(context),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -190,6 +193,17 @@ class LoginPage extends StatelessWidget {
             color: Color(0xFF717182),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildServerConfigLink(BuildContext context) {
+    return TextButton.icon(
+      onPressed: () => mostrarConfiguracionServidor(context),
+      icon: const Icon(Icons.dns_outlined, size: 16, color: Color(0xFF717182)),
+      label: const Text(
+        'Configurar servidor',
+        style: TextStyle(fontSize: 13, color: Color(0xFF717182)),
       ),
     );
   }

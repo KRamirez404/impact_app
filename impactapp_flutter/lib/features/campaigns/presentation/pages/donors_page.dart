@@ -53,7 +53,7 @@ class DonorsPage extends StatelessWidget {
   Widget _buildHeader() {
     final hasImage = campaignImageUrl != null && campaignImageUrl!.isNotEmpty;
     final normalizedUrl = hasImage && campaignImageUrl!.startsWith('/')
-        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$campaignImageUrl'
+        ? '${ApiConstants.originUrl}$campaignImageUrl'
         : campaignImageUrl;
     return Stack(
       children: [
