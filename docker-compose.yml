@@ -2,12 +2,15 @@ services:
   db:
     image: postgres:16-alpine
     container_name: impactapp_db
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-impactapp}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-impactapp}
       - POSTGRES_DB=${POSTGRES_DB:-impactapp}
     volumes:
       - pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
     networks:
       - impactapp_network
     healthcheck:
@@ -22,6 +25,8 @@ services:
       context: ./impactapp_backend
       dockerfile: Dockerfile
     container_name: impactapp_backend
+    restart: unless-stopped
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "60", "--access-logfile", "-", "--access-logformat", "%(h)s %(t)s \"%(r)s\" %(s)s %(b)s %(L)s", "app:app"]
     ports:
       - "5000:5000"
     volumes:
