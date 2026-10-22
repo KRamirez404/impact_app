@@ -21,6 +21,7 @@ from test_wompi_extra import (
 )
 
 CONSULTAR_TRANSACCION = wompi_service.fetch_transaction
+CONSULTAR_POR_REFERENCIA = wompi_service.fetch_transaction_by_reference
 
 
 @pytest.fixture()
@@ -405,3 +406,43 @@ def test_concurrencia_postgresql_serializa_campania_y_auditoria(pago, duplicado)
     assert _estado(donation)[2] == (1 if duplicado else 2)
     with app.app_context():
         assert db.session.get(CAMPAÑA, 1).porcentaje_avance == (1 if duplicado else 3)
+
+
+def test_consulta_por_referencia_filtra_y_elige_aprobada(pago, monkeypatch):
+    _, _, donation, payload = pago
+    referencia = donation["referencia"]
+    aprobada = {**payload["data"]["transaction"], "created_at": "2026-01-02T00:00:00"}
+    rechazada = {
+        **payload["data"]["transaction"],
+        "id": "otra-1-1",
+        "status": "DECLINED",
+        "created_at": "2026-01-01T00:00:00",
+    }
+    ajena = {**payload["data"]["transaction"], "id": "ajena-1-1", "reference": "OTRA"}
+
+    def responder(request, timeout):
+        assert request.full_url.endswith("/transactions?reference=" + referencia)
+        assert request.get_header("Authorization") == "Bearer " + app.config["WOMPI_PRIVATE_KEY"]
+        assert timeout == 15
+        return BytesIO(json.dumps({"data": [rechazada, aprobada, ajena]}).encode())
+
+    monkeypatch.setattr(wompi_service, "fetch_transaction_by_reference", CONSULTAR_POR_REFERENCIA)
+    monkeypatch.setattr(wompi_service.urllib.request, "urlopen", responder)
+    with app.app_context():
+        assert wompi_service.fetch_transaction_by_reference(referencia) == aprobada
+
+    monkeypatch.setattr(
+        wompi_service.urllib.request,
+        "urlopen",
+        lambda *a, **k: BytesIO(json.dumps({"data": []}).encode()),
+    )
+    with app.app_context():
+        assert wompi_service.fetch_transaction_by_reference(referencia) is None
+
+    monkeypatch.setattr(
+        wompi_service.urllib.request,
+        "urlopen",
+        lambda *a, **k: BytesIO(b'{"data": {}}'),
+    )
+    with app.app_context(), pytest.raises(wompi_service.WompiQueryError):
+        wompi_service.fetch_transaction_by_reference(referencia)

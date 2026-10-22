@@ -308,3 +308,38 @@ def fetch_transaction(transaction_id: str) -> dict:
             return body["data"]
     except (urllib.error.URLError, ValueError, TimeoutError, OSError) as exc:
         raise WompiQueryError("consulta_no_disponible") from exc
+
+
+def fetch_transaction_by_reference(reference: str) -> dict | None:
+    ensure_configured()
+    config = current_app.config
+    private_key = config.get("WOMPI_PRIVATE_KEY")
+    if not private_key or not isinstance(reference, str) or not reference.strip():
+        raise WompiQueryError("consulta_no_configurada")
+    url = (
+        f"{config['WOMPI_API_URL'].rstrip('/')}/transactions"
+        f"?reference={quote(reference, safe='')}"
+    )
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {private_key}",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, ValueError, TimeoutError, OSError) as exc:
+        raise WompiQueryError("consulta_no_disponible") from exc
+    if not isinstance(body, dict) or not isinstance(body.get("data"), list):
+        raise WompiQueryError("respuesta_invalida")
+    candidatas = [
+        item
+        for item in body["data"]
+        if isinstance(item, dict) and item.get("reference") == reference
+    ]
+    if not candidatas:
+        return None
+    aprobadas = [item for item in candidatas if item.get("status") == "APPROVED"]
+    return max(aprobadas or candidatas, key=lambda item: str(item.get("created_at") or ""))

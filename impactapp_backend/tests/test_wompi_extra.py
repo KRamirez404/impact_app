@@ -6,13 +6,12 @@ import pytest
 
 from app import app
 from models import AUDITORIA, CAMPAÑA, DONACION, db
-from conftest import get_token, register_user
+from conftest import get_support_token, get_token, register_user
 from services import wompi_service
 
 EVENTS_SECRET = "test_events_secret"
 INTEGRITY_SECRET = "test_integrity_secret"
 PUBLIC_KEY = "pub_test_000000000000000000000000000000"
-ADMIN = {"correo": "admin@impactapp.co", "contrasena": "Admin123*"}
 TRANSACTIONS = {}
 
 
@@ -20,6 +19,7 @@ TRANSACTIONS = {}
 def wompi_config(monkeypatch):
     TRANSACTIONS.clear()
     monkeypatch.setattr(wompi_service, "fetch_transaction", lambda tx: deepcopy(TRANSACTIONS[tx]))
+    monkeypatch.setattr(wompi_service, "fetch_transaction_by_reference", lambda reference: None)
     original = dict(app.config)
     app.config.update(
         WOMPI_PUBLIC_KEY=PUBLIC_KEY,
@@ -283,7 +283,7 @@ def test_status_forbidden_for_other_donante(client, wompi_config):
 def test_status_allowed_for_support(client, wompi_config):
     _, token = _token(client)
     donation = _checkout(client, token).get_json()
-    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+    admin_token = get_support_token(client)
     resp = client.get(
         f"/api/donations/{donation['id_donacion']}/status",
         headers={"Authorization": f"Bearer {admin_token}"},
@@ -390,3 +390,33 @@ def test_listado_publico_no_expone_datos_privados_de_pago(client, wompi_config):
         assert campo not in item
     assert item["estado_pago"] == "pendiente"
     assert item["integridad"] is True
+
+
+def test_status_concilia_por_referencia_sin_transaction_id(client, wompi_config, monkeypatch):
+    _, token = _token(client)
+    donation = _checkout(client, token).get_json()
+    transaction = {
+        "id": "1234-1610641025-49202",
+        "status": "APPROVED",
+        "amount_in_cents": 5000000,
+        "reference": donation["referencia"],
+        "currency": "COP",
+        "payment_method_type": "CARD",
+    }
+    monkeypatch.setattr(
+        wompi_service,
+        "fetch_transaction_by_reference",
+        lambda reference: deepcopy(transaction),
+    )
+    resp = client.get(
+        f"/api/donations/{donation['id_donacion']}/status",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["estado_pago"] == "aprobada"
+    assert body["conciliacion"] == "verificada"
+    with app.app_context():
+        row = db.session.get(DONACION, donation["id_donacion"])
+        assert row.estado_pago == "aprobada"
+        assert row.wompi_transaction_id == transaction["id"]

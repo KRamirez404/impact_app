@@ -13,6 +13,7 @@ from services.audit_service import registrar
 from services.authorization import current_user, is_support, require_role
 from services.campaign_service import recalculate_campaign_progress
 from services.donation_integrity import compute_donation_checksum, donation_is_intact
+from services.rate_limit import client_ip, enforce, too_many_requests
 
 wompi_bp = Blueprint("wompi_bp", __name__, url_prefix="/api")
 
@@ -127,6 +128,7 @@ def get_donation_status(donation_id: int):
     if hint and donation.wompi_transaction_id and hint != donation.wompi_transaction_id:
         return jsonify({"error": "La donación ya tiene otra transacción asociada"}), 409
     transaction_id = donation.wompi_transaction_id or hint
+    reconciliation = None
     if transaction_id:
         try:
             transaction = wompi_service.fetch_transaction(transaction_id)
@@ -139,10 +141,37 @@ def get_donation_status(donation_id: int):
             return _payment_error(str(exc), 409)
         except SQLAlchemyError:
             return _payment_error("pago_no_persistido", 503)
+    elif (
+        donation.estado_pago == "pendiente"
+        and donation.tipo == "economica"
+        and donation.referencia_pago
+    ):
+        reconciliation = _reconciliar_por_referencia(donation)
     payload = donation.to_dict()
-    payload["conciliacion"] = reconciliation if transaction_id else "sin_identificador"
+    payload["conciliacion"] = reconciliation if transaction_id or reconciliation else "sin_identificador"
     payload["ambiente"] = wompi_service.configured_environment()
     return jsonify(payload), 200
+
+
+def _reconciliar_por_referencia(donation):
+    try:
+        transaction = wompi_service.fetch_transaction_by_reference(donation.referencia_pago)
+    except (wompi_service.WompiQueryError, wompi_service.WompiConfigurationError):
+        current_app.logger.warning("Wompi: consulta por referencia no disponible")
+        return None
+    if not transaction:
+        return None
+    try:
+        return _apply_transaction(donation, transaction)
+    except ConciliationError as exc:
+        db.session.rollback()
+        current_app.logger.warning("Wompi: conciliación por referencia rechazada (%s)", exc)
+        return None
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.warning("Wompi: conciliación por referencia no persistida")
+        return None
+
 
 
 @wompi_bp.post("/webhooks/wompi")
@@ -165,6 +194,13 @@ def wompi_webhook():
         return jsonify({"error": "Firma de evento inválida"}), 401
     if not wompi_service.environment_matches(payload):
         return jsonify({"error": "Ambiente de evento inválido"}), 401
+    retry_after = enforce(
+        f"webhook:{client_ip()}",
+        "RATE_LIMIT_WEBHOOK_ATTEMPTS",
+        "RATE_LIMIT_WEBHOOK_WINDOW",
+    )
+    if retry_after:
+        return too_many_requests(retry_after)
     transaction = payload["data"].get("transaction")
     fingerprint = _event_fingerprint(payload, checksum)
     try:

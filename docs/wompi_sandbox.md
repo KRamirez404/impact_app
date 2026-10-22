@@ -58,6 +58,9 @@ donaciones.
 7. El evento válido se registra en `PAGO_EVENTO` con huella única y resultado.
 8. La app consulta `GET /api/donations/:id/status`; el diálogo mantiene el
    estado `pendiente` hasta que el backend confirme.
+9. Si el webhook no llega (por ejemplo, backend en LAN), esa consulta busca la
+   transacción por referencia en Wompi y aplica el estado solo si coinciden
+   referencia, monto y moneda.
 
 `PAGO_EVENTO` no guarda payload completo, correos, secretos ni checksum
 completo. La tabla se crea con `db.create_all()`; no se eliminan ni recrean
@@ -79,9 +82,11 @@ https://<URL-DEL-TUNEL>/api/webhooks/wompi
 ```
 
 Cerrar el túnel al terminar. No guardar tokens del túnel en el repositorio ni
-exponer otros endpoints. Si no hay URL pública, el webhook real no llegará; las
-pruebas automatizadas usan un proveedor simulado y no acreditan una transacción
-Sandbox real.
+exponer otros endpoints. Si no hay URL pública, el webhook real no llegará: en
+ese caso la consulta de estado (`GET /api/donations/:id/status`) concilia por
+referencia contra Wompi, de forma que la app refleja el pago al terminar el
+checkout. Las pruebas automatizadas usan un proveedor simulado y no acreditan
+una transacción Sandbox real.
 
 ## Datos de prueba oficiales
 
@@ -108,7 +113,8 @@ disponibilidad se comprueba en el checkout Sandbox.
 
 ## Limitaciones
 
-- Sin túnel HTTPS no hay webhook real.
+- Sin túnel HTTPS no hay webhook real; la aprobación depende de la conciliación
+  por referencia al consultar el estado de la donación.
 - La dispersión a organizadores no está implementada.
 - Transferencias bancarias directas no se validan con Wompi.
 - Producción no está habilitada.
