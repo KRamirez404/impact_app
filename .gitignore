@@ -79,3 +79,7 @@ Thumbs.db
 # Tool caches and logs
 *.log
 *.tmp
+
+# Material local de trabajo (no publicar)
+PROMPT_IMPLEMENTACIÓN.txt
+graphify-out/
