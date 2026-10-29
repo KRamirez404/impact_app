@@ -104,8 +104,7 @@ class CampaignDetailController extends GetxController {
       final donation = await getDonationStatusUseCase(donationId);
       return donation.estadoPago.trim().toLowerCase();
     } catch (e) {
-      _err(friendlyError(e));
-      return 'pendiente';
+      throw Exception(friendlyError(e));
     }
   }
 

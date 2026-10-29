@@ -28,6 +28,10 @@ import '../../features/verification/presentation/pages/upload_support_page.dart'
 import '../../features/support/presentation/bindings/support_binding.dart';
 import '../../features/support/presentation/pages/support_home_page.dart';
 import '../../features/support/presentation/pages/support_campaign_detail_page.dart';
+import '../../features/transfers/presentation/bindings/transfer_binding.dart';
+import '../../features/transfers/presentation/pages/create_transfer_page.dart';
+import '../../features/transfers/presentation/pages/my_transfers_page.dart';
+import '../../features/transfers/presentation/pages/transfer_detail_page.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -120,7 +124,9 @@ class AppPages {
         return DonorsPage(
           campaignId: int.parse(args['id'] ?? '0'),
           campaignTitle: args['title'] ?? 'Campaña',
-          campaignImageUrl: (args['imageUrl'] ?? '').isEmpty ? null : args['imageUrl'],
+          campaignImageUrl: (args['imageUrl'] ?? '').isEmpty
+              ? null
+              : args['imageUrl'],
         );
       },
       bindings: [DonorsBinding()],
@@ -134,6 +140,21 @@ class AppPages {
       name: '${AppRoutes.supportCampaignDetail}/:id',
       page: () => SupportCampaignDetailPage(),
       bindings: [AuthBinding(), CampaignBinding(), SupportBinding()],
+    ),
+    GetPage(
+      name: '${AppRoutes.createTransfer}/:id',
+      page: () => const CreateTransferPage(),
+      bindings: [AuthBinding(), TransferBinding()],
+    ),
+    GetPage(
+      name: AppRoutes.myTransfers,
+      page: () => const MyTransfersPage(),
+      bindings: [AuthBinding(), TransferBinding()],
+    ),
+    GetPage(
+      name: '${AppRoutes.transferDetail}/:id',
+      page: () => const TransferDetailPage(),
+      bindings: [AuthBinding(), TransferBinding()],
     ),
   ];
 }

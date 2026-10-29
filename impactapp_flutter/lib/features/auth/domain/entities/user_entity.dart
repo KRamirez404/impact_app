@@ -8,6 +8,7 @@ class UserEntity {
   final String? ciudadNombre;
   final String? biografia;
   final String? fotoPerfil;
+  final bool mostrarFotoTop;
   final String? fechaRegistro;
   final String rol;
   final String estado;
@@ -22,6 +23,7 @@ class UserEntity {
     this.ciudadNombre,
     this.biografia,
     this.fotoPerfil,
+    this.mostrarFotoTop = true,
     this.fechaRegistro,
     required this.rol,
     required this.estado,

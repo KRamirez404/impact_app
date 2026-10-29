@@ -15,6 +15,8 @@ abstract class AuthRepository {
   Future<UserEntity> me();
   Future<List<CityEntity>> getCities();
   Future<void> deleteAccount();
+  Future<UserEntity> updatePreferences({required bool mostrarFotoTop});
+  Future<UserEntity> changeRole(String rol);
   Future<UserEntity> updateProfile({
     required String nombre,
     required String apellido,

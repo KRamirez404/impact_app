@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../domain/entities/campaign_entity.dart';
@@ -388,6 +389,8 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                   ] else ...[
                     DonationButtons(
                       onDonateMoney: () => _showMoneyDonationDialog(id),
+                      onBankTransfer: () =>
+                          Get.toNamed('${AppRoutes.createTransfer}/$id'),
                       onDonatePhysical: () => _showPhysicalDonationDialog(
                         id,
                         campaign.puntosRecoleccion,

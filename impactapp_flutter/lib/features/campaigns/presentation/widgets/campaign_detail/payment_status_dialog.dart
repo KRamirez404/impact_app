@@ -72,7 +72,8 @@ class _PaymentStatusDialog extends StatefulWidget {
   State<_PaymentStatusDialog> createState() => _PaymentStatusDialogState();
 }
 
-class _PaymentStatusDialogState extends State<_PaymentStatusDialog> {
+class _PaymentStatusDialogState extends State<_PaymentStatusDialog>
+    with WidgetsBindingObserver {
   static const int _maxAttempts = 20;
   static const Duration _interval = Duration(seconds: 4);
 
@@ -80,17 +81,34 @@ class _PaymentStatusDialogState extends State<_PaymentStatusDialog> {
   String _status = 'pendiente';
   int _attempts = 0;
   bool _checking = false;
+  String? _connectionError;
 
   @override
   void initState() {
     super.initState();
-    _check();
+    WidgetsBinding.instance.addObserver(this);
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.paused &&
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.inactive) {
+      _check();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _check();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _timer?.cancel();
+    }
   }
 
   Future<void> _check() async {
@@ -100,11 +118,20 @@ class _PaymentStatusDialogState extends State<_PaymentStatusDialog> {
     try {
       final status = await widget.onCheckStatus(widget.donationId);
       if (!mounted) return;
-      setState(() => _status = status);
+      setState(() {
+        _status = status;
+        _connectionError = null;
+      });
       if (status == 'pendiente' && _attempts < _maxAttempts) {
         _attempts++;
         _timer = Timer(_interval, _check);
       }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _connectionError =
+            'No se pudo consultar el pago. Verifica tu conexión y actualiza nuevamente.';
+      });
     } finally {
       if (mounted) setState(() => _checking = false);
     }
@@ -136,6 +163,14 @@ class _PaymentStatusDialogState extends State<_PaymentStatusDialog> {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 14, color: Color(0xFF717182)),
           ),
+          if (_connectionError != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _connectionError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
+            ),
+          ],
           if (widget.environment == 'sandbox') ...[
             const SizedBox(height: 10),
             Container(

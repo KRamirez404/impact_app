@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/utils/cop_amount.dart';
 import '../../../domain/entities/donation_checkout_entity.dart';
+import '../../../domain/entities/pending_payment_session.dart';
+import '../../../infrastructure/datasources/pending_payment_store.dart';
 import 'payment_status_dialog.dart';
 
 String _formatCurrency(int cents) => formatCopAmount(cents);
@@ -337,8 +339,16 @@ Future<String?> showPaymentProcessDialog({
   }
 
   final uri = Uri.tryParse(checkoutUrl!);
+  await PendingPaymentStore().save(
+    PendingPaymentSession(
+      donationId: donationId!,
+      reference: checkoutReference ?? '',
+      environment: checkoutEnvironment ?? 'sandbox',
+    ),
+  );
   if (uri == null ||
       !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    await PendingPaymentStore().clear();
     Get.snackbar(
       'Error',
       'No se pudo abrir la pasarela de pago',
@@ -352,11 +362,13 @@ Future<String?> showPaymentProcessDialog({
     return null;
   }
 
-  return showPaymentStatusDialog(
+  final status = await showPaymentStatusDialog(
     context: context,
     donationId: donationId!,
     onCheckStatus: onCheckStatus,
     environment: checkoutEnvironment,
     reference: checkoutReference,
   );
+  if (status != 'pendiente') await PendingPaymentStore().clear();
+  return status;
 }

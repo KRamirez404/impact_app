@@ -27,7 +27,7 @@ class ApiConstants {
     }
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-      return 'URL inválida. Ejemplo: http://192.168.1.10:5000/api';
+      return 'URL inválida. Ejemplo: http://192.168.1.113:5000/api';
     }
     if (uri.scheme != 'http' && uri.scheme != 'https') {
       return 'La URL debe iniciar con http:// o https://';
@@ -49,6 +49,7 @@ class ApiConstants {
   static String get login => '$baseUrl/auth/login';
   static String get register => '$baseUrl/auth/register';
   static String get me => '$baseUrl/auth/me';
+  static String get changeRole => '$baseUrl/auth/role';
   static String get privacyPolicy => '$baseUrl/auth/privacy-policy';
   static String get campaigns => '$baseUrl/campaigns';
   static String get myCampaigns => '$baseUrl/campaigns/mine';
@@ -81,4 +82,14 @@ class ApiConstants {
   static String get likes => '$baseUrl/likes';
   static String get upload => '$baseUrl/upload';
   static String get health => '$baseUrl/health';
+  static String campaignBankAccount(int campaignId) =>
+      '$baseUrl/campaigns/$campaignId/bank-account';
+  static String get transfers => '$baseUrl/transfers';
+  static String get myTransfers => '$baseUrl/transfers/mine';
+  static String transferDetail(int transferId) =>
+      '$baseUrl/transfers/$transferId';
+  static String transferReceipt(int transferId) =>
+      '$baseUrl/transfers/$transferId/receipt';
+  static String transferResubmit(int transferId) =>
+      '$baseUrl/transfers/$transferId/resubmit';
 }

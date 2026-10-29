@@ -21,98 +21,235 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (controller.user.value?.rol == 'soporte') {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Get.offAllNamed(AppRoutes.supportHome));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Get.offAllNamed(AppRoutes.supportHome),
+      );
       return const SizedBox.shrink();
     }
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: const BottomNavBar(currentIndex: 3),
-      body: Obx(
-        () {
-          final user = controller.user.value;
-          if (user == null) return const Center(child: Text('Sin datos de usuario'));
-          final fullName = '${user.nombre} ${user.apellido}'.trim();
-          return DefaultTabController(
-            length: 2,
-            child: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverToBoxAdapter(
-                  child: Column(
+      body: Obx(() {
+        final user = controller.user.value;
+          if (user == null) {
+            return const Center(child: Text('Sin datos de usuario'));
+          }
+        final fullName = '${user.nombre} ${user.apellido}'.trim();
+        return DefaultTabController(
+          length: 2,
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    _buildHeader(
+                      context,
+                      fullName,
+                      user.correo,
+                      user.biografia,
+                      user.fotoPerfil,
+                      user.rol,
+                    ),
+                    Obx(() => _buildStatsRow()),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => Get.toNamed(AppRoutes.myTransfers),
+                          icon: const Icon(Icons.account_balance),
+                          label: const Text('Mis transferencias bancarias'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0x1A000000)),
+                        ),
+                        child: Column(
+                          children: [
+                            SwitchListTile(
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              secondary: const Icon(Icons.photo_camera_outlined),
+                              title: const Text(
+                                'Mostrar mi foto en el Top de donadores',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              subtitle: const Text(
+                                'Si lo desactivas se mostrará un avatar genérico en el ranking',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              value: user.mostrarFotoTop,
+                              onChanged: controller.isUpdatingProfile.value
+                                  ? null
+                                  : (value) async {
+                                      final ok = await controller
+                                          .setMostrarFotoTop(value);
+                                      if (ok) {
+                                        controller.showSuccess(
+                                          value
+                                              ? 'Tu foto se mostrará en el Top de donadores'
+                                              : 'Tu foto ya no se mostrará en el Top de donadores',
+                                        );
+                                      }
+                                    },
+                            ),
+                            const Divider(height: 1),
+                            ListTile(
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              leading: const Icon(Icons.swap_horiz),
+                              title: Text(
+                                user.rol == 'organizador'
+                                    ? 'Cambiar a donador'
+                                    : 'Cambiar a organizador',
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              subtitle: Text(
+                                user.rol == 'organizador'
+                                    ? 'Explora y apoya campañas como donador'
+                                    : 'Crea y administra campañas como organizador',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: controller.isUpdatingProfile.value
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 16,
+                                    ),
+                              onTap: controller.isUpdatingProfile.value
+                                  ? null
+                                  : _cambiarRol,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const ProfileTabs(),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              ),
+            ],
+            body: Column(
+              children: [
+                Expanded(
+                  child: TabBarView(
                     children: [
-                      _buildHeader(context, fullName, user.correo, user.biografia, user.fotoPerfil, user.rol),
-                      Obx(() => _buildStatsRow()),
-                      const SizedBox(height: 20),
-                      const ProfileTabs(),
-                      const SizedBox(height: 12),
+                      Obx(() {
+                        if (profileController.isLoadingCampaigns.value &&
+                            profileController.myCampaigns.isEmpty) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (profileController.myCampaigns.isEmpty) {
+                          return const Center(
+                            child: Text('No tienes campañas creadas'),
+                          );
+                        }
+                        final items = profileController.myCampaigns
+                            .map(_activityFromCampaign)
+                            .toList();
+                        return _buildScrollableTabContent(items);
+                      }),
+                      Obx(() {
+                        if (profileController.isLoadingDonations.value &&
+                            profileController.myDonations.isEmpty) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (profileController.myDonations.isEmpty) {
+                          return const Center(
+                            child: Text('No tienes donaciones registradas'),
+                          );
+                        }
+                        final items = profileController.myDonations
+                            .map(_activityFromDonation)
+                            .toList();
+                        return _buildScrollableTabContent(items);
+                      }),
                     ],
                   ),
                 ),
-              ],
-              body: Column(
-                children: [
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        Obx(() {
-                          if (profileController.isLoadingCampaigns.value &&
-                              profileController.myCampaigns.isEmpty) {
-                            return const Center(child: CircularProgressIndicator());
-                          }
-                          if (profileController.myCampaigns.isEmpty) {
-                            return const Center(child: Text('No tienes campañas creadas'));
-                          }
-                          final items = profileController.myCampaigns
-                              .map(_activityFromCampaign)
-                              .toList();
-                          return _buildScrollableTabContent(items);
-                        }),
-                        Obx(() {
-                          if (profileController.isLoadingDonations.value &&
-                              profileController.myDonations.isEmpty) {
-                            return const Center(child: CircularProgressIndicator());
-                          }
-                          if (profileController.myDonations.isEmpty) {
-                            return const Center(child: Text('No tienes donaciones registradas'));
-                          }
-                          final items = profileController.myDonations
-                              .map(_activityFromDonation)
-                              .toList();
-                          return _buildScrollableTabContent(items);
-                        }),
-                      ],
-                    ),
-                  ),
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 36,
-                        child: OutlinedButton.icon(
-                          onPressed: controller.logout,
-                          icon: const Icon(Icons.logout, size: 16, color: Color(0xFFD4183D)),
-                          label: const Text('Cerrar sesión'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFD4183D),
-                            side: const BorderSide(color: Color(0xFFD4183D), width: 0.8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 36,
+                      child: OutlinedButton.icon(
+                        onPressed: controller.logout,
+                        icon: const Icon(
+                          Icons.logout,
+                          size: 16,
+                          color: Color(0xFFD4183D),
+                        ),
+                        label: const Text('Cerrar sesión'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFD4183D),
+                          side: const BorderSide(
+                            color: Color(0xFFD4183D),
+                            width: 0.8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      }),
     );
   }
 
-  Widget _buildHeader(BuildContext context, String name, String email, String? bio, String? fotoPerfil, String rol) {
+  Future<void> _cambiarRol() async {
+    final actual = controller.user.value?.rol;
+    if (actual == null) return;
+    final nuevo = actual == 'organizador' ? 'donante' : 'organizador';
+    final ok = await controller.changeRole(nuevo);
+    if (!ok) return;
+    controller.showSuccess(
+      nuevo == 'organizador'
+          ? 'Ahora puedes crear y administrar campañas'
+          : 'Ahora navegas como donador',
+    );
+    Get.offAllNamed(AppRoutes.home);
+  }
+
+  Widget _buildHeader(
+    BuildContext context,
+    String name,
+    String email,
+    String? bio,
+    String? fotoPerfil,
+    String rol,
+  ) {
     final initials = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'I';
     final bioText = (bio == null || bio.trim().isEmpty)
         ? 'Aún no has agregado una biografía.'
@@ -146,7 +283,11 @@ class ProfilePage extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Text(
                   'Mi Perfil',
-                  style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -155,10 +296,14 @@ class ProfilePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 80, height: 80,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 4),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 4,
+                    ),
                   ),
                   child: ClipOval(
                     child: fotoPerfil != null
@@ -167,21 +312,30 @@ class ProfilePage extends StatelessWidget {
                             fit: BoxFit.cover,
                             width: 80,
                             height: 80,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              alignment: Alignment.center,
-                              child: Text(
-                                initials,
-                                style: const TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.w600),
-                              ),
-                            ),
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    initials,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
                           )
                         : Container(
                             color: Colors.white.withValues(alpha: 0.15),
                             alignment: Alignment.center,
                             child: Text(
                               initials,
-                              style: const TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontSize: 24,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                   ),
@@ -191,9 +345,22 @@ class ProfilePage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600)),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(email, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9))),
+                      Text(
+                        email,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       _buildRoleBadge(rol),
                       const SizedBox(height: 12),
@@ -206,9 +373,17 @@ class ProfilePage extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF43A047),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -218,10 +393,21 @@ class ProfilePage extends StatelessWidget {
                             label: const Text('Ajustes'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
-                              side: BorderSide(color: Colors.white.withValues(alpha: 0.3), width: 0.8),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 0.8,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -234,7 +420,11 @@ class ProfilePage extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               bioText,
-              style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9), height: 1.4),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withValues(alpha: 0.9),
+                height: 1.4,
+              ),
             ),
           ],
         ),
@@ -298,11 +488,23 @@ class ProfilePage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
-          StatCard(value: campaignsCount.toString(), label: 'Campañas', valueColor: const Color(0xFF1976D2)),
+          StatCard(
+            value: campaignsCount.toString(),
+            label: 'Campañas',
+            valueColor: const Color(0xFF1976D2),
+          ),
           const SizedBox(width: 12),
-          StatCard(value: donationsCount.toString(), label: 'Donaciones', valueColor: const Color(0xFF43A047)),
+          StatCard(
+            value: donationsCount.toString(),
+            label: 'Donaciones',
+            valueColor: const Color(0xFF43A047),
+          ),
           const SizedBox(width: 12),
-          StatCard(value: _formatCompactCurrency(totalDonated), label: 'Donado', valueColor: const Color(0xFF1976D2)),
+          StatCard(
+            value: _formatCompactCurrency(totalDonated),
+            label: 'Donado',
+            valueColor: const Color(0xFF1976D2),
+          ),
         ],
       ),
     );
@@ -325,13 +527,10 @@ class ProfilePage extends StatelessWidget {
     final auditorName = campaign.auditorNombre == null
         ? null
         : '${campaign.auditorNombre} ${campaign.auditorApellido ?? ''}'.trim();
-    final mainImageSoporte = campaign.soportes.firstWhere(
-      (s) {
-        final tipo = (s['tipo'] ?? '').toString().toLowerCase().trim();
-        return tipo == 'foto' || tipo == 'imagen';
-      },
-      orElse: () => <String, dynamic>{},
-    );
+    final mainImageSoporte = campaign.soportes.firstWhere((s) {
+      final tipo = (s['tipo'] ?? '').toString().toLowerCase().trim();
+      return tipo == 'foto' || tipo == 'imagen';
+    }, orElse: () => <String, dynamic>{});
     final imageUrl = mainImageSoporte['url_o_ruta'] as String?;
     return ProfileActivityItem(
       title: campaign.titulo,
@@ -345,8 +544,12 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  ProfileActivityItem _activityFromDonation(DonationWithCampaignEntity donation) {
-    final title = donation.campaignTitulo.isNotEmpty ? donation.campaignTitulo : 'Donación';
+  ProfileActivityItem _activityFromDonation(
+    DonationWithCampaignEntity donation,
+  ) {
+    final title = donation.campaignTitulo.isNotEmpty
+        ? donation.campaignTitulo
+        : 'Donación';
     return ProfileActivityItem(
       title: title,
       amount: donation.montoEstimado,
@@ -363,12 +566,18 @@ class ProfilePage extends StatelessWidget {
 
   String _mapCampaignStatus(String estado) {
     switch (estado) {
-      case 'en_verificacion': return 'En verificación';
-      case 'rechazada': return 'Rechazada';
-      case 'pausada': return 'Rechazada';
-      case 'finalizada': return 'Finalizada';
-      case 'activa': return 'Activa';
-      default: return 'Sin estado';
+      case 'en_verificacion':
+        return 'En verificación';
+      case 'rechazada':
+        return 'Rechazada';
+      case 'pausada':
+        return 'Rechazada';
+      case 'finalizada':
+        return 'Finalizada';
+      case 'activa':
+        return 'Activa';
+      default:
+        return 'Sin estado';
     }
   }
 
