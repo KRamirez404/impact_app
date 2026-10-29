@@ -2,10 +2,12 @@ from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy.orm import joinedload, selectinload
 
 from models import CAMPAÑA, CATEGORIA, CIUDAD, DONACION, REACCION, db
 from services.audit_service import registrar
 from services.authorization import is_support, require_role
+from services.campaign_service import contar_donantes_por_campania
 
 campaign_bp = Blueprint("campaign_bp", __name__, url_prefix="/api")
 
@@ -45,16 +47,23 @@ def list_campaigns():
     if estado:
         query = query.filter(CAMPAÑA.estado == estado)
 
-    campaigns = query.order_by(CAMPAÑA.id_campania.desc()).all()
+    campaigns = (
+        query.options(
+            joinedload(CAMPAÑA.ciudad),
+            joinedload(CAMPAÑA.categoria),
+            joinedload(CAMPAÑA.creador),
+            selectinload(CAMPAÑA.soportes),
+        )
+        .order_by(CAMPAÑA.id_campania.desc())
+        .all()
+    )
+    donantes_por_campania = contar_donantes_por_campania(
+        [campaign.id_campania for campaign in campaigns]
+    )
     payload = []
     for campaign in campaigns:
         data = campaign.to_public_dict()
-        data["donantes_count"] = (
-            db.session.query(db.func.count(db.distinct(DONACION.id_donante)))
-            .filter(DONACION.id_campania == campaign.id_campania)
-            .scalar()
-            or 0
-        )
+        data["donantes_count"] = donantes_por_campania.get(campaign.id_campania, 0)
         data["soportes"] = [
             support.to_public_dict()
             for support in campaign.soportes
@@ -157,12 +166,9 @@ def get_campaign(campaign_id: int):
     payload["seguimientos"] = [s.to_dict() for s in campaign.seguimientos]
     payload["puntos_recoleccion"] = [p.to_dict() for p in campaign.puntos_recoleccion]
     payload["donaciones"] = [d.to_public_dict() for d in campaign.donaciones]
-    payload["donantes_count"] = (
-        db.session.query(db.func.count(db.distinct(DONACION.id_donante)))
-        .filter(DONACION.id_campania == campaign.id_campania)
-        .scalar()
-        or 0
-    )
+    payload["donantes_count"] = contar_donantes_por_campania(
+        [campaign.id_campania]
+    ).get(campaign.id_campania, 0)
     payload["likes_count"] = REACCION.query.filter_by(
         id_campania=campaign.id_campania
     ).count()
