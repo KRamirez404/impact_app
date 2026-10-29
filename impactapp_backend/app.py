@@ -17,6 +17,7 @@ from models import (
     CAMPAÑA,
     CATEGORIA,
     CIUDAD,
+    PAGO_INTENTO,
     PUNTO_RECOLECCION,
     SEGUIMIENTO,
     SOPORTE,
@@ -147,6 +148,11 @@ def ensure_user_schema():
     if "foto_perfil" not in columns:
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN foto_perfil TEXT'))
         db.session.commit()
+    if "mostrar_foto_top" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "USUARIO" ADD COLUMN mostrar_foto_top BOOLEAN NOT NULL DEFAULT true')
+        )
+        db.session.commit()
     if "acepta_tratamiento" not in columns:
         db.session.execute(
             text('ALTER TABLE "USUARIO" ADD COLUMN acepta_tratamiento BOOLEAN NOT NULL DEFAULT false')
@@ -242,6 +248,10 @@ def ensure_donation_schema():
     db.session.commit()
 
 
+def ensure_payment_attempt_schema():
+    PAGO_INTENTO.__table__.create(bind=db.engine, checkfirst=True)
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -258,6 +268,8 @@ def create_app():
         user = db.session.get(USUARIO, user_id)
         if user is None:
             return False
+        if user.estado != "activo":
+            return True
         token_version = jwt_payload.get("token_version", 0)
         if type(token_version) is not int:
             return True
@@ -392,6 +404,7 @@ def create_app():
         ensure_user_schema()
         ensure_campaign_schema()
         ensure_donation_schema()
+        ensure_payment_attempt_schema()
         seed_database()
         wompi_status = wompi_service.configuration_status()
         if wompi_status["ok"]:
@@ -402,6 +415,10 @@ def create_app():
                 ",".join(wompi_status["missing"]) or "ninguna",
                 ",".join(wompi_status["issues"]) or "ninguno",
             )
+        if app.config.get("TRANSFERENCIAS_ENABLED", False):
+            from routes.transfer_bootstrap import register_transfer_blueprints
+
+            register_transfer_blueprints(app)
 
     return app
 

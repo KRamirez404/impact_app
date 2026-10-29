@@ -56,6 +56,9 @@ donaciones.
    `GET /v1/transactions/{id}` con la llave privada.
 6. Solo si coinciden id, referencia, monto y moneda se aplica el estado.
 7. El evento válido se registra en `PAGO_EVENTO` con huella única y resultado.
+   Cada transacción se conserva además en `PAGO_INTENTO`, de modo que un
+   reintento de Wompi con la misma referencia y otro `id` no se confunda con el
+   primer intento. Ver `wompi_reintentos.md`.
 8. La app consulta `GET /api/donations/:id/status`; el diálogo mantiene el
    estado `pendiente` hasta que el backend confirme.
 9. Si el webhook no llega (por ejemplo, backend en LAN), esa consulta busca la
@@ -111,10 +114,32 @@ disponibilidad se comprueba en el checkout Sandbox.
 - Una transacción Sandbox real solo se considera probada después de completar
   checkout, webhook/consulta autoritativa y verificación de estado y recaudación.
 
+## Conciliación sin webhook
+
+Además de la consulta de estado desde la app, existe un barrido server-side para
+donaciones económicas pendientes:
+
+```bash
+make wompi-reconcile
+# o:
+cd impactapp_backend
+.venv/bin/python scripts/reconcile_wompi.py --limit 50 \
+  --min-age-minutes 10 --max-age-hours 72
+```
+
+Solo consulta Wompi por referencia y aplica las mismas validaciones
+autoritativas. Se puede programar con cron o un timer de systemd; no sustituye al
+webhook. Ver `wompi_produccion.md`.
+
 ## Limitaciones
 
 - Sin túnel HTTPS no hay webhook real; la aprobación depende de la conciliación
-  por referencia al consultar el estado de la donación.
+  por referencia al consultar el estado de la donación o del barrido.
 - La dispersión a organizadores no está implementada.
 - Transferencias bancarias directas no se validan con Wompi.
-- Producción no está habilitada.
+- El método específico `BANCOLOMBIA_TRANSFER` no está implementado en la creación
+  de transacciones ni en la tokenización. Si el comercio lo habilita en Checkout
+  Web, sus `transaction.updated` se procesan de forma genérica; ver
+  `wompi_produccion.md`.
+- Producción no está habilitada. Los requisitos externos y el procedimiento de
+  activación están en [`wompi_produccion.md`](wompi_produccion.md).

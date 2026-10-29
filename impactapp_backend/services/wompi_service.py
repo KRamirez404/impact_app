@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import http.client
 import json
 import re
 import secrets
@@ -54,7 +55,10 @@ MAX_AMOUNT = Decimal("9999999999.99")
 
 
 class WompiQueryError(Exception):
-    pass
+    def __init__(self, code: str = "proveedor_no_disponible", *, retryable: bool = True):
+        super().__init__(code)
+        self.code = code
+        self.retryable = retryable
 
 
 class WompiConfigurationError(Exception):
@@ -290,8 +294,10 @@ def fetch_transaction(transaction_id: str) -> dict:
     ensure_configured()
     config = current_app.config
     private_key = config.get("WOMPI_PRIVATE_KEY")
-    if not private_key or not valid_transaction_id(transaction_id):
-        raise WompiQueryError("consulta_no_configurada")
+    if not private_key:
+        raise WompiQueryError("consulta_no_configurada", retryable=False)
+    if not valid_transaction_id(transaction_id):
+        raise WompiQueryError("transaccion_invalida", retryable=False)
     url = f"{config['WOMPI_API_URL'].rstrip('/')}/transactions/{quote(transaction_id, safe='')}"
     request = urllib.request.Request(
         url,
@@ -302,20 +308,39 @@ def fetch_transaction(transaction_id: str) -> dict:
     )
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
-            body = json.loads(response.read().decode("utf-8"))
-            if not isinstance(body, dict) or not isinstance(body.get("data"), dict):
-                raise WompiQueryError("respuesta_invalida")
-            return body["data"]
-    except (urllib.error.URLError, ValueError, TimeoutError, OSError) as exc:
-        raise WompiQueryError("consulta_no_disponible") from exc
+            raw = response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            raise WompiQueryError("transaccion_no_encontrada", retryable=False) from exc
+        if exc.code in (401, 403):
+            raise WompiQueryError("proveedor_no_disponible", retryable=False) from exc
+        if exc.code == 429 or 500 <= exc.code < 600:
+            raise WompiQueryError("proveedor_no_disponible", retryable=True) from exc
+        raise WompiQueryError("respuesta_proveedor_invalida", retryable=False) from exc
+    except (
+        urllib.error.URLError,
+        TimeoutError,
+        OSError,
+        http.client.HTTPException,
+    ) as exc:
+        raise WompiQueryError("proveedor_no_disponible", retryable=True) from exc
+    try:
+        body = json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise WompiQueryError("respuesta_proveedor_invalida", retryable=False) from exc
+    if not isinstance(body, dict) or not isinstance(body.get("data"), dict):
+        raise WompiQueryError("respuesta_proveedor_invalida", retryable=False)
+    return body["data"]
 
 
 def fetch_transaction_by_reference(reference: str) -> dict | None:
     ensure_configured()
     config = current_app.config
     private_key = config.get("WOMPI_PRIVATE_KEY")
-    if not private_key or not isinstance(reference, str) or not reference.strip():
-        raise WompiQueryError("consulta_no_configurada")
+    if not private_key:
+        raise WompiQueryError("consulta_no_configurada", retryable=False)
+    if not isinstance(reference, str) or not reference.strip():
+        raise WompiQueryError("consulta_no_configurada", retryable=False)
     url = (
         f"{config['WOMPI_API_URL'].rstrip('/')}/transactions"
         f"?reference={quote(reference, safe='')}"
@@ -329,11 +354,26 @@ def fetch_transaction_by_reference(reference: str) -> dict | None:
     )
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
-            body = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, ValueError, TimeoutError, OSError) as exc:
-        raise WompiQueryError("consulta_no_disponible") from exc
+            raw = response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401, 403):
+            raise WompiQueryError("proveedor_no_disponible", retryable=False) from exc
+        if exc.code == 429 or 500 <= exc.code < 600:
+            raise WompiQueryError("proveedor_no_disponible", retryable=True) from exc
+        raise WompiQueryError("respuesta_proveedor_invalida", retryable=False) from exc
+    except (
+        urllib.error.URLError,
+        TimeoutError,
+        OSError,
+        http.client.HTTPException,
+    ) as exc:
+        raise WompiQueryError("proveedor_no_disponible", retryable=True) from exc
+    try:
+        body = json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise WompiQueryError("respuesta_proveedor_invalida", retryable=False) from exc
     if not isinstance(body, dict) or not isinstance(body.get("data"), list):
-        raise WompiQueryError("respuesta_invalida")
+        raise WompiQueryError("respuesta_proveedor_invalida", retryable=False)
     candidatas = [
         item
         for item in body["data"]

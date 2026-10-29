@@ -13,7 +13,7 @@ from sqlalchemy import event, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import app, ensure_donation_schema
-from models import AUDITORIA, CAMPAÑA, DONACION, db
+from models import AUDITORIA, CAMPAÑA, DONACION, PAGO_INTENTO, db
 from routes import wompi_routes
 from services import wompi_service
 from test_wompi_extra import (
@@ -97,6 +97,29 @@ def test_checkout_idempotente_y_conflicto(client, wompi_config):
         assert AUDITORIA.query.filter_by(accion="DONACION_CHECKOUT").count() == 1
 
 
+def test_replay_idempotente_no_reemite_url_pagable_tras_aprobar(client, wompi_config):
+    _, token = _token(client)
+    headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "replay-pagado"}
+    body = {"id_campania": 1, "monto_estimado": "50000"}
+    first = client.post("/api/donations/checkout", json=body, headers=headers)
+    assert first.status_code == 201
+    donation = first.get_json()
+    assert donation["checkout_url"]
+
+    assert client.post(
+        "/api/webhooks/wompi", json=_event(donation["referencia"])
+    ).status_code == 200
+
+    replay = client.post("/api/donations/checkout", json=body, headers=headers)
+    assert replay.status_code == 200
+    repetida = replay.get_json()
+    assert repetida["id_donacion"] == donation["id_donacion"]
+    assert repetida["estado_pago"] == "aprobada"
+    assert repetida["checkout_url"] is None
+    with app.app_context():
+        assert DONACION.query.count() == 1
+
+
 def test_firma_respeta_orden_y_header(pago):
     client, _, _, payload = pago
     properties = ["transaction.amount_in_cents", "transaction.reference", "transaction.id", "transaction.status"]
@@ -176,8 +199,18 @@ def test_transaccion_no_puede_asociarse_dos_veces(pago):
 def test_donacion_no_admite_otro_identificador(pago):
     client, _, donation, payload = pago
     assert client.post("/api/webhooks/wompi", json=payload).status_code == 200
+    original_id = donation["id_donacion"]
     payload = _event(donation["referencia"], tx_id="OTRA-TRANSACCION")
-    assert client.post("/api/webhooks/wompi", json=payload).status_code == 409
+    assert client.post("/api/webhooks/wompi", json=payload).status_code == 200
+    with app.app_context():
+        row = db.session.get(DONACION, original_id)
+        assert row.estado_pago == "aprobada"
+        assert row.wompi_transaction_id == "1234-1610641025-49201"
+        duplicado = PAGO_INTENTO.query.filter_by(
+            wompi_transaction_id="OTRA-TRANSACCION"
+        ).one()
+        assert duplicado.resultado == "duplicado"
+        assert AUDITORIA.query.filter_by(accion="PAGO_DUPLICADO").count() == 1
 
 
 @pytest.mark.parametrize("campo,valor", [("monto_estimado", -1), ("descripcion", "alterada"), ("checksum", None)])
