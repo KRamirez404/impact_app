@@ -40,6 +40,7 @@ impactapp_backend/*.sqlite*-wal
 impactapp_backend/data/
 impactapp_backend/uploads/*
 !impactapp_backend/uploads/.gitkeep
+impactapp_backend/private_uploads/
 
 # Documentos privados / académicos (no se publican)
 Plan.txt

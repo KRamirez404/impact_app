@@ -1,4 +1,5 @@
 import os
+import secrets
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -26,11 +27,26 @@ else:
         os.remove(_test_db)
     os.environ["DATABASE_URL"] = f"sqlite:///{_test_db}"
 
+if os.getenv("TRANSFERENCIAS_ENABLED", "0") == "1":
+    from cryptography.fernet import Fernet
+
+    os.environ.setdefault("FINANCIAL_ASSIGNMENTS_ENABLED", "1")
+    os.environ.setdefault(
+        "PRIVATE_STORAGE_ROOT",
+        tempfile.mkdtemp(prefix="impactapp-transfer-", dir=tempfile.gettempdir()),
+    )
+    os.environ.setdefault(
+        "BANK_ACCOUNT_ENCRYPTION_KEY", Fernet.generate_key().decode("ascii")
+    )
+    os.environ.setdefault("BANK_ACCOUNT_HASH_KEY", secrets.token_hex(32))
+    import models.transfer  # noqa: E402,F401
+
 import pytest  # noqa: E402
 
 from app import (  # noqa: E402
     ensure_campaign_schema,
     ensure_donation_schema,
+    ensure_payment_attempt_schema,
     ensure_user_schema,
     seed_database,
 )
@@ -60,6 +76,7 @@ def client():
         ensure_user_schema()
         ensure_campaign_schema()
         ensure_donation_schema()
+        ensure_payment_attempt_schema()
         seed_database()
         support = USUARIO(
             nombre="Soporte",

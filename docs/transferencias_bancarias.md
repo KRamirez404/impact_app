@@ -1,6 +1,8 @@
 # Etapa 2 — Contrato de transferencias bancarias
 
 Fecha: 16/10/2026. Estado: Fase A documental y base de autorización de Fase B.
+El Incremento 2B implementó el backend detrás de banderas deshabilitadas; ver
+`docs/transferencias_incremento2b.md` para endpoints, migraciones y límites.
 La implementación parcial se detalla al final. Fuente de decisiones: solicitudes del
 responsable del proyecto de planificación y Build de Etapa 2.
 

@@ -31,6 +31,7 @@ services:
       - "5000:5000"
     volumes:
       - ./impactapp_backend:/app
+      - private_uploads_data:/app/private_uploads
     environment:
       - FLASK_ENV=production
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
@@ -46,6 +47,15 @@ services:
       - WOMPI_API_URL=${WOMPI_API_URL:-https://sandbox.wompi.co/v1}
       - WOMPI_MIN_AMOUNT=${WOMPI_MIN_AMOUNT:-1000}
       - DONATION_REDIRECT_URL=${DONATION_REDIRECT_URL:-https://transaction-redirect.wompi.co/check}
+      - TRANSFERENCIAS_ENABLED=${TRANSFERENCIAS_ENABLED:-0}
+      - FINANCIAL_ASSIGNMENTS_ENABLED=${FINANCIAL_ASSIGNMENTS_ENABLED:-0}
+      - FINANCIAL_ADMIN_USER_ID=${FINANCIAL_ADMIN_USER_ID:-}
+      - PRIVATE_STORAGE_ROOT=/app/private_uploads
+      - TRANSFER_RECEIPT_MAX_BYTES=${TRANSFER_RECEIPT_MAX_BYTES:-8388608}
+      - TRANSFER_MIN_AMOUNT=${TRANSFER_MIN_AMOUNT:-1000}
+      - BANK_ACCOUNT_ENCRYPTION_KEY=${BANK_ACCOUNT_ENCRYPTION_KEY:-}
+      - BANK_ACCOUNT_ENCRYPTION_KEY_OLD=${BANK_ACCOUNT_ENCRYPTION_KEY_OLD:-}
+      - BANK_ACCOUNT_HASH_KEY=${BANK_ACCOUNT_HASH_KEY:-}
     depends_on:
       db:
         condition: service_healthy
@@ -60,6 +70,7 @@ services:
 
 volumes:
   pg_data:
+  private_uploads_data:
 
 networks:
   impactapp_network:
