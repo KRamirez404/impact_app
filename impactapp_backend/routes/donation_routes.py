@@ -133,12 +133,19 @@ def get_top_donors():
             USUARIO.nombre,
             USUARIO.apellido,
             USUARIO.foto_perfil,
+            USUARIO.mostrar_foto_top,
             func.sum(DONACION.monto_estimado).label("total_donado"),
             func.count(DONACION.id_donacion).label("donaciones_count"),
         )
         .join(USUARIO, DONACION.id_donante == USUARIO.id_usuario)
         .filter(DONACION.estado_pago == "aprobada")
-        .group_by(DONACION.id_donante, USUARIO.nombre, USUARIO.apellido, USUARIO.foto_perfil)
+        .group_by(
+            DONACION.id_donante,
+            USUARIO.nombre,
+            USUARIO.apellido,
+            USUARIO.foto_perfil,
+            USUARIO.mostrar_foto_top,
+        )
         .order_by(func.sum(DONACION.monto_estimado).desc())
         .limit(limit)
         .all()
@@ -148,7 +155,9 @@ def get_top_donors():
             "id_usuario": donor.id_donante,
             "nombre": donor.nombre,
             "apellido": donor.apellido,
-            "foto_perfil": donor.foto_perfil,
+            "foto_perfil": donor.foto_perfil
+            if donor.mostrar_foto_top is not False
+            else None,
             "total_donado": float(donor.total_donado or 0),
             "donaciones_count": int(donor.donaciones_count or 0),
         }

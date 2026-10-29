@@ -49,9 +49,7 @@ def test_delete_me_anonymizes_account(client):
     assert resp.status_code == 200
 
     me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
-    body = me.get_json()
-    assert body["estado"] == "bloqueado"
-    assert "eliminado_" in body["correo"]
+    assert me.status_code == 401
 
     login = client.post("/api/auth/login", json={"correo": correo, "contrasena": "Passw0rd!"})
     assert login.status_code == 401

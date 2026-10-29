@@ -8,6 +8,7 @@ from services.rate_limit import client_ip, enforce, too_many_requests
 from services.auth_service import (
     PRIVACY_POLICY,
     anonymize_user,
+    cambiar_rol,
     login_user,
     register_user,
     update_user_profile,
@@ -120,6 +121,31 @@ def update_me():
     except IntegrityError:
         db.session.rollback()
         return jsonify({"error": "No se pudo actualizar el perfil con estos datos"}), 400
+    return jsonify(user.to_dict()), 200
+
+
+@auth_bp.put("/role")
+@jwt_required()
+def update_role():
+    user_id = int(get_jwt_identity())
+    user = USUARIO.query.get_or_404(user_id)
+    if user.estado != "activo":
+        return jsonify({"error": "La cuenta no está activa"}), 403
+    try:
+        data = _json_object()
+        rol_anterior = user.rol
+        cambiar_rol(user, data)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    if user.rol != rol_anterior:
+        registrar(
+            id_usuario=user.id_usuario,
+            accion="CAMBIO_ROL",
+            descripcion=f"Rol cambiado de '{rol_anterior}' a '{user.rol}'",
+            entidad="USUARIO",
+            id_entidad=user.id_usuario,
+            direccion_ip=request.remote_addr,
+        )
     return jsonify(user.to_dict()), 200
 
 

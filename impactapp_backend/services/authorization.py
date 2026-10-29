@@ -15,7 +15,11 @@ def current_user():
 
 def is_support():
     user = current_user()
-    return user is not None and user.rol == "soporte"
+    return (
+        user is not None
+        and user.estado == "activo"
+        and user.rol == "soporte"
+    )
 
 
 def require_role(*allowed_roles: str):
@@ -28,7 +32,7 @@ def require_role(*allowed_roles: str):
             user = USUARIO.query.get(user_id)
             if user is None:
                 return jsonify({"error": "Usuario no encontrado"}), 404
-            if user.rol not in allowed:
+            if user.estado != "activo" or user.rol not in allowed:
                 roles_str = ", ".join(sorted(allowed))
                 return jsonify({"error": f"Requiere rol: {roles_str}"}), 403
             return fn(*args, **kwargs)
