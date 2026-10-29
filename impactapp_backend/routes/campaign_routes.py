@@ -6,7 +6,12 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from models import CAMPAÑA, CATEGORIA, CIUDAD, DONACION, REACCION, db
 from services.audit_service import registrar
-from services.authorization import is_support, require_role
+from services.authorization import (
+    ESTADOS_PUBLICOS_CAMPANIA,
+    current_user,
+    puede_ver_campania,
+    require_role,
+)
 from services.campaign_service import contar_donantes_por_campania
 
 campaign_bp = Blueprint("campaign_bp", __name__, url_prefix="/api")
@@ -45,7 +50,11 @@ def list_campaigns():
     if tipo_ayuda:
         query = query.filter(CAMPAÑA.tipo_ayuda_requerida == tipo_ayuda)
     if estado:
+        if estado not in ESTADOS_PUBLICOS_CAMPANIA:
+            return jsonify({"error": "Estado no consultable públicamente"}), 400
         query = query.filter(CAMPAÑA.estado == estado)
+    else:
+        query = query.filter(CAMPAÑA.estado.in_(ESTADOS_PUBLICOS_CAMPANIA))
 
     campaigns = (
         query.options(
@@ -153,7 +162,7 @@ def create_campaign():
 @jwt_required(optional=True)
 def get_campaign(campaign_id: int):
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
-    if campaign.eliminada and not is_support():
+    if not puede_ver_campania(campaign, current_user()):
         return jsonify({"error": "Campaña no encontrada"}), 404
     current_user_id = get_jwt_identity()
     payload = campaign.to_public_dict()

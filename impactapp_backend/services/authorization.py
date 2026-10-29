@@ -5,6 +5,8 @@ from flask_jwt_extended import get_jwt_identity
 
 from models import USUARIO
 
+ESTADOS_PUBLICOS_CAMPANIA = ("activa", "finalizada")
+
 
 def current_user():
     user_id = get_jwt_identity()
@@ -19,6 +21,20 @@ def is_support():
         user is not None
         and user.estado == "activo"
         and user.rol == "soporte"
+    )
+
+
+def puede_ver_campania(campaign, user=None) -> bool:
+    if campaign is None:
+        return False
+    if user is not None and user.estado != "activo":
+        user = None
+    if campaign.eliminada:
+        return user is not None and user.rol == "soporte"
+    if campaign.estado in ESTADOS_PUBLICOS_CAMPANIA:
+        return True
+    return user is not None and (
+        user.rol == "soporte" or campaign.id_creador == user.id_usuario
     )
 
 

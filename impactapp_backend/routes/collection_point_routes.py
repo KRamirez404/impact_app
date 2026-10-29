@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from models import CAMPAÑA, PUNTO_RECOLECCION, db
+from services.authorization import current_user, puede_ver_campania
 
 collection_point_bp = Blueprint(
     "collection_point_bp", __name__, url_prefix="/api/collection-points"
@@ -9,7 +10,11 @@ collection_point_bp = Blueprint(
 
 
 @collection_point_bp.get("/campaign/<int:campaign_id>")
+@jwt_required(optional=True)
 def list_collection_points(campaign_id: int):
+    campaign = CAMPAÑA.query.get_or_404(campaign_id)
+    if not puede_ver_campania(campaign, current_user()):
+        return jsonify({"error": "Campaña no encontrada"}), 404
     points = PUNTO_RECOLECCION.query.filter_by(id_campania=campaign_id).all()
     return jsonify([point.to_dict() for point in points]), 200
 

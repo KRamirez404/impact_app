@@ -4,7 +4,11 @@ from sqlalchemy import func
 
 from models import CAMPAÑA, DONACION, PUNTO_RECOLECCION, USUARIO, db
 from services.audit_service import registrar
-from services.authorization import require_role
+from services.authorization import (
+    current_user,
+    puede_ver_campania,
+    require_role,
+)
 from services.donation_integrity import compute_donation_checksum, donation_is_intact
 
 donation_bp = Blueprint("donation_bp", __name__, url_prefix="/api/donations")
@@ -32,7 +36,7 @@ def create_donation():
         )
 
     campaign = CAMPAÑA.query.get_or_404(data["id_campania"])
-    if campaign.eliminada:
+    if campaign.eliminada or campaign.estado != "activa":
         return jsonify({"error": "La campaña no está disponible"}), 404
     point_id = data.get("id_punto")
     if point_id:
@@ -69,7 +73,11 @@ def create_donation():
 
 
 @donation_bp.get("/campaign/<int:campaign_id>")
+@jwt_required(optional=True)
 def get_campaign_donations(campaign_id: int):
+    campaign = CAMPAÑA.query.get_or_404(campaign_id)
+    if not puede_ver_campania(campaign, current_user()):
+        return jsonify({"error": "Campaña no encontrada"}), 404
     secret = current_app.config["JWT_SECRET_KEY"]
     donations = DONACION.query.filter_by(id_campania=campaign_id).all()
     payload = []

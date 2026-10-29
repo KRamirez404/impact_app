@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from models import CAMPAÑA, VALORACION, db
+from services.authorization import current_user, puede_ver_campania
 
 rating_bp = Blueprint("rating_bp", __name__, url_prefix="/api/ratings")
 
@@ -41,7 +42,11 @@ def create_rating():
 
 
 @rating_bp.get("/campaign/<int:campaign_id>")
+@jwt_required(optional=True)
 def list_ratings(campaign_id: int):
+    campaign = CAMPAÑA.query.get_or_404(campaign_id)
+    if not puede_ver_campania(campaign, current_user()):
+        return jsonify({"error": "Campaña no encontrada"}), 404
     ratings = VALORACION.query.filter_by(id_campania=campaign_id, visible=True).all()
     return jsonify([rating.to_dict() for rating in ratings]), 200
 

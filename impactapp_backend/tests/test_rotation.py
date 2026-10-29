@@ -57,6 +57,10 @@ def _create_activity(client):
     )
     assert campaign.status_code == 201
     campaign_id = campaign.get_json()["id_campania"]
+    with app.app_context():
+        campaign_row = db.session.get(CAMPAÑA, campaign_id)
+        campaign_row.estado = "activa"
+        db.session.commit()
     donation = client.post(
         "/api/donations",
         json={"id_campania": campaign_id, "tipo": "alimentos", "monto_estimado": 1000},
