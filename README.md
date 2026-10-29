@@ -467,9 +467,20 @@ Las donaciones económicas se procesan con **Wompi Checkout Web**. El flujo es:
 2. Flutter envía una `Idempotency-Key` estable por intento y abre la pasarela oficial (`https://checkout.wompi.co/p/`) en el navegador.
 3. Wompi notifica `transaction.updated` a `POST /api/webhooks/wompi`. El backend verifica el checksum, el ambiente, consulta la transacción autoritativa con la llave privada, compara id/referencia/monto/moneda y solo entonces actualiza la donación.
 4. La app consulta `GET /api/donations/:id/status`. La redirección o la pantalla de retorno **no** confirman el pago.
-5. Cada evento válido se registra en `PAGO_EVENTO` con una huella única y el resultado (`aplicado`, `ignorado`, `sin_donacion`). No se guardan payloads completos, correos, secretos ni checksums completos.
+5. Cada evento válido se registra en `PAGO_EVENTO` con una huella única y el resultado (`aplicado`, `ignorado`, `sin_donacion`). Cada transacción se conserva en `PAGO_INTENTO`, lo que permite conciliar reintentos de Wompi con la misma referencia y distinto `id` sin duplicar la acreditación. No se guardan payloads completos, correos, secretos ni checksums completos. Detalle: [`docs/wompi_reintentos.md`](docs/wompi_reintentos.md).
 
 Solo las donaciones económicas con `estado_pago = "aprobada"` cuentan para la meta y el top de donadores. Las donaciones en especie siguen usando `POST /api/donations`. Las transferencias bancarias directas son un flujo separado y no se validan con credenciales Wompi.
+
+Para conciliar pagos cuyo webhook no llegó, el backend puede barrer donaciones pendientes contra la API autoritativa:
+
+```bash
+make wompi-reconcile
+# alternativa:
+cd impactapp_backend && .venv/bin/python scripts/reconcile_wompi.py \
+  --limit 50 --min-age-minutes 10 --max-age-hours 72
+```
+
+El barrido no acredita por redirección ni por estado local y se puede programar con cron. Los requisitos externos, las pruebas de aceptación y el procedimiento de activación de producción están en [`docs/wompi_produccion.md`](docs/wompi_produccion.md); producción sigue bloqueada con `WOMPI_ALLOW_PRODUCTION=0`.
 
 ### Configuración Sandbox
 

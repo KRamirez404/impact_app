@@ -131,6 +131,16 @@ Prefijo `/api`. Públicas: `GET /health`, `/auth/privacy-policy`, `GET /campaign
 - Evita explorar indiscriminadamente todo el repositorio si una consulta específica permite localizar los componentes necesarios.
 - Después de cambios estructurales, actualiza el grafo utilizando el comando compatible con la versión instalada.
 
+### GRAPHIFY QUERY POLICY
+- Start with exact symbols, paths, IDs or narrowly scoped queries; when a name is ambiguous, reuse the candidate path or ID returned by Graphify.
+- Prefer direct relationships before multi-hop exploration, and expand traversal only when necessary.
+- When investigating application behavior, seed queries with paths or symbols under `impactapp_backend/` or `impactapp_flutter/` and disregard `.opencode/` results unless agent configuration is relevant.
+- Graphify 0.9.91 has no directory-exclusion option for `query`; use precise seeds and interpret results instead of inventing filters.
+- Never infer a direct dependency from broad BFS proximity alone.
+- For Dart repository and data-source flows, verify potentially missing edges in the relevant interface and implementation files.
+- Do not repeat failed queries with equivalent parameters; refine them using the candidates or exact paths already returned.
+- Stop exploring once sufficient evidence exists, and treat incomplete language extraction as a known limitation.
+
 ### Seguridad y calidad
 - No modifiques funcionalidades ajenas a la tarea sin una justificación clara.
 - No sobrescribas configuraciones, variables de entorno, datos ni migraciones existentes sin revisar sus consecuencias.
@@ -141,6 +151,70 @@ Prefijo `/api`. Públicas: `GET /health`, `/auth/privacy-policy`, `GET /campaign
 - Después de los cambios, ejecuta las pruebas pertinentes y revisa los errores y las diferencias de Git.
 - No declares una funcionalidad terminada si no has verificado las pruebas correspondientes.
 - Separa claramente las funciones implementadas, las que dependen de servicios externos y las que todavía no se han probado.
+
+### NO HALLUCINATIONS
+- Never invent APIs, packages, functions, methods, file paths, test outcomes or tool results.
+- Verify uncertain claims using source code or authoritative documentation.
+- Treat inferred information as uncertain until verified.
+- Never claim execution without actual execution evidence.
+- Clearly report missing evidence.
+
+### MINIMAL CODE
+- Implement only what the task requires.
+- Prefer existing project patterns.
+- Avoid unnecessary files, helpers, abstractions, dependencies and configuration.
+- Avoid speculative fallbacks.
+- Do not introduce placeholder implementations.
+- Do not modify unrelated code.
+- Avoid defensive code without a demonstrated need.
+- Preserve backwards compatibility unless explicitly requested otherwise.
+
+### DEBUGGING
+- Reproduce the issue where feasible.
+- Identify the root cause before modifying code.
+- Inspect related dependencies and callers.
+- Make the smallest effective correction.
+- Add proportionate regression tests.
+- Verify the actual result.
+- Do not conceal errors or suppress failing checks.
+
+### TESTING
+- Run the most relevant tests first.
+- Execute broader tests only when the change warrants them.
+- Distinguish unexecuted, passed and failed tests.
+- Never fabricate test results.
+- Do not add tests unrelated to the change.
+- Never modify a test merely to hide a legitimate failure.
+
+### TOKEN EFFICIENCY
+- Prefer Graphify for relevant structural questions.
+- Search exact symbols and files before broad scans.
+- Avoid reading entire repositories.
+- Avoid dumping huge logs.
+- Reuse already available evidence.
+- Avoid duplicate agent exploration.
+- Load specialist skills only when needed.
+- Keep outputs concise and information-dense.
+- Do not sacrifice correctness to reduce tokens.
+
+### SCOPE CONTROL
+- Respect the requested scope.
+- Do not add features without authorization.
+- Do not perform unsolicited refactoring.
+- Do not rewrite working code unnecessarily.
+- Do not modify unrelated files.
+- Do not create documentation unless requested or necessary for a change.
+
+### COMPLETION CRITERIA
+A task is complete only when:
+
+1. The requirement is implemented.
+2. Relevant verification has actually run successfully.
+3. No known regression has been introduced.
+4. Changes remain within scope.
+5. Remaining risks are disclosed.
+
+If verification was impossible, report that the task is not fully verified.
 
 ## graphify
 
@@ -155,3 +229,15 @@ Rules:
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 - A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.
+
+## Principio de mantenimiento y reutilización
+
+Antes de añadir código, busca si ya existe una función, servicio, modelo, endpoint o componente que resuelva el mismo problema. Reutiliza o amplía la implementación existente cuando sea apropiado.
+
+No crees archivos, capas, abstracciones, dependencias ni documentación redundantes por defecto. Cada nuevo componente debe tener una responsabilidad clara y justificar su existencia.
+
+Prefiere el cambio mínimo que resuelva el requisito. No realices refactorizaciones generales como parte de una tarea funcional sin necesidad demostrable.
+
+Al finalizar, comprueba que el código nuevo no duplique lógica existente, que las pruebas pertinentes pasen y que no se hayan alterado funcionalidades ajenas.
+
+Graphify debe utilizarse para localizar dependencias y orientar la exploración, no como sustituto de verificar el código real.
