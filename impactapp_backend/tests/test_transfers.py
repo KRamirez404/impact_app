@@ -173,10 +173,16 @@ def _claim(client, ctx, transfer_id, key="claim-1"):
     )
 
 
-def _approve(client, ctx, transfer_id, key="approve-1"):
+def _approve(client, ctx, transfer_id, key="approve-1", *, account_id=1, movement="BANK-MOV-1", amount="50000.00", bank_date=None):
     return client.post(
         f"/api/support/transfers/{transfer_id}/approve",
-        json={"nota": "Verificado en el banco"},
+        json={
+            "nota": "Verificado en el banco",
+            "id_cuenta_recaudo": account_id,
+            "id_movimiento_bancario": movement,
+            "monto_abono": amount,
+            "fecha_abono": bank_date or date.today().isoformat(),
+        },
         headers=_headers(ctx["approver_token"], key),
     )
 
@@ -280,6 +286,96 @@ def test_pending_transfer_does_not_increase_total_and_approval_credits_once(clie
             ).count()
             == 1
         )
+
+
+def test_no_se_acredita_sin_movimiento_bancario_independiente(client, transfer_context):
+    ctx = transfer_context
+    account_id = _create_account(client, ctx)
+    transfer = _create_transfer(client, ctx, account_id)
+    transfer_id = transfer["id_transferencia"]
+    assert _upload(client, ctx, transfer_id).status_code == 201
+    assert _claim(client, ctx, transfer_id).status_code == 200
+
+    response = client.post(
+        f"/api/support/transfers/{transfer_id}/approve",
+        json={"nota": "Sin consulta bancaria"},
+        headers=_headers(ctx["approver_token"], "approve-no-movement"),
+    )
+
+    assert response.status_code == 400
+    assert _state(transfer_id)[0:2] == ("en_revision", "pendiente")
+    with app.app_context():
+        assert AUDITORIA.query.filter_by(
+            accion="TRANSFERENCIA_APROBADA", id_entidad=transfer_id
+        ).count() == 0
+
+
+@pytest.mark.parametrize("campo,valor", [
+    ("id_cuenta_recaudo", 999),
+    ("monto_abono", "49000.00"),
+    ("fecha_abono", "2020-01-01"),
+])
+def test_abono_incompatible_no_acredita(client, transfer_context, campo, valor):
+    ctx = transfer_context
+    account_id = _create_account(client, ctx)
+    transfer = _create_transfer(client, ctx, account_id)
+    transfer_id = transfer["id_transferencia"]
+    assert _upload(client, ctx, transfer_id).status_code == 201
+    assert _claim(client, ctx, transfer_id).status_code == 200
+    options = {"account_id": account_id, "amount": "50000.00", "bank_date": date.today().isoformat()}
+    options[{"id_cuenta_recaudo": "account_id", "monto_abono": "amount", "fecha_abono": "bank_date"}[campo]] = valor
+
+    response = _approve(client, ctx, transfer_id, **options)
+
+    assert response.status_code == 409
+    assert response.get_json()["code"] == "bank_movement_mismatch"
+    assert _state(transfer_id)[0:2] == ("en_revision", "pendiente")
+
+
+def test_movimiento_bancario_no_se_usa_dos_veces(client, transfer_context):
+    ctx = transfer_context
+    account_id = _create_account(client, ctx)
+    first = _create_transfer(client, ctx, account_id)
+    assert _upload(client, ctx, first["id_transferencia"]).status_code == 201
+    assert _claim(client, ctx, first["id_transferencia"]).status_code == 200
+    assert _approve(client, ctx, first["id_transferencia"], account_id=account_id, movement="mov-123").status_code == 200
+
+    second = _create_transfer(client, ctx, account_id, reference="DONOR-REF-2", key="transfer-2")
+    assert _upload(client, ctx, second["id_transferencia"]).status_code == 201
+    assert _claim(client, ctx, second["id_transferencia"], key="claim-2").status_code == 200
+    repeated = _approve(client, ctx, second["id_transferencia"], key="approve-2", account_id=account_id, movement="MOV-123")
+
+    assert repeated.status_code == 409
+    assert repeated.get_json()["code"] == "bank_movement_duplicate"
+    assert _state(second["id_transferencia"])[0:2] == ("en_revision", "pendiente")
+    with app.app_context():
+        assert TRANSFERENCIA_BANCARIA.query.filter_by(id_movimiento_bancario="MOV-123").count() == 1
+
+
+def test_evidencia_bancaria_solo_es_visible_para_soporte(client, transfer_context):
+    ctx = transfer_context
+    account_id = _create_account(client, ctx)
+    transfer = _create_transfer(client, ctx, account_id)
+    transfer_id = transfer["id_transferencia"]
+    assert _upload(client, ctx, transfer_id).status_code == 201
+    assert _claim(client, ctx, transfer_id).status_code == 200
+    assert _approve(client, ctx, transfer_id, account_id=account_id, movement="MOV-PRIVADO-1").status_code == 200
+
+    donor = client.get(
+        f"/api/transfers/{transfer_id}", headers=_headers(ctx["donor_token"])
+    )
+    support = client.get(
+        f"/api/support/transfers/{transfer_id}", headers=_headers(ctx["approver_token"])
+    )
+
+    assert donor.status_code == 200
+    assert support.status_code == 200
+    assert "abono_verificado" not in donor.get_json()
+    assert support.get_json()["abono_verificado"] == {
+        "id_movimiento_bancario": "MOV-PRIVADO-1",
+        "monto_abono": "50000.00",
+        "fecha_abono": date.today().isoformat(),
+    }
 
 
 def test_reviewer_cannot_approve_and_unassigned_cannot_claim(client, transfer_context):
@@ -685,7 +781,13 @@ def test_concurrent_approval_credits_once(client, transfer_context):
             barrier.wait(timeout=10)
             response = threaded_client.post(
                 f"/api/support/transfers/{transfer['id_transferencia']}/approve",
-                json={"nota": "concurrente"},
+                json={
+                    "nota": "concurrente",
+                    "id_cuenta_recaudo": account_id,
+                    "id_movimiento_bancario": "MOV-CONCURRENT-1",
+                    "monto_abono": "50000.00",
+                    "fecha_abono": date.today().isoformat(),
+                },
                 headers=_headers(ctx["approver_token"], f"concurrent-approve-{index}"),
             )
             return response.status_code

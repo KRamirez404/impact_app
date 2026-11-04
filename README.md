@@ -120,6 +120,34 @@ nuevos todavía requieren prueba de integración PostgreSQL/Android. La matriz
 vigente usa los códigos del PDF: [`docs/trazabilidad_requisitos.md`](docs/trazabilidad_requisitos.md).
 Decisiones de pagos pendientes: [`docs/decisiones_cierre.md`](docs/decisiones_cierre.md).
 
+Verificación de cierre del 29/10/2026: la suite completa aprobó **333 casos en
+SQLite** (29 omitidos) y **337 casos en PostgreSQL aislado** (25 omitidos), además
+de **67 pruebas Flutter**. Las transferencias y las notificaciones tienen pruebas
+propias; las notificaciones permanecen deshabilitadas por defecto. Detalle en
+[`docs/notificaciones_email.md`](docs/notificaciones_email.md).
+
+### Notificaciones por correo
+
+El envío SMTP está desactivado por defecto y no es requisito para operar:
+
+```dotenv
+MAIL_ENABLED=0
+MAIL_HOST=
+MAIL_PORT=587
+MAIL_USE_TLS=1
+MAIL_USE_SSL=0
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_FROM=
+MAIL_TIMEOUT=10
+MAIL_MAX_ATTEMPTS=3
+```
+
+Los eventos de pago y transferencia se registran en `NOTIFICACION_EMAIL`; si el
+correo está activo se envían con `smtplib`. Los reintentos se ejecutan con
+`python scripts/send_pending_emails.py` y soporte consulta la cola en
+`GET /api/support/notifications`. Una falla de correo nunca revierte un pago.
+
 ---
 
 ## Generación del APK (Android)
@@ -252,6 +280,7 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | `GET` | `/api/supports/campaign/:id` | — | Soportes de campaña |
 | `POST` | `/api/supports` | JWT | Subir soporte (solo creador de la campaña) |
 | `GET` | `/api/support/summary` | JWT* | Resumen panel soporte (*rol `soporte`) |
+| `GET` | `/api/support/notifications` | JWT* | Cola de notificaciones con filtro `estado` y `limit` (*rol `soporte`) |
 | `POST` | `/api/support/campaigns/:id/approve` | JWT* | Aprobar campaña (*rol `soporte`) |
 | `POST` | `/api/support/campaigns/:id/reject` | JWT* | Rechazar campaña (*rol `soporte`) |
 | `GET` | `/api/tracking/:campaign_id` | — | Seguimiento de campaña |

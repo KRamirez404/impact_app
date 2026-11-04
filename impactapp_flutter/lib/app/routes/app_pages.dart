@@ -32,6 +32,8 @@ import '../../features/transfers/presentation/bindings/transfer_binding.dart';
 import '../../features/transfers/presentation/pages/create_transfer_page.dart';
 import '../../features/transfers/presentation/pages/my_transfers_page.dart';
 import '../../features/transfers/presentation/pages/transfer_detail_page.dart';
+import '../../features/transfers/presentation/pages/support_transfers_page.dart';
+import '../../features/transfers/presentation/pages/support_transfer_detail_page.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -154,6 +156,16 @@ class AppPages {
     GetPage(
       name: '${AppRoutes.transferDetail}/:id',
       page: () => const TransferDetailPage(),
+      bindings: [AuthBinding(), TransferBinding()],
+    ),
+    GetPage(
+      name: AppRoutes.supportTransfers,
+      page: () => const SupportTransfersPage(),
+      bindings: [AuthBinding(), TransferBinding()],
+    ),
+    GetPage(
+      name: '${AppRoutes.supportTransferDetail}/:id',
+      page: () => const SupportTransferDetailPage(),
       bindings: [AuthBinding(), TransferBinding()],
     ),
   ];

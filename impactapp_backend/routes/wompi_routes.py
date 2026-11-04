@@ -8,7 +8,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from models import AUDITORIA, CAMPAÑA, DONACION, PAGO_EVENTO, PAGO_INTENTO, db
-from services import wompi_service
+from services import notification_service, wompi_service
 from services.audit_service import registrar
 from services.authorization import current_user, is_support, require_role
 from services.campaign_service import recalculate_campaign_progress
@@ -95,6 +95,34 @@ def _checkout_response(donation, user, status):
     }), status
 
 
+def _notificar_estado_donacion(donation, campaign):
+    tipos = {
+        "aprobada": "donacion_aprobada",
+        "rechazada": "donacion_rechazada",
+        "anulada": "donacion_anulada",
+        "error": "donacion_error",
+    }
+    tipo = tipos.get(donation.estado_pago)
+    if tipo is None:
+        return
+    donante = donation.donante
+    clave = (
+        f"donacion:{donation.id_donacion}:{donation.estado_pago}:"
+        f"{donation.wompi_transaction_id or 'sin_transaccion'}"
+    )
+    notification_service.registrar_y_enviar(
+        tipo,
+        donante.correo if donante else None,
+        {
+            "nombre": donante.nombre if donante else "",
+            "campania": campaign.titulo if campaign else "",
+            "monto": donation.monto_estimado,
+            "referencia": donation.referencia_pago,
+        },
+        clave,
+    )
+
+
 @wompi_bp.post("/donations/checkout")
 @jwt_required()
 @require_role("donante")
@@ -161,6 +189,17 @@ def create_donation_checkout():
             direccion_ip=request.remote_addr, confirmar=False,
         )
         db.session.commit()
+        notification_service.registrar_y_enviar(
+            "donacion_pendiente",
+            user.correo,
+            {
+                "nombre": user.nombre,
+                "campania": campaign.titulo,
+                "monto": donation.monto_estimado,
+                "referencia": donation.referencia_pago,
+            },
+            f"donacion:{donation.id_donacion}:pendiente",
+        )
         return response
     except SQLAlchemyError:
         return _payment_error("checkout_no_persistido", 503)
@@ -689,4 +728,5 @@ def _apply_transaction(
         evento.resultado = "aplicado" if result == "verificada" else "ignorado"
         db.session.add(evento)
     db.session.commit()
+    _notificar_estado_donacion(donation, campaign)
     return result

@@ -27,6 +27,7 @@ from services.donation_integrity import (
     donation_is_intact,
 )
 from services.private_storage import delete_receipt, read_receipt, resolve_receipt, store_receipt
+from services import notification_service
 from services.transfer_crypto import (
     decrypt_account_number,
     encrypt_account_number,
@@ -210,7 +211,29 @@ def _transfer_payload(transfer, include_donor=False):
             "nombre": transfer.donante.nombre,
             "apellido": transfer.donante.apellido,
         }
+        if transfer.id_movimiento_bancario:
+            data["abono_verificado"] = {
+                "id_movimiento_bancario": transfer.id_movimiento_bancario,
+                "monto_abono": str(transfer.monto_abono),
+                "fecha_abono": transfer.fecha_abono.isoformat(),
+            }
     return data
+
+
+def _notificar_transferencia(transfer, tipo, clave, motivo=None):
+    donante = transfer.donante
+    notification_service.registrar_y_enviar(
+        tipo,
+        donante.correo if donante else None,
+        {
+            "nombre": donante.nombre if donante else "",
+            "campania": transfer.campania.titulo if transfer.campania else "",
+            "monto": transfer.monto_declarado,
+            "referencia": transfer.referencia_bancaria,
+            "motivo": motivo,
+        },
+        clave,
+    )
 
 
 def _lock_campaign(id_campania):
@@ -755,10 +778,17 @@ def reject_transfer(actor, id_transferencia, motivo, key, ip):
         ip,
     )
     db.session.commit()
-    return _transfer_payload(transfer, include_donor=True), True
+    payload = _transfer_payload(transfer, include_donor=True)
+    _notificar_transferencia(
+        transfer,
+        "transferencia_rechazada",
+        f"transferencia:{id_transferencia}:rechazada:{transfer.fecha_revision.isoformat()}",
+        motivo=reason,
+    )
+    return payload, True
 
 
-def approve_transfer(actor, id_transferencia, nota, key, ip):
+def approve_transfer(actor, id_transferencia, data, key, ip):
     transfer = TRANSFERENCIA_BANCARIA.query.filter_by(
         id_transferencia=id_transferencia
     ).first()
@@ -766,9 +796,7 @@ def approve_transfer(actor, id_transferencia, nota, key, ip):
         raise TransferError("transfer_not_found", 404, "Transferencia no encontrada")
     _support_capacity(actor, transfer.id_campania, ("contabilizacion",))
     request_key = _key(actor, "aprobar_transferencia", key, id_transferencia)
-    fingerprint = _fingerprint(
-        {"accion": "aprobada", "id": id_transferencia, "nota": nota or ""}
-    )
+    fingerprint = _fingerprint({"accion": "aprobada", "id": id_transferencia, **data})
     existing_event = TRANSFERENCIA_EVENTO.query.filter_by(
         clave_idempotencia=request_key
     ).first()
@@ -822,8 +850,31 @@ def approve_transfer(actor, id_transferencia, nota, key, ip):
         or transfer.moneda != "COP"
     ):
         raise TransferError("transfer_conflict", 409, "Datos financieros inconsistentes")
+    id_movimiento = _reference(data.get("id_movimiento_bancario")).upper()
+    monto_abono = _decimal(data.get("monto_abono"))
+    fecha_abono = _date(data.get("fecha_abono"))
+    id_cuenta = _int(data.get("id_cuenta_recaudo"), "id_cuenta_recaudo")
+    if (
+        id_cuenta != account.id_cuenta_recaudo
+        or monto_abono != transfer.monto_declarado
+        or fecha_abono < transfer.fecha_transferencia
+    ):
+        raise TransferError(
+            "bank_movement_mismatch", 409, "El abono bancario no coincide con la transferencia"
+        )
+    duplicate = TRANSFERENCIA_BANCARIA.query.filter_by(
+        id_cuenta_recaudo=id_cuenta, id_movimiento_bancario=id_movimiento
+    ).first()
+    if duplicate is not None:
+        raise TransferError(
+            "bank_movement_duplicate", 409, "El movimiento bancario ya fue utilizado"
+        )
+    nota = data.get("nota")
     if nota is not None:
         nota = _text(nota, "nota", 0, 500, required=False)
+    transfer.id_movimiento_bancario = id_movimiento
+    transfer.monto_abono = monto_abono
+    transfer.fecha_abono = fecha_abono
     transfer.estado = "aprobada"
     transfer.id_aprobador = actor.id_usuario
     transfer.fecha_aprobacion = datetime.utcnow()
@@ -866,7 +917,13 @@ def approve_transfer(actor, id_transferencia, nota, key, ip):
             503,
             "No fue posible guardar la aprobación",
         )
-    return _transfer_payload(transfer, include_donor=True), True
+    payload = _transfer_payload(transfer, include_donor=True)
+    _notificar_transferencia(
+        transfer,
+        "transferencia_aprobada",
+        f"transferencia:{id_transferencia}:aprobada",
+    )
+    return payload, True
 
 
 def add_receipt(actor, id_transferencia, file_storage, ip):
@@ -962,7 +1019,13 @@ def add_receipt(actor, id_transferencia, file_storage, ip):
             503,
             "No fue posible guardar el comprobante",
         )
-    return receipt.to_dict(), transfer, True
+    metadata = receipt.to_dict()
+    _notificar_transferencia(
+        transfer,
+        "transferencia_comprobante",
+        f"transferencia:{id_transferencia}:comprobante:{version}",
+    )
+    return metadata, transfer, True
 
 
 def receipt_path(actor, id_transferencia, support=False):

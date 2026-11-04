@@ -17,6 +17,7 @@ from models import (
     CAMPAÑA,
     CATEGORIA,
     CIUDAD,
+    NOTIFICACION_EMAIL,
     PAGO_INTENTO,
     PUNTO_RECOLECCION,
     SEGUIMIENTO,
@@ -252,6 +253,10 @@ def ensure_payment_attempt_schema():
     PAGO_INTENTO.__table__.create(bind=db.engine, checkfirst=True)
 
 
+def ensure_notification_schema():
+    NOTIFICACION_EMAIL.__table__.create(bind=db.engine, checkfirst=True)
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -405,6 +410,7 @@ def create_app():
         ensure_campaign_schema()
         ensure_donation_schema()
         ensure_payment_attempt_schema()
+        ensure_notification_schema()
         seed_database()
         wompi_status = wompi_service.configuration_status()
         if wompi_status["ok"]:

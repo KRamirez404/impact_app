@@ -20,4 +20,6 @@ abstract class AppRoutes {
   static const createTransfer = '/transfers/create';
   static const myTransfers = '/transfers/mine';
   static const transferDetail = '/transfers/detail';
+  static const supportTransfers = '/support/transfers';
+  static const supportTransferDetail = '/support/transfers/detail';
 }

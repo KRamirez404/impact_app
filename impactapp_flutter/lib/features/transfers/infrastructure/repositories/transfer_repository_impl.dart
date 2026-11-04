@@ -36,4 +36,31 @@ class TransferRepositoryImpl implements TransferRepository {
   @override
   Future<Uint8List> downloadReceipt(int transferId) =>
       dataSource.downloadReceipt(transferId);
+
+  @override
+  Future<List<TransferEntity>> getSupportTransfers() =>
+      dataSource.getSupportTransfers();
+
+  @override
+  Future<TransferEntity> getSupportTransfer(int transferId) =>
+      dataSource.getSupportTransfer(transferId);
+
+  @override
+  Future<TransferEntity> claimSupportTransfer(int transferId, String key) =>
+      dataSource.claimSupportTransfer(transferId, key);
+
+  @override
+  Future<TransferEntity> approveSupportTransfer(
+    int transferId,
+    Map<String, dynamic> evidence,
+    String key,
+  ) => dataSource.approveSupportTransfer(transferId, evidence, key);
+
+  @override
+  Future<TransferEntity> rejectSupportTransfer(int transferId, String reason, String key) =>
+      dataSource.rejectSupportTransfer(transferId, reason, key);
+
+  @override
+  Future<Uint8List> downloadSupportReceipt(int transferId) =>
+      dataSource.downloadSupportReceipt(transferId);
 }

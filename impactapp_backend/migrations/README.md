@@ -7,6 +7,7 @@ ejecutado contra la base de desarrollo ni contra la base activa.
 
 1. `20261022_01_financial_assignments.sql`
 2. `20261022_02_transfers.sql`
+3. `20261104_03_bank_movement.sql`
 
 La primera crea las tablas de asignaciones financieras que el backend ya modela y
 que son prerrequisito para el doble control. La segunda crea las cuatro tablas de
@@ -22,15 +23,25 @@ migración automática ni `create_all()` para estas tablas.
 2. Tomar un backup verificable de la base y probar la restauración.
 3. Revisar el SQL contra el esquema real. En particular, confirmar que no existan
    tablas de asignaciones con un esquema distinto.
-4. Aplicar `20261022_01_financial_assignments.sql` y después
-   `20261022_02_transfers.sql` con un usuario que pueda crear tablas e índices.
+4. Aplicar `20261022_01_financial_assignments.sql`, después
+   `20261022_02_transfers.sql` y finalmente `20261104_03_bank_movement.sql`
+   con un usuario que pueda crear tablas e índices. Si las dos primeras ya se
+   aplicaron, ejecutar solo la tercera tras revisar el esquema existente.
 5. Verificar tablas, claves foráneas, `CHECK` e índices parciales:
    - `uq_cuenta_verificada_por_campania`
-   - `uq_transferencia_aprobada_por_donacion`
+    - `uq_transferencia_aprobada_por_donacion`
+    - `uq_transferencia_movimiento_bancario`
 6. Configurar las claves, la raíz privada y las variables de entorno descritas
    abajo. No activar todavía.
 7. Solo después de revisar y autorizar, poner `FINANCIAL_ASSIGNMENTS_ENABLED=1` y
    `TRANSFERENCIAS_ENABLED=1`, reiniciar y verificar que el módulo responde.
+
+Para aprobar una transferencia se requiere consultar el abono en la fuente
+bancaria independiente y consignar su identificador único, fecha, importe y cuenta
+en la solicitud de aprobación. El identificador declarado por el donante y el
+comprobante adjunto no son prueba suficiente. La aplicación no consulta el banco:
+el aprobador responde por el contraste manual. Los movimientos sin identificación
+única verificable permanecen pendientes y no se contabilizan.
 
 Si faltan tablas, claves o una raíz privada válida, el arranque deja el módulo
 deshabilitado y las rutas de transferencias responden `503` con

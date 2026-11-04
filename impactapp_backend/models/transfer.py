@@ -106,6 +106,10 @@ class TRANSFERENCIA_BANCARIA(db.Model):
             "clave_idempotencia",
             name="uq_transferencia_idempotencia",
         ),
+        db.UniqueConstraint(
+            "id_cuenta_recaudo", "id_movimiento_bancario",
+            name="uq_transferencia_movimiento_bancario",
+        ),
         db.CheckConstraint(
             "monto_declarado > 0",
             name="ck_transferencia_monto",
@@ -167,6 +171,9 @@ class TRANSFERENCIA_BANCARIA(db.Model):
         db.Integer, db.ForeignKey("USUARIO.id_usuario"), nullable=True
     )
     fecha_aprobacion = db.Column(db.DateTime, nullable=True)
+    id_movimiento_bancario = db.Column(db.String(100), nullable=True)
+    monto_abono = db.Column(db.Numeric(12, 2), nullable=True)
+    fecha_abono = db.Column(db.Date, nullable=True)
     clave_idempotencia = db.Column(db.String(64), nullable=False)
     huella_solicitud = db.Column(db.String(64), nullable=False)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

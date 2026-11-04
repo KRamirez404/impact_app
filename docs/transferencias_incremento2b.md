@@ -1,5 +1,33 @@
 # Transferencias bancarias — Incremento 2B
 
+## Incremento de cierre RF-09 (4/11/2026)
+
+La aprobación ahora exige `id_cuenta_recaudo`, `id_movimiento_bancario`,
+`monto_abono` y `fecha_abono` consultados por soporte en la cuenta bancaria
+receptora. El monto y la cuenta deben coincidir con la transferencia declarada;
+la fecha del abono no puede preceder la fecha declarada. El identificador
+bancario se normaliza y no puede acreditarse dos veces para la misma cuenta.
+El comprobante del donante sigue siendo obligatorio y no reemplaza la consulta
+bancaria. Los metadatos del abono solo se devuelven al soporte asignado, no al
+donante. La aplicación **no consulta automáticamente el banco**: el aprobador
+es responsable del contraste manual; introducir un identificador no prueba por
+sí mismo que el dinero llegó.
+
+La migración `impactapp_backend/migrations/20261104_03_bank_movement.sql` es
+posterior a las dos migraciones originales. El 4/11/2026 se aplicaron las tres
+en orden en la base PostgreSQL nueva `impactapp_rf09_20261104_test`; se verificaron
+las tres columnas añadidas y la restricción de unicidad. No se aplica
+automáticamente ni se ha aplicado a la base activa. La aprobación no debe
+habilitarse sin una fuente bancaria comprobable. La interfaz Flutter
+para consulta, descarga de comprobantes y revisión financiera de soporte se
+añadió en este incremento, pero aún no se ha comprobado en un dispositivo.
+La administración de cuentas y asignaciones financieras sigue disponible por
+API restringida; no dispone de pantallas Flutter en este incremento.
+
+Las pruebas dirigidas `test_transfers.py` y `test_notifications.py` terminaron
+con **42 aprobadas y 0 omitidas** en esa base PostgreSQL aislada. La suite
+PostgreSQL completa requiere una verificación independiente.
+
 Fecha: 22/10/2026. Estado: backend implementado, módulo deshabilitado por defecto y
 migraciones no aplicadas a la base activa. No incluye Flutter, correos, verificación
 bancaria automática ni habilitación en producción.

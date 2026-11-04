@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from models import CAMPAÑA, SOPORTE, USUARIO, db
+from models import CAMPAÑA, NOTIFICACION_EMAIL, SOPORTE, USUARIO, db
 from services.audit_service import registrar
 
 support_panel_bp = Blueprint("support_panel_bp", __name__, url_prefix="/api/support")
@@ -205,6 +205,42 @@ def delete_campaign(campaign_id: int):
         direccion_ip=request.remote_addr,
     )
     return jsonify(campaign.to_dict(include_relations=True)), 200
+
+
+@support_panel_bp.get("/notifications")
+@jwt_required()
+def support_notifications():
+    _, error = _require_support_user()
+    if error:
+        return error
+
+    estado = request.args.get("estado")
+    if estado is not None and estado not in ("pendiente", "enviado", "fallido"):
+        return jsonify({"error": "Estado de notificación inválido"}), 400
+    try:
+        limit = int(request.args.get("limit", 50))
+    except (TypeError, ValueError):
+        return jsonify({"error": "limit debe ser un entero"}), 400
+    limit = max(1, min(limit, 200))
+
+    query = NOTIFICACION_EMAIL.query
+    if estado:
+        query = query.filter(NOTIFICACION_EMAIL.estado == estado)
+    total = query.count()
+    items = (
+        query.order_by(NOTIFICACION_EMAIL.creado_en.desc())
+        .limit(limit)
+        .all()
+    )
+    return (
+        jsonify(
+            {
+                "total": total,
+                "items": [item.to_dict() for item in items],
+            }
+        ),
+        200,
+    )
 
 
 @support_panel_bp.post("/campaigns/<int:campaign_id>/restore")

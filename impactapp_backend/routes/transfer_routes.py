@@ -251,11 +251,19 @@ def reject_transfer(id_transferencia):
 @require_role("soporte")
 def approve_transfer(id_transferencia):
     actor = _actor()
-    data = _datos({"nota"})
+    data = _datos(
+        {
+            "nota",
+            "id_cuenta_recaudo",
+            "id_movimiento_bancario",
+            "monto_abono",
+            "fecha_abono",
+        }
+    )
     payload, _ = transfer_service.approve_transfer(
         actor,
         id_transferencia,
-        data.get("nota"),
+        data,
         _idempotency(),
         request.remote_addr,
     )

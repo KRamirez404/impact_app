@@ -80,4 +80,64 @@ class TransferRemoteDataSource {
     }
     return Uint8List.fromList(data);
   }
+
+  Future<List<TransferModel>> getSupportTransfers() async {
+    final response = await _dio.get(ApiConstants.supportTransfers);
+    final items = _map(response.data)['items'];
+    if (items is! List) {
+      throw ServerException('Respuesta inválida del servidor');
+    }
+    return items.map((item) => TransferModel.fromJson(_map(item))).toList();
+  }
+
+  Future<TransferModel> getSupportTransfer(int transferId) async {
+    final response = await _dio.get(ApiConstants.supportTransfer(transferId));
+    return TransferModel.fromJson(_map(response.data));
+  }
+
+  Future<TransferModel> claimSupportTransfer(int transferId, String key) async {
+    final response = await _dio.post(
+      ApiConstants.supportTransferAction(transferId, 'claim'),
+      options: Options(headers: {'Idempotency-Key': key}),
+    );
+    return TransferModel.fromJson(_map(response.data));
+  }
+
+  Future<TransferModel> approveSupportTransfer(
+    int transferId,
+    Map<String, dynamic> evidence,
+    String key,
+  ) async {
+    final response = await _dio.post(
+      ApiConstants.supportTransferAction(transferId, 'approve'),
+      data: evidence,
+      options: Options(headers: {'Idempotency-Key': key}),
+    );
+    return TransferModel.fromJson(_map(response.data));
+  }
+
+  Future<TransferModel> rejectSupportTransfer(
+    int transferId,
+    String reason,
+    String key,
+  ) async {
+    final response = await _dio.post(
+      ApiConstants.supportTransferAction(transferId, 'reject'),
+      data: {'motivo': reason},
+      options: Options(headers: {'Idempotency-Key': key}),
+    );
+    return TransferModel.fromJson(_map(response.data));
+  }
+
+  Future<Uint8List> downloadSupportReceipt(int transferId) async {
+    final response = await _dio.get<List<int>>(
+      ApiConstants.supportTransferReceipt(transferId),
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final data = response.data;
+    if (data == null || data.isEmpty) {
+      throw ServerException('El comprobante descargado está vacío');
+    }
+    return Uint8List.fromList(data);
+  }
 }

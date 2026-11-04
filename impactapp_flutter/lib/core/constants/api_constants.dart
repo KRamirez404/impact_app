@@ -92,4 +92,11 @@ class ApiConstants {
       '$baseUrl/transfers/$transferId/receipt';
   static String transferResubmit(int transferId) =>
       '$baseUrl/transfers/$transferId/resubmit';
+  static String get supportTransfers => '$baseUrl/support/transfers';
+  static String supportTransfer(int transferId) =>
+      '$baseUrl/support/transfers/$transferId';
+  static String supportTransferReceipt(int transferId) =>
+      '${supportTransfer(transferId)}/receipt';
+  static String supportTransferAction(int transferId, String action) =>
+      '${supportTransfer(transferId)}/$action';
 }

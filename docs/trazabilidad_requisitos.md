@@ -1,6 +1,6 @@
 # Matriz de trazabilidad de cierre — ImpactApp
 
-Referencia principal: `requerimientos.pdf`, páginas 3–6. Actualización: 11/10/2026.
+Referencia principal: `requerimientos.pdf`, páginas 3–6. Actualización: 29/10/2026.
 El alcance adicional procede de `anteproyecto.txt`; no modifica silenciosamente el PDF.
 
 ## Cómo leer la matriz
@@ -11,6 +11,49 @@ El alcance adicional procede de `anteproyecto.txt`; no modifica silenciosamente 
 - La suite backend de referencia aprobó **95 casos** en SQLite y PostgreSQL el 11/10/2026.
   Eso no significa que cada requisito esté satisfecho: hay cobertura parcial y flujos sin pruebas.
 - Toda ejecución nueva debe indicar fecha, versión/estado del código, entorno y resultado.
+
+### Avance RF-09 — 4/11/2026 (árbol de trabajo sin confirmar)
+
+- La aprobación de transferencias requiere cuenta, monto, fecha e identificador
+  del movimiento contrastados por soporte en una fuente bancaria independiente.
+  El identificador se reserva de forma única por cuenta, sin exponerlo al donante;
+  el comprobante del donante permanece obligatorio. La comprobación en el banco
+  es manual, no una integración bancaria automática.
+- Se añadió interfaz Flutter de consulta y revisión para soporte. La administración
+  de cuentas y asignaciones financieras sigue disponible solo por API restringida.
+- Verificación local: suite backend SQLite con transferencias habilitadas:
+  **363 aprobadas, 6 omitidas**; prueba dirigida final de transferencias y correo:
+  **40 aprobadas, 2 omitidas**. Flutter: **69 pruebas aprobadas**; análisis sin
+  errores ni avisos de severidad warning, con 40 mensajes informativos existentes.
+- PostgreSQL aislado (`impactapp_rf09_20261104_test`): pruebas dirigidas de
+  transferencias y notificaciones **42 aprobadas, 0 omitidas**. La suite completa
+  PostgreSQL se ejecuta por separado; no se extrapola este resultado a ella.
+- **RF-09 permanece parcial**: después de activar Docker se aplicaron las tres
+  migraciones en orden en la base PostgreSQL nueva `impactapp_rf09_20261104_test`
+  y se verificaron las columnas y la restricción única del abono. No se aplicaron
+  a la base activa ni se comprobó el flujo en un dispositivo. La contabilización
+  de transferencias reales no se habilitó.
+
+### Avance de cierre — 29/10/2026
+
+- **Etapa 8, privacidad y acceso:** el listado público solo expone campañas
+  `activa` y `finalizada`; el detalle, las donaciones, los seguimientos, los puntos
+  de recolección y las valoraciones responden `404` cuando el usuario no puede ver
+  la campaña. El creador y soporte conservan acceso; solo soporte ve campañas
+  eliminadas. Las donaciones en especie exigen campaña `activa`.
+- **Verificación Etapa 8:** 44 pruebas dirigidas aprobadas
+  (`test_security.py`, `test_roles.py`, `test_campaign_visibility.py`), suite
+  completa **333 passed / 29 skipped** en SQLite y **337 passed / 25 skipped** en
+  PostgreSQL aislado.
+- **Notificaciones por correo:** patrón outbox en `NOTIFICACION_EMAIL`, envío SMTP
+  deshabilitado por defecto, reintentos manuales y consulta para soporte. Un fallo
+  de correo no revierte pagos. Pruebas: 11 casos en SQLite y 11 en PostgreSQL,
+  incluidos Wompi y transferencias; detalle en `docs/notificaciones_email.md`.
+- **Flutter:** 67 pruebas aprobadas; `flutter analyze` sin errores (40 avisos
+  informativos preexistentes).
+- **Sigue pendiente:** APK release, pruebas en dispositivos, SUS con participantes,
+  envío real contra un proveedor SMTP y pagos reales. No se modificaron los
+  indicadores de Wompi ni de transferencias.
 
 ## Requisitos del PDF y escenarios de aceptación
 
@@ -61,6 +104,7 @@ Rutas desde la raíz del proyecto:
 | Donaciones/trazabilidad | `impactapp_backend/routes/donation_routes.py`, `wompi_routes.py` | `impactapp_flutter/lib/features/campaigns/`, `features/auth/presentation/widgets/profile/` | `test_wompi.py`, `test_wompi_extra.py`; Flutter: `money_donation_flow_test.dart`, `payment_status_dialog_test.dart`, `activity_card_test.dart` |
 | Archivos/avances | `impactapp_backend/services/file_service.py`, `routes/upload_routes.py`, `support_routes.py`, `tracking_routes.py` | `impactapp_flutter/lib/features/verification/`, `features/campaigns/presentation/widgets/tabs/` | `impactapp_backend/tests/test_uploads.py` (31 casos); no acredita publicación integral |
 | Auditoría/integridad | `impactapp_backend/models/auditoria.py`, `services/audit_service.py`, `donation_integrity.py` | Estados e historial de aportes | `test_f2_f3.py`; inmutabilidad pendiente |
+| Notificaciones | `impactapp_backend/models/notification.py`, `services/notification_service.py`, `routes/support_panel_routes.py`, `scripts/send_pending_emails.py` | — | `test_notifications.py` (11 casos SQLite/PostgreSQL); SMTP simulado |
 | Android | `docker-compose.yml`, API Flask | `impactapp_flutter/android/` | Pendiente instalación y ejecución en dispositivo/emulador |
 
 ## Alcance adicional del anteproyecto

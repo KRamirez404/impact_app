@@ -17,4 +17,14 @@ abstract class TransferRepository {
     required bool resubmit,
   });
   Future<Uint8List> downloadReceipt(int transferId);
+  Future<List<TransferEntity>> getSupportTransfers();
+  Future<TransferEntity> getSupportTransfer(int transferId);
+  Future<TransferEntity> claimSupportTransfer(int transferId, String key);
+  Future<TransferEntity> approveSupportTransfer(
+    int transferId,
+    Map<String, dynamic> evidence,
+    String key,
+  );
+  Future<TransferEntity> rejectSupportTransfer(int transferId, String reason, String key);
+  Future<Uint8List> downloadSupportReceipt(int transferId);
 }

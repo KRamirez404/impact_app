@@ -97,6 +97,11 @@ class SupportHomePage extends GetView<SupportController> {
               );
             }),
             const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => Get.toNamed(AppRoutes.supportTransfers),
+              icon: const Icon(Icons.account_balance, color: Colors.white),
+              label: const Text('Revisar transferencias', style: TextStyle(color: Colors.white)),
+            ),
             _buildSearchBar(),
           ],
         ),
