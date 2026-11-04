@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../domain/entities/campaign_entity.dart';
@@ -97,7 +98,12 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
     final status = await showMoneyDonationDialog(
       context: context,
       campaignId: campaignId,
-      onCheckout: (amount) => controller.startMoneyDonation(campaignId, amount),
+      onCheckout: (amountCents, idempotencyKey) =>
+          controller.startMoneyDonation(
+            campaignId,
+            amountCents,
+            idempotencyKey: idempotencyKey,
+          ),
       onCheckStatus: (donationId) => controller.checkDonationStatus(donationId),
     );
     if (status == 'aprobada') {
@@ -118,7 +124,8 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
   }
 
   Future<void> _shareCampaign(CampaignEntity campaign) async {
-    final texto = 'Apoya "${campaign.titulo}" en ImpactApp.\n'
+    final texto =
+        'Apoya "${campaign.titulo}" en ImpactApp.\n'
         '${campaign.descripcion}\n'
         'Meta: ${_formatMoney(campaign.metaMonetaria)} · '
         '${campaign.ciudadNombre.isNotEmpty ? campaign.ciudadNombre : 'Colombia'}';
@@ -184,8 +191,8 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
         final rawImageUrl = _imageSupportUrl(campaign.soportes);
         final headerImageUrl = rawImageUrl != null
             ? (rawImageUrl.startsWith('/')
-                ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$rawImageUrl'
-                : rawImageUrl)
+                  ? '${ApiConstants.originUrl}$rawImageUrl'
+                  : rawImageUrl)
             : null;
 
         return Column(
@@ -241,14 +248,20 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                     onRate: () => _showRateCampaignDialog(id),
                     onShare: () => _shareCampaign(campaign),
                   ),
-                  if (campaign.estado == 'finalizada' || 
-                      campaign.porcentajeAvance >= 100 || 
-                      (DateTime.tryParse(campaign.fechaFin)?.isBefore(DateTime.now()) ?? false)) ...[
+                  if (campaign.estado == 'finalizada' ||
+                      campaign.porcentajeAvance >= 100 ||
+                      (DateTime.tryParse(
+                            campaign.fechaFin,
+                          )?.isBefore(DateTime.now()) ??
+                          false)) ...[
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF0FDF4),
-                        border: Border.all(color: const Color(0xFF7BF1A8), width: 1.18),
+                        border: Border.all(
+                          color: const Color(0xFF7BF1A8),
+                          width: 1.18,
+                        ),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -260,7 +273,10 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                               color: Color(0xFFB9F8CF),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.check_circle_outline, color: Color(0xFF008236)),
+                            child: const Icon(
+                              Icons.check_circle_outline,
+                              color: Color(0xFF008236),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -302,25 +318,37 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: const BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Color(0x1A000000))),
+                        border: Border(
+                          bottom: BorderSide(color: Color(0x1A000000)),
+                        ),
                       ),
                       child: Column(
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Icon(Icons.lock_outline, size: 16, color: Color(0xFF717182)),
+                              Icon(
+                                Icons.lock_outline,
+                                size: 16,
+                                color: Color(0xFF717182),
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 'Las donaciones han finalizado',
-                                style: TextStyle(fontSize: 14, color: Color(0xFF717182)),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF717182),
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 4),
                           const Text(
                             'Esta campaña ya no acepta nuevas contribuciones',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF717182)),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF717182),
+                            ),
                           ),
                         ],
                       ),
@@ -339,8 +367,11 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info_outline,
-                              size: 20, color: Color(0xFF717182)),
+                          Icon(
+                            Icons.info_outline,
+                            size: 20,
+                            color: Color(0xFF717182),
+                          ),
                           SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -358,6 +389,8 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                   ] else ...[
                     DonationButtons(
                       onDonateMoney: () => _showMoneyDonationDialog(id),
+                      onBankTransfer: () =>
+                          Get.toNamed('${AppRoutes.createTransfer}/$id'),
                       onDonatePhysical: () => _showPhysicalDonationDialog(
                         id,
                         campaign.puntosRecoleccion,

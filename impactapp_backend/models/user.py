@@ -27,6 +27,9 @@ class USUARIO(db.Model):
         nullable=False,
     )
     foto_perfil = db.Column(db.String(255), nullable=True)
+    mostrar_foto_top = db.Column(
+        db.Boolean, default=True, server_default="true", nullable=False
+    )
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     acepta_tratamiento = db.Column(db.Boolean, default=False, nullable=False)
     fecha_aceptacion = db.Column(db.DateTime, nullable=True)
@@ -34,6 +37,9 @@ class USUARIO(db.Model):
         db.Enum("activo", "bloqueado", name="usuario_estado", native_enum=False),
         default="activo",
         nullable=False,
+    )
+    token_version = db.Column(
+        db.Integer, default=0, server_default="0", nullable=False
     )
 
     campañas = db.relationship(
@@ -54,7 +60,16 @@ class USUARIO(db.Model):
             "ciudad": self.ciudad.to_dict() if self.ciudad else None,
             "biografia": self.biografia,
             "foto_perfil": self.foto_perfil,
+            "mostrar_foto_top": self.mostrar_foto_top,
             "rol": self.rol,
             "fecha_registro": self.fecha_registro.isoformat(),
             "estado": self.estado,
+        }
+
+    def to_public_dict(self):
+        return {
+            "id_usuario": self.id_usuario,
+            "nombre": self.nombre,
+            "apellido": self.apellido,
+            "foto_perfil": self.foto_perfil,
         }

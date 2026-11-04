@@ -1,4 +1,4 @@
-.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test prod-up prod-down prod-logs prod-ps simulate-webhook test-postgres
+.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test prod-up prod-down prod-logs prod-ps test-postgres wompi-check wompi-reconcile
 
 up:
 	docker compose up --build
@@ -36,5 +36,7 @@ prod-logs:
 	docker compose --env-file .env.production -f docker-compose.prod.yml logs -f
 prod-ps:
 	docker compose --env-file .env.production -f docker-compose.prod.yml ps
-simulate-webhook:
-	docker compose exec backend python scripts/simulate_wompi_webhook.py notify --latest --status APPROVED
+wompi-check:
+	docker compose exec backend python scripts/check_wompi_config.py
+wompi-reconcile:
+	docker compose exec backend python scripts/reconcile_wompi.py

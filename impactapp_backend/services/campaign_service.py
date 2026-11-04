@@ -3,6 +3,21 @@ from decimal import Decimal
 from models import CAMPAÑA, DONACION, SOPORTE, db
 
 
+def contar_donantes_por_campania(id_campanias):
+    if not id_campanias:
+        return {}
+    rows = (
+        db.session.query(
+            DONACION.id_campania,
+            db.func.count(db.distinct(DONACION.id_donante)),
+        )
+        .filter(DONACION.id_campania.in_(id_campanias))
+        .group_by(DONACION.id_campania)
+        .all()
+    )
+    return {id_campania: total for id_campania, total in rows}
+
+
 def recalculate_campaign_progress(campania: CAMPAÑA, *, confirmar: bool = True):
     if (campania.meta_monetaria or 0) <= 0:
         campania.porcentaje_avance = Decimal("0.00")

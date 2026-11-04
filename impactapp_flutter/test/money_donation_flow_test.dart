@@ -25,7 +25,7 @@ class _FakeUrlLauncher extends UrlLauncherPlatform {
 }
 
 Widget _harness({
-  required Future<DonationCheckoutEntity?> Function(double) onCheckout,
+  required Future<DonationCheckoutEntity?> Function(int, String) onCheckout,
   required Future<String> Function(int) onCheckStatus,
 }) {
   return MaterialApp(
@@ -55,19 +55,24 @@ void main() {
     UrlLauncherPlatform.instance = fakeLauncher;
   });
 
-  testWidgets('flujo completo: monto -> Wompi -> pago aprobado', (tester) async {
-    double? capturedAmount;
+  testWidgets('flujo completo: monto -> Wompi -> pago aprobado', (
+    tester,
+  ) async {
+    int? capturedAmountCents;
+    String? capturedIdempotencyKey;
     int? capturedDonationId;
 
     await tester.pumpWidget(
       _harness(
-        onCheckout: (amount) async {
-          capturedAmount = amount;
+        onCheckout: (amountCents, idempotencyKey) async {
+          capturedAmountCents = amountCents;
+          capturedIdempotencyKey = idempotencyKey;
           return DonationCheckoutEntity(
             idDonacion: 21,
             idCampania: 7,
             referencia: 'IMPACTAPP-21-test',
-            montoEstimado: amount,
+            montoEstimado: amountCents / 100,
+            montoEnCentavos: amountCents,
             estadoPago: 'pendiente',
             checkoutUrl:
                 'https://checkout.wompi.co/p/?reference=IMPACTAPP-21-test',
@@ -93,7 +98,9 @@ void main() {
     await tester.tap(find.text('Pagar con Wompi'));
     await tester.pumpAndSettle();
 
-    expect(capturedAmount, 50000);
+    expect(capturedAmountCents, 5000000);
+    expect(capturedIdempotencyKey, isNotEmpty);
+    expect(capturedIdempotencyKey!.length, lessThanOrEqualTo(128));
     expect(fakeLauncher.launchedUrls, hasLength(1));
     expect(fakeLauncher.launchedUrls.first, contains('checkout.wompi.co'));
     expect(capturedDonationId, 21);
@@ -105,11 +112,11 @@ void main() {
 
     await tester.pumpWidget(
       _harness(
-        onCheckout: (amount) async {
+        onCheckout: (amountCents, idempotencyKey) async {
           checkoutCalled = true;
           return null;
         },
-        onCheckStatus: (_) async => 'pendiente',
+        onCheckStatus: (_) async => 'aprobada',
       ),
     );
 
@@ -132,7 +139,7 @@ void main() {
 
     await tester.pumpWidget(
       _harness(
-        onCheckout: (amount) async {
+        onCheckout: (amountCents, idempotencyKey) async {
           checkoutCalled = true;
           return null;
         },
@@ -153,5 +160,42 @@ void main() {
     );
     expect(payButton.onPressed, isNull);
     expect(checkoutCalled, isFalse);
+  });
+
+  testWidgets('interpreta decimales COP sin multiplicar el importe', (
+    tester,
+  ) async {
+    int? capturedAmountCents;
+
+    await tester.pumpWidget(
+      _harness(
+        onCheckout: (amountCents, idempotencyKey) async {
+          capturedAmountCents = amountCents;
+          return DonationCheckoutEntity(
+            idDonacion: 22,
+            idCampania: 7,
+            referencia: 'IMPACTAPP-22-test',
+            montoEstimado: amountCents / 100,
+            montoEnCentavos: amountCents,
+            estadoPago: 'pendiente',
+            checkoutUrl:
+                'https://checkout.wompi.co/p/?reference=IMPACTAPP-22-test',
+          );
+        },
+        onCheckStatus: (_) async => 'aprobada',
+      ),
+    );
+
+    await tester.tap(find.text('donar'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '50000.50');
+    await tester.tap(find.text('Confirmar Donación'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pagar con Wompi'));
+    await tester.pumpAndSettle();
+
+    expect(capturedAmountCents, 5000050);
   });
 }

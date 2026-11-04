@@ -9,7 +9,7 @@ Aplicación full-stack de donaciones solidarias para Colombia. Conecta donantes 
 | Capa | Tecnología |
 |---|---|
 | **Backend** | Flask + SQLAlchemy + PostgreSQL + JWT + bcrypt + Flask-CORS + Gunicorn |
-| **Pagos** | Wompi (Checkout Web: tarjetas, PSE y Nequi) |
+| **Pagos** | Wompi Checkout Web (Sandbox; métodos según disponibilidad) |
 | **Frontend** | Flutter 3.47+ (Android/iOS/Web/Linux) + GetX (state, routes) + Dio (HTTP) + GetStorage (local) |
 | **Infra** | Docker Compose, PostgreSQL 16, Nginx + Certbot, Python 3.12 |
 | **Pruebas** | pytest (backend) |
@@ -120,6 +120,34 @@ nuevos todavía requieren prueba de integración PostgreSQL/Android. La matriz
 vigente usa los códigos del PDF: [`docs/trazabilidad_requisitos.md`](docs/trazabilidad_requisitos.md).
 Decisiones de pagos pendientes: [`docs/decisiones_cierre.md`](docs/decisiones_cierre.md).
 
+Verificación de cierre del 29/10/2026: la suite completa aprobó **333 casos en
+SQLite** (29 omitidos) y **337 casos en PostgreSQL aislado** (25 omitidos), además
+de **67 pruebas Flutter**. Las transferencias y las notificaciones tienen pruebas
+propias; las notificaciones permanecen deshabilitadas por defecto. Detalle en
+[`docs/notificaciones_email.md`](docs/notificaciones_email.md).
+
+### Notificaciones por correo
+
+El envío SMTP está desactivado por defecto y no es requisito para operar:
+
+```dotenv
+MAIL_ENABLED=0
+MAIL_HOST=
+MAIL_PORT=587
+MAIL_USE_TLS=1
+MAIL_USE_SSL=0
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_FROM=
+MAIL_TIMEOUT=10
+MAIL_MAX_ATTEMPTS=3
+```
+
+Los eventos de pago y transferencia se registran en `NOTIFICACION_EMAIL`; si el
+correo está activo se envían con `smtplib`. Los reintentos se ejecutan con
+`python scripts/send_pending_emails.py` y soporte consulta la cola en
+`GET /api/support/notifications`. Una falla de correo nunca revierte un pago.
+
 ---
 
 ## Generación del APK (Android)
@@ -129,24 +157,34 @@ Requisito: Android SDK y Java configurados (`flutter doctor` sin errores en la s
 ```bash
 cd impactapp_flutter
 
-# APK debug (demostración / instalación directa)
+# APK debug para emulador (10.0.2.2 = host visto desde el emulador)
 flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:5000/api
 # Salida: build/app/outputs/flutter-apk/app-debug.apk
+
+# APK debug para móvil físico en la misma red Wi-Fi (usa la IP local del equipo)
+flutter build apk --debug --split-per-abi \
+  --dart-define=API_BASE_URL=http://192.168.1.10:5000/api
+# Salida: build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk (la mayoría de móviles)
 
 # APK release (firma con keystore propio)
 flutter build apk --release --dart-define=API_BASE_URL=https://TU_BACKEND/api
 ```
 
-> Para conectar un dispositivo físico al backend durante la demo, reemplaza `10.0.2.2` por la IP local del equipo (p. ej. `http://192.168.1.10:5000/api`).
+> La URL compilada es solo el valor por defecto. En la pantalla de login, la opción **Configurar servidor** permite cambiarla en tiempo de ejecución y probar la conexión (`/api/health`) sin recompilar el APK.
+>
+> El APK debug permite HTTP plano. Un APK release bloquea tráfico HTTP en Android; para pruebas locales usa debug o publica el backend con HTTPS.
 
 ---
 
-### Usuario admin precargado
+### Usuario soporte
 
-| Campo | Valor |
-|---|---|
-| Correo | `admin@impactapp.co` |
-| Contraseña | `Admin123*` |
+El código de inicialización no crea cuentas administrativas ni contraseñas conocidas. Para crear o rotar una cuenta con rol `soporte`, usa una contraseña única y ejecuta dentro del contenedor:
+
+```bash
+docker exec -it impactapp_backend python scripts/rotate_support_password.py
+```
+
+El script solicita correo y contraseña de forma interactiva, valida la política de contraseñas y no imprime el valor ingresado.
 
 ---
 
@@ -242,6 +280,7 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | `GET` | `/api/supports/campaign/:id` | — | Soportes de campaña |
 | `POST` | `/api/supports` | JWT | Subir soporte (solo creador de la campaña) |
 | `GET` | `/api/support/summary` | JWT* | Resumen panel soporte (*rol `soporte`) |
+| `GET` | `/api/support/notifications` | JWT* | Cola de notificaciones con filtro `estado` y `limit` (*rol `soporte`) |
 | `POST` | `/api/support/campaigns/:id/approve` | JWT* | Aprobar campaña (*rol `soporte`) |
 | `POST` | `/api/support/campaigns/:id/reject` | JWT* | Rechazar campaña (*rol `soporte`) |
 | `GET` | `/api/tracking/:campaign_id` | — | Seguimiento de campaña |
@@ -453,17 +492,30 @@ No ejecutar `flutter run` desde la raíz del repositorio. Siempre hacer `cd impa
 
 Las donaciones económicas se procesan con **Wompi Checkout Web**. El flujo es:
 
-1. El donante elige el monto en la app; `POST /api/donations/checkout` crea la donación en estado `pendiente` y devuelve una `checkout_url` firmada con el secreto de integridad.
-2. La app abre la pasarela (`https://checkout.wompi.co/p/`) en el navegador.
-3. Wompi notifica el resultado vía webhook a `POST /api/webhooks/wompi`; el backend valida el checksum del evento (`WOMPI_EVENTS_SECRET`), actualiza `estado_pago` y recalcula el avance de la campaña solo si el pago fue `APPROVED`.
-4. La app consulta `GET /api/donations/:id/status` para mostrar el resultado.
+1. El donante elige el monto; `POST /api/donations/checkout` valida campaña, rol, moneda e importe, crea la donación en `pendiente` y devuelve una `checkout_url` firmada con el secreto de integridad.
+2. Flutter envía una `Idempotency-Key` estable por intento y abre la pasarela oficial (`https://checkout.wompi.co/p/`) en el navegador.
+3. Wompi notifica `transaction.updated` a `POST /api/webhooks/wompi`. El backend verifica el checksum, el ambiente, consulta la transacción autoritativa con la llave privada, compara id/referencia/monto/moneda y solo entonces actualiza la donación.
+4. La app consulta `GET /api/donations/:id/status`. La redirección o la pantalla de retorno **no** confirman el pago.
+5. Cada evento válido se registra en `PAGO_EVENTO` con una huella única y el resultado (`aplicado`, `ignorado`, `sin_donacion`). Cada transacción se conserva en `PAGO_INTENTO`, lo que permite conciliar reintentos de Wompi con la misma referencia y distinto `id` sin duplicar la acreditación. No se guardan payloads completos, correos, secretos ni checksums completos. Detalle: [`docs/wompi_reintentos.md`](docs/wompi_reintentos.md).
 
-Solo las donaciones económicas con `estado_pago = "aprobada"` cuentan para la meta y el top de donadores. Las donaciones en especie siguen usando `POST /api/donations`.
+Solo las donaciones económicas con `estado_pago = "aprobada"` cuentan para la meta y el top de donadores. Las donaciones en especie siguen usando `POST /api/donations`. Las transferencias bancarias directas son un flujo separado y no se validan con credenciales Wompi.
 
-Variables de entorno (Sandbox):
+Para conciliar pagos cuyo webhook no llegó, el backend puede barrer donaciones pendientes contra la API autoritativa:
+
+```bash
+make wompi-reconcile
+# alternativa:
+cd impactapp_backend && .venv/bin/python scripts/reconcile_wompi.py \
+  --limit 50 --min-age-minutes 10 --max-age-hours 72
+```
+
+El barrido no acredita por redirección ni por estado local y se puede programar con cron. Los requisitos externos, las pruebas de aceptación y el procedimiento de activación de producción están en [`docs/wompi_produccion.md`](docs/wompi_produccion.md); producción sigue bloqueada con `WOMPI_ALLOW_PRODUCTION=0`.
+
+### Configuración Sandbox
 
 ```bash
 WOMPI_ENV=sandbox
+WOMPI_ALLOW_PRODUCTION=0
 WOMPI_PUBLIC_KEY=pub_test_...
 WOMPI_PRIVATE_KEY=prv_test_...
 WOMPI_INTEGRITY_SECRET=test_integrity_...
@@ -472,25 +524,48 @@ WOMPI_CHECKOUT_URL=https://checkout.wompi.co/p/
 WOMPI_API_URL=https://sandbox.wompi.co/v1
 ```
 
-> Con llaves de Sandbox **no se cobra dinero real**. Para cobros reales se requiere la cuenta de comercio Wompi aprobada y cambiar a llaves `pub_prod_`/`prv_prod_`, `WOMPI_ENV=prod` y `WOMPI_API_URL=https://production.wompi.co/v1`. Registra la URL de eventos de producción en el Dashboard de Wompi.
-
-### Probar pagos en local sin túnel ni llaves reales
-
-El script `impactapp_backend/scripts/simulate_wompi_webhook.py` crea una donación de prueba en la BD y envía un evento `transaction.updated` **firmado** con `WOMPI_EVENTS_SECRET`, reemplazando el webhook de Wompi para pruebas locales.
+El backend rechaza configuraciones incompletas, llaves de producción en Sandbox, URLs distintas de las oficiales, monedas distintas de COP y producción salvo que `WOMPI_ALLOW_PRODUCTION=1`. El diagnóstico seguro se ejecuta con:
 
 ```bash
-# 1. Tener un donante registrado (p. ej. admin@impactapp.co) y una campaña activa (id 1)
-# 2. Crear donación pendiente + simular pago aprobado en un solo paso
-docker compose exec backend python scripts/simulate_wompi_webhook.py run \
-  --campaign-id 1 --donante-correo admin@impactapp.co --amount 50000 --status APPROVED
-
-# Alternativa: aprobar la última donación pendiente (equivalente a make simulate-webhook)
-docker compose exec backend python scripts/simulate_wompi_webhook.py notify --latest --status APPROVED
+make wompi-check
+# o, sin Docker:
+cd impactapp_backend && .venv/bin/python scripts/check_wompi_config.py
 ```
 
-Estados válidos: `APPROVED`, `DECLINED`, `ERROR`, `VOIDED`, `PENDING`. El script se niega a ejecutarse si `WOMPI_ENV=prod` salvo que uses `--force`.
+No se imprimen valores de credenciales. Si faltan llaves, el checkout y el webhook responden 503 sin modificar donaciones.
 
-Para la prueba de UI con la pasarela real (Sandbox) sí se necesitan las llaves `pub_test_`/`test_integrity_`, y el webhook requiere exponer el backend con un túnel (`cloudflared tunnel --url http://localhost:5000`) o desplegar en el VPS.
+> Con llaves de Sandbox **no se cobra dinero real**. Producción está bloqueada por defecto y no forma parte de esta entrega.
+
+### Webhook en Sandbox
+
+Wompi exige una URL HTTPS pública. Para desarrollo local:
+
+```bash
+# Opción con cloudflared (instalar aparte; no se guarda el token en el repo)
+cloudflared tunnel --url http://localhost:5000
+```
+
+Registra en el Dashboard de Wompi, ambiente Sandbox, la URL:
+
+```text
+https://<URL-DEL-TUNEL>/api/webhooks/wompi
+```
+
+Cierra el túnel al terminar. No publiques otros endpoints. Si no hay túnel ni URL pública, el webhook real no puede llegar: las pruebas automatizadas usan un proveedor simulado explícito y no acreditan una transacción Sandbox real.
+
+### Prueba manual en Sandbox
+
+1. Completa las cuatro credenciales `test_` en `.env` y ejecuta `make up`.
+2. Ejecuta `make wompi-check` y confirma `configurado=si`.
+3. Levanta Flutter con `API_BASE_URL=http://localhost:5000/api` y abre una campaña activa.
+4. Inicia una donación y paga en el checkout Sandbox con los datos oficiales:
+   - Tarjeta `4242 4242 4242 4242`: aprobada.
+   - Tarjeta `4111 1111 1111 1111`: declinada.
+   - Nequi `3991111111`: aprobada; `3992222222`: declinada.
+   - PSE: usa el banco de prueba que aprueba o rechaza, si está disponible para el comercio.
+5. Verifica en la app y en `GET /api/donations/:id/status`. La donación permanece `pendiente` hasta que el backend procese el webhook o consulte la transacción con el identificador autoritativo.
+
+No se debe usar un webhook falso para aprobar pagos: el backend exige la consulta autoritativa a Wompi. El script `scripts/simulate_wompi_webhook.py` solo conserva el comando `create` para crear una donación pendiente local; `run`/`notify` están bloqueados.
 
 ---
 

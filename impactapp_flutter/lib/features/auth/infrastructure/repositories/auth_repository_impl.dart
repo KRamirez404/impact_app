@@ -62,6 +62,22 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<List<CityEntity>> getCities() => dataSource.getCities();
 
   @override
+  Future<UserEntity> updatePreferences({required bool mostrarFotoTop}) async {
+    final user = await dataSource.updatePreferences(
+      mostrarFotoTop: mostrarFotoTop,
+    );
+    await storage.write(StorageKeys.user, jsonEncode(user.toJson()));
+    return user;
+  }
+
+  @override
+  Future<UserEntity> changeRole(String rol) async {
+    final user = await dataSource.changeRole(rol);
+    await storage.write(StorageKeys.user, jsonEncode(user.toJson()));
+    return user;
+  }
+
+  @override
   Future<UserEntity> updateProfile({
     required String nombre,
     required String apellido,

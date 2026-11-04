@@ -1,5 +1,22 @@
 # Wompi: integridad financiera, incremento 1
 
+> Actualización Sandbox: la operación vigente se documenta en
+> [wompi_sandbox.md](wompi_sandbox.md). Se añadieron validación estricta de
+> prefijos/URLs, bloqueo de producción por defecto, registro persistente
+> `PAGO_EVENTO`, idempotencia desde Flutter y saneamiento del listado público.
+> El simulador local con IDs fabricados ya no se usa para aprobar pagos porque
+> el webhook exige consulta autoritativa a Wompi.
+>
+> Actualización 22/10/2026: el Incremento 1 de reintentos añade `PAGO_INTENTO`
+> para conservar varias transacciones por donación. Ver
+> [wompi_reintentos.md](wompi_reintentos.md). Las afirmaciones siguientes sobre
+> no añadir una tabla de eventos describen el estado del 16/10/2026.
+>
+> Actualización 27/10/2026: la conciliación por referencia ya está implementada
+> en `GET /status`, en el reintento y en el barrido
+> `scripts/reconcile_wompi.py`. Los requisitos externos y el procedimiento de
+> producción están en [wompi_produccion.md](wompi_produccion.md).
+
 Fecha de implementación y pruebas locales: 16/10/2026.
 
 ## Contrato contrastado

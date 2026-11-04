@@ -7,6 +7,13 @@ def _split_env(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
 
 
+def _int_env(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
 def _database_uri():
     uri = os.getenv("DATABASE_URL") or "sqlite:///impactapp.db"
     if uri.startswith("postgres://"):
@@ -23,6 +30,29 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(32)
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "uploads")
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+    FINANCIAL_ASSIGNMENTS_ENABLED = os.getenv("FINANCIAL_ASSIGNMENTS_ENABLED", "0") == "1"
+    FINANCIAL_ADMIN_USER_ID = os.getenv("FINANCIAL_ADMIN_USER_ID", "")
+    TRANSFERENCIAS_ENABLED = os.getenv("TRANSFERENCIAS_ENABLED", "0") == "1"
+    PRIVATE_STORAGE_ROOT = os.getenv("PRIVATE_STORAGE_ROOT", "")
+    TRANSFER_RECEIPT_MAX_BYTES = _int_env(
+        "TRANSFER_RECEIPT_MAX_BYTES", 8 * 1024 * 1024
+    )
+    TRANSFER_MIN_AMOUNT = Decimal(os.getenv("TRANSFER_MIN_AMOUNT", "1000"))
+    BANK_ACCOUNT_ENCRYPTION_KEY = os.getenv("BANK_ACCOUNT_ENCRYPTION_KEY", "")
+    BANK_ACCOUNT_ENCRYPTION_KEY_OLD = os.getenv(
+        "BANK_ACCOUNT_ENCRYPTION_KEY_OLD", ""
+    )
+    BANK_ACCOUNT_HASH_KEY = os.getenv("BANK_ACCOUNT_HASH_KEY", "")
+
+    RATE_LIMIT_LOGIN_ATTEMPTS = _int_env("RATE_LIMIT_LOGIN_ATTEMPTS", 10)
+    RATE_LIMIT_LOGIN_IP_ATTEMPTS = _int_env("RATE_LIMIT_LOGIN_IP_ATTEMPTS", 50)
+    RATE_LIMIT_LOGIN_WINDOW = _int_env("RATE_LIMIT_LOGIN_WINDOW", 900)
+    RATE_LIMIT_REGISTER_ATTEMPTS = _int_env("RATE_LIMIT_REGISTER_ATTEMPTS", 5)
+    RATE_LIMIT_REGISTER_WINDOW = _int_env("RATE_LIMIT_REGISTER_WINDOW", 3600)
+    RATE_LIMIT_UPLOAD_ATTEMPTS = _int_env("RATE_LIMIT_UPLOAD_ATTEMPTS", 30)
+    RATE_LIMIT_UPLOAD_WINDOW = _int_env("RATE_LIMIT_UPLOAD_WINDOW", 3600)
+    RATE_LIMIT_WEBHOOK_ATTEMPTS = _int_env("RATE_LIMIT_WEBHOOK_ATTEMPTS", 600)
+    RATE_LIMIT_WEBHOOK_WINDOW = _int_env("RATE_LIMIT_WEBHOOK_WINDOW", 60)
 
     ALLOWED_ORIGINS = _split_env(
         "ALLOWED_ORIGINS",
@@ -34,10 +64,22 @@ class Config:
     WOMPI_INTEGRITY_SECRET = os.getenv("WOMPI_INTEGRITY_SECRET", "")
     WOMPI_EVENTS_SECRET = os.getenv("WOMPI_EVENTS_SECRET", "")
     WOMPI_ENV = os.getenv("WOMPI_ENV", "sandbox")
+    WOMPI_ALLOW_PRODUCTION = os.getenv("WOMPI_ALLOW_PRODUCTION", "0") == "1"
     WOMPI_CURRENCY = os.getenv("WOMPI_CURRENCY", "COP")
     WOMPI_CHECKOUT_URL = os.getenv("WOMPI_CHECKOUT_URL", "https://checkout.wompi.co/p/")
     WOMPI_API_URL = os.getenv("WOMPI_API_URL", "https://sandbox.wompi.co/v1")
     WOMPI_MIN_AMOUNT = Decimal(os.getenv("WOMPI_MIN_AMOUNT", "1000"))
     DONATION_REDIRECT_URL = os.getenv(
-        "DONATION_REDIRECT_URL", "http://localhost:8080/donacion/resultado"
+        "DONATION_REDIRECT_URL", "https://transaction-redirect.wompi.co/check"
     )
+
+    MAIL_ENABLED = os.getenv("MAIL_ENABLED", "0") == "1"
+    MAIL_HOST = os.getenv("MAIL_HOST", "")
+    MAIL_PORT = _int_env("MAIL_PORT", 587)
+    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "1") == "1"
+    MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", "0") == "1"
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+    MAIL_FROM = os.getenv("MAIL_FROM", "")
+    MAIL_TIMEOUT = _int_env("MAIL_TIMEOUT", 10)
+    MAIL_MAX_ATTEMPTS = _int_env("MAIL_MAX_ATTEMPTS", 3)

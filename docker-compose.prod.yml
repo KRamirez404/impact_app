@@ -28,9 +28,11 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-impactapp}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-impactapp}
       UPLOAD_FOLDER: uploads
+      PRIVATE_STORAGE_ROOT: /app/private_uploads
       FLASK_ENV: production
     volumes:
       - uploads_data:/app/uploads
+      - private_uploads_data:/app/private_uploads
     depends_on:
       db:
         condition: service_healthy
@@ -76,6 +78,7 @@ services:
 volumes:
   postgres_data:
   uploads_data:
+  private_uploads_data:
   certbot_certs:
   certbot_www:
 

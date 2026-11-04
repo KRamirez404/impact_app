@@ -3,7 +3,9 @@ class DonationCheckoutEntity {
   final int idCampania;
   final String referencia;
   final double montoEstimado;
+  final int montoEnCentavos;
   final String estadoPago;
+  final String ambiente;
   final String checkoutUrl;
 
   const DonationCheckoutEntity({
@@ -13,5 +15,7 @@ class DonationCheckoutEntity {
     required this.montoEstimado,
     required this.estadoPago,
     required this.checkoutUrl,
+    this.montoEnCentavos = 0,
+    this.ambiente = 'sandbox',
   });
 }

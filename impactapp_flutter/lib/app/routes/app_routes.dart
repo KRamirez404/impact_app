@@ -17,4 +17,9 @@ abstract class AppRoutes {
   static const donors = '/donors';
   static const supportHome = '/support';
   static const supportCampaignDetail = '/support/campaign';
+  static const createTransfer = '/transfers/create';
+  static const myTransfers = '/transfers/mine';
+  static const transferDetail = '/transfers/detail';
+  static const supportTransfers = '/support/transfers';
+  static const supportTransferDetail = '/support/transfers/detail';
 }

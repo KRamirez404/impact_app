@@ -1,8 +1,6 @@
 import uuid
 
-from conftest import get_token, register_user
-
-ADMIN = {"correo": "admin@impactapp.co", "contrasena": "Admin123*"}
+from conftest import get_support_token, get_token, register_user
 
 
 def _new_email(prefix):
@@ -51,9 +49,7 @@ def test_delete_me_anonymizes_account(client):
     assert resp.status_code == 200
 
     me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
-    body = me.get_json()
-    assert body["estado"] == "bloqueado"
-    assert "eliminado_" in body["correo"]
+    assert me.status_code == 401
 
     login = client.post("/api/auth/login", json={"correo": correo, "contrasena": "Passw0rd!"})
     assert login.status_code == 401
@@ -61,7 +57,7 @@ def test_delete_me_anonymizes_account(client):
 
 def test_approve_economic_campaign_requires_document(client):
     _, org_token, campaign_id = _create_economic_campaign(client)
-    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+    admin_token = get_support_token(client)
 
     resp = client.post(
         f"/api/support/campaigns/{campaign_id}/approve",
@@ -101,7 +97,7 @@ def test_approve_non_economic_campaign_requires_document(client):
         headers={"Authorization": f"Bearer {org_token}"},
     )
     campaign_id = resp.get_json()["id_campania"]
-    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+    admin_token = get_support_token(client)
 
     resp = client.post(
         f"/api/support/campaigns/{campaign_id}/approve",
@@ -114,7 +110,7 @@ def test_approve_non_economic_campaign_requires_document(client):
 
 def test_bank_account_locked_after_approval(client):
     correo, org_token, campaign_id = _create_economic_campaign(client)
-    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+    admin_token = get_support_token(client)
     client.post(
         "/api/supports",
         data={
@@ -202,7 +198,15 @@ def _create_campaign(client, tipo="alimentos"):
 
 def test_support_soft_delete_and_restore_campaign(client):
     org_token, campaign_id = _create_campaign(client)
-    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+    admin_token = get_support_token(client)
+
+    from app import app
+    from models import CAMPAÑA, db
+
+    with app.app_context():
+        campaign = db.session.get(CAMPAÑA, campaign_id)
+        campaign.estado = "activa"
+        db.session.commit()
 
     public = client.get("/api/campaigns").get_json()
     assert any(c["id_campania"] == campaign_id for c in public)
@@ -248,7 +252,7 @@ def test_support_soft_delete_and_restore_campaign(client):
 
 def test_support_invalidate_campaign_hides_it(client):
     _, campaign_id = _create_campaign(client)
-    admin_token = get_token(client, ADMIN["correo"], ADMIN["contrasena"])
+    admin_token = get_support_token(client)
 
     resp = client.post(
         f"/api/support/campaigns/{campaign_id}/invalidate",

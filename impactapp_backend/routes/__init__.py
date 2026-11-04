@@ -23,3 +23,7 @@ def register_blueprints(app):
     app.register_blueprint(collection_point_bp)
     app.register_blueprint(rating_bp)
     app.register_blueprint(upload_bp)
+    if app.config.get("FINANCIAL_ASSIGNMENTS_ENABLED", False):
+        from .financial_assignment_routes import financial_assignment_bp
+
+        app.register_blueprint(financial_assignment_bp)

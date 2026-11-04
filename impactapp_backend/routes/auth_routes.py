@@ -4,9 +4,11 @@ from sqlalchemy.exc import IntegrityError
 
 from models import USUARIO, db
 from services.audit_service import registrar
+from services.rate_limit import client_ip, enforce, too_many_requests
 from services.auth_service import (
     PRIVACY_POLICY,
     anonymize_user,
+    cambiar_rol,
     login_user,
     register_user,
     update_user_profile,
@@ -29,6 +31,13 @@ def privacy_policy():
 
 @auth_bp.post("/register")
 def register():
+    retry_after = enforce(
+        f"register:{client_ip()}",
+        "RATE_LIMIT_REGISTER_ATTEMPTS",
+        "RATE_LIMIT_REGISTER_WINDOW",
+    )
+    if retry_after:
+        return too_many_requests(retry_after)
     try:
         data = _json_object()
         user = register_user(data)
@@ -60,6 +69,21 @@ def login():
         return jsonify({"error": "Correo y contraseña son requeridos"}), 400
     if len(correo) > 150 or len(contrasena.encode("utf-8")) > 72:
         return jsonify({"error": "Las credenciales superan la longitud permitida"}), 400
+
+    normalized_email = correo.strip().lower()
+    retry_after = enforce(
+        f"login:{client_ip()}:{normalized_email}",
+        "RATE_LIMIT_LOGIN_ATTEMPTS",
+        "RATE_LIMIT_LOGIN_WINDOW",
+    )
+    if not retry_after:
+        retry_after = enforce(
+            f"login-ip:{client_ip()}",
+            "RATE_LIMIT_LOGIN_IP_ATTEMPTS",
+            "RATE_LIMIT_LOGIN_WINDOW",
+        )
+    if retry_after:
+        return too_many_requests(retry_after)
 
     try:
         token, user = login_user(correo, contrasena)
@@ -97,6 +121,31 @@ def update_me():
     except IntegrityError:
         db.session.rollback()
         return jsonify({"error": "No se pudo actualizar el perfil con estos datos"}), 400
+    return jsonify(user.to_dict()), 200
+
+
+@auth_bp.put("/role")
+@jwt_required()
+def update_role():
+    user_id = int(get_jwt_identity())
+    user = USUARIO.query.get_or_404(user_id)
+    if user.estado != "activo":
+        return jsonify({"error": "La cuenta no está activa"}), 403
+    try:
+        data = _json_object()
+        rol_anterior = user.rol
+        cambiar_rol(user, data)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    if user.rol != rol_anterior:
+        registrar(
+            id_usuario=user.id_usuario,
+            accion="CAMBIO_ROL",
+            descripcion=f"Rol cambiado de '{rol_anterior}' a '{user.rol}'",
+            entidad="USUARIO",
+            id_entidad=user.id_usuario,
+            direccion_ip=request.remote_addr,
+        )
     return jsonify(user.to_dict()), 200
 
 

@@ -263,7 +263,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     child: _selectedImage != null
                         ? Image.file(File(_selectedImage!.path), fit: BoxFit.cover)
                         : (_controller.user.value?.fotoPerfil != null
-                            ? Image.network('${ApiConstants.baseUrl.replaceAll('/api', '')}${_controller.user.value!.fotoPerfil}', fit: BoxFit.cover)
+                            ? Image.network('${ApiConstants.originUrl}${_controller.user.value!.fotoPerfil}', fit: BoxFit.cover)
                             : CircleAvatar(
                                 backgroundColor: Colors.white.withValues(alpha: 0.15),
                                 child: Text(

@@ -1,5 +1,7 @@
 import os
+import secrets
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy.engine import make_url
@@ -25,17 +27,45 @@ else:
         os.remove(_test_db)
     os.environ["DATABASE_URL"] = f"sqlite:///{_test_db}"
 
+if os.getenv("TRANSFERENCIAS_ENABLED", "0") == "1":
+    from cryptography.fernet import Fernet
+
+    os.environ.setdefault("FINANCIAL_ASSIGNMENTS_ENABLED", "1")
+    os.environ.setdefault(
+        "PRIVATE_STORAGE_ROOT",
+        tempfile.mkdtemp(prefix="impactapp-transfer-", dir=tempfile.gettempdir()),
+    )
+    os.environ.setdefault(
+        "BANK_ACCOUNT_ENCRYPTION_KEY", Fernet.generate_key().decode("ascii")
+    )
+    os.environ.setdefault("BANK_ACCOUNT_HASH_KEY", secrets.token_hex(32))
+    import models.transfer  # noqa: E402,F401
+
 import pytest  # noqa: E402
 
 from app import (  # noqa: E402
     ensure_campaign_schema,
     ensure_donation_schema,
+    ensure_notification_schema,
+    ensure_payment_attempt_schema,
     ensure_user_schema,
     seed_database,
 )
-from models import db  # noqa: E402
+from models import USUARIO, db  # noqa: E402
+from services.auth_service import hash_password  # noqa: E402
+from services.rate_limit import reset_rate_limits  # noqa: E402
 
 from app import app  # noqa: E402
+
+SUPPORT_EMAIL = "soporte@test.co"
+SUPPORT_PASSWORD = "SupportPassw0rd!"
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limits():
+    reset_rate_limits()
+    yield
+    reset_rate_limits()
 
 
 @pytest.fixture()
@@ -47,6 +77,21 @@ def client():
         ensure_user_schema()
         ensure_campaign_schema()
         ensure_donation_schema()
+        ensure_payment_attempt_schema()
+        ensure_notification_schema()
+        seed_database()
+        support = USUARIO(
+            nombre="Soporte",
+            apellido="Pruebas",
+            correo=SUPPORT_EMAIL,
+            contraseña_hash=hash_password(SUPPORT_PASSWORD),
+            estado="activo",
+            rol="soporte",
+            acepta_tratamiento=True,
+            fecha_aceptacion=datetime.utcnow(),
+        )
+        db.session.add(support)
+        db.session.commit()
         seed_database()
     with app.test_client() as test_client:
         yield test_client
@@ -72,3 +117,7 @@ def login(client, correo, contrasena="Passw0rd!"):
 
 def get_token(client, correo, contrasena="Passw0rd!"):
     return login(client, correo, contrasena).get_json()["access_token"]
+
+
+def get_support_token(client):
+    return get_token(client, SUPPORT_EMAIL, SUPPORT_PASSWORD)

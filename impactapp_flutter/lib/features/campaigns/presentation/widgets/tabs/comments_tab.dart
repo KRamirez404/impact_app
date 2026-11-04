@@ -107,7 +107,7 @@ class _CommentsTabState extends State<CommentsTab> {
                 child: ClipOval(
                   child: fotoPerfil != null
                       ? Image.network(
-                          '${ApiConstants.baseUrl.replaceAll('/api', '')}$fotoPerfil',
+                          '${ApiConstants.originUrl}$fotoPerfil',
                           fit: BoxFit.cover,
                           width: 40,
                           height: 40,
@@ -251,7 +251,7 @@ class _CommentCard extends StatelessWidget {
             child: ClipOval(
               child: fotoPerfil != null
                   ? Image.network(
-                      '${ApiConstants.baseUrl.replaceAll('/api', '')}$fotoPerfil',
+                      '${ApiConstants.originUrl}$fotoPerfil',
                       fit: BoxFit.cover,
                       width: 40,
                       height: 40,

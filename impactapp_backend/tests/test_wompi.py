@@ -19,6 +19,7 @@ TRANSACTIONS = {}
 def wompi_config(monkeypatch):
     TRANSACTIONS.clear()
     monkeypatch.setattr(wompi_service, "fetch_transaction", lambda tx: deepcopy(TRANSACTIONS[tx]))
+    monkeypatch.setattr(wompi_service, "fetch_transaction_by_reference", lambda reference: None)
     original = dict(app.config)
     app.config.update(
         WOMPI_PUBLIC_KEY=PUBLIC_KEY,

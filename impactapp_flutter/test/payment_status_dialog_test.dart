@@ -62,4 +62,20 @@ void main() {
     expect(find.text('Pago rechazado'), findsOneWidget);
     expect(find.text('Cerrar'), findsOneWidget);
   });
+
+  testWidgets('un fallo de red no presenta el pago como aprobado', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _harness((_) async => throw Exception('Sin conexión')),
+    );
+    await tester.tap(find.text('abrir'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Pago pendiente'), findsOneWidget);
+    expect(find.textContaining('No se pudo consultar'), findsOneWidget);
+    expect(find.text('Pago aprobado'), findsNothing);
+    expect(find.text('Actualizar'), findsOneWidget);
+  });
 }

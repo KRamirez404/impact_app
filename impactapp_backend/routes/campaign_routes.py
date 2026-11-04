@@ -2,10 +2,17 @@ from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy.orm import joinedload, selectinload
 
 from models import CAMPAÑA, CATEGORIA, CIUDAD, DONACION, REACCION, db
 from services.audit_service import registrar
-from services.authorization import is_support, require_role
+from services.authorization import (
+    ESTADOS_PUBLICOS_CAMPANIA,
+    current_user,
+    puede_ver_campania,
+    require_role,
+)
+from services.campaign_service import contar_donantes_por_campania
 
 campaign_bp = Blueprint("campaign_bp", __name__, url_prefix="/api")
 
@@ -43,19 +50,34 @@ def list_campaigns():
     if tipo_ayuda:
         query = query.filter(CAMPAÑA.tipo_ayuda_requerida == tipo_ayuda)
     if estado:
+        if estado not in ESTADOS_PUBLICOS_CAMPANIA:
+            return jsonify({"error": "Estado no consultable públicamente"}), 400
         query = query.filter(CAMPAÑA.estado == estado)
+    else:
+        query = query.filter(CAMPAÑA.estado.in_(ESTADOS_PUBLICOS_CAMPANIA))
 
-    campaigns = query.order_by(CAMPAÑA.id_campania.desc()).all()
+    campaigns = (
+        query.options(
+            joinedload(CAMPAÑA.ciudad),
+            joinedload(CAMPAÑA.categoria),
+            joinedload(CAMPAÑA.creador),
+            selectinload(CAMPAÑA.soportes),
+        )
+        .order_by(CAMPAÑA.id_campania.desc())
+        .all()
+    )
+    donantes_por_campania = contar_donantes_por_campania(
+        [campaign.id_campania for campaign in campaigns]
+    )
     payload = []
     for campaign in campaigns:
-        data = campaign.to_dict(include_relations=True)
-        data["donantes_count"] = (
-            db.session.query(db.func.count(db.distinct(DONACION.id_donante)))
-            .filter(DONACION.id_campania == campaign.id_campania)
-            .scalar()
-            or 0
-        )
-        data["soportes"] = [s.to_dict() for s in campaign.soportes]
+        data = campaign.to_public_dict()
+        data["donantes_count"] = donantes_por_campania.get(campaign.id_campania, 0)
+        data["soportes"] = [
+            support.to_public_dict()
+            for support in campaign.soportes
+            if support.validado
+        ]
         payload.append(data)
     return jsonify(payload), 200
 
@@ -140,21 +162,22 @@ def create_campaign():
 @jwt_required(optional=True)
 def get_campaign(campaign_id: int):
     campaign = CAMPAÑA.query.get_or_404(campaign_id)
-    if campaign.eliminada and not is_support():
+    if not puede_ver_campania(campaign, current_user()):
         return jsonify({"error": "Campaña no encontrada"}), 404
     current_user_id = get_jwt_identity()
-    payload = campaign.to_dict(include_relations=True)
+    payload = campaign.to_public_dict()
     payload["valoraciones"] = [r.to_dict() for r in campaign.valoraciones if r.visible]
-    payload["soportes"] = [s.to_dict() for s in campaign.soportes]
+    payload["soportes"] = [
+        support.to_public_dict()
+        for support in campaign.soportes
+        if support.validado
+    ]
     payload["seguimientos"] = [s.to_dict() for s in campaign.seguimientos]
     payload["puntos_recoleccion"] = [p.to_dict() for p in campaign.puntos_recoleccion]
-    payload["donaciones"] = [d.to_dict() for d in campaign.donaciones]
-    payload["donantes_count"] = (
-        db.session.query(db.func.count(db.distinct(DONACION.id_donante)))
-        .filter(DONACION.id_campania == campaign.id_campania)
-        .scalar()
-        or 0
-    )
+    payload["donaciones"] = [d.to_public_dict() for d in campaign.donaciones]
+    payload["donantes_count"] = contar_donantes_por_campania(
+        [campaign.id_campania]
+    ).get(campaign.id_campania, 0)
     payload["likes_count"] = REACCION.query.filter_by(
         id_campania=campaign.id_campania
     ).count()
@@ -194,7 +217,9 @@ def get_campaign_donors(campaign_id: int):
     result = []
     for donation in donations:
         d = donation.to_dict()
-        d["donante"] = donation.donante.to_dict() if donation.donante else {}
+        d["donante"] = (
+            donation.donante.to_public_dict() if donation.donante else {}
+        )
         d["es_anonimo"] = False
         result.append(d)
 

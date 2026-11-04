@@ -4,7 +4,11 @@ from sqlalchemy import func
 
 from models import CAMPAÑA, DONACION, PUNTO_RECOLECCION, USUARIO, db
 from services.audit_service import registrar
-from services.authorization import require_role
+from services.authorization import (
+    current_user,
+    puede_ver_campania,
+    require_role,
+)
 from services.donation_integrity import compute_donation_checksum, donation_is_intact
 
 donation_bp = Blueprint("donation_bp", __name__, url_prefix="/api/donations")
@@ -32,7 +36,7 @@ def create_donation():
         )
 
     campaign = CAMPAÑA.query.get_or_404(data["id_campania"])
-    if campaign.eliminada:
+    if campaign.eliminada or campaign.estado != "activa":
         return jsonify({"error": "La campaña no está disponible"}), 404
     point_id = data.get("id_punto")
     if point_id:
@@ -69,14 +73,25 @@ def create_donation():
 
 
 @donation_bp.get("/campaign/<int:campaign_id>")
+@jwt_required(optional=True)
 def get_campaign_donations(campaign_id: int):
+    campaign = CAMPAÑA.query.get_or_404(campaign_id)
+    if not puede_ver_campania(campaign, current_user()):
+        return jsonify({"error": "Campaña no encontrada"}), 404
     secret = current_app.config["JWT_SECRET_KEY"]
     donations = DONACION.query.filter_by(id_campania=campaign_id).all()
     payload = []
     for donation in donations:
-        data = donation.to_dict()
-        data["integridad"] = donation_is_intact(donation, secret)
-        payload.append(data)
+        payload.append({
+            "id_donacion": donation.id_donacion,
+            "id_campania": donation.id_campania,
+            "tipo": donation.tipo,
+            "monto_estimado": float(donation.monto_estimado or 0),
+            "descripcion": donation.descripcion,
+            "fecha_donacion": donation.fecha_donacion.isoformat(),
+            "estado_pago": donation.estado_pago,
+            "integridad": donation_is_intact(donation, secret),
+        })
     return jsonify(payload), 200
 
 
@@ -126,12 +141,19 @@ def get_top_donors():
             USUARIO.nombre,
             USUARIO.apellido,
             USUARIO.foto_perfil,
+            USUARIO.mostrar_foto_top,
             func.sum(DONACION.monto_estimado).label("total_donado"),
             func.count(DONACION.id_donacion).label("donaciones_count"),
         )
         .join(USUARIO, DONACION.id_donante == USUARIO.id_usuario)
         .filter(DONACION.estado_pago == "aprobada")
-        .group_by(DONACION.id_donante, USUARIO.nombre, USUARIO.apellido, USUARIO.foto_perfil)
+        .group_by(
+            DONACION.id_donante,
+            USUARIO.nombre,
+            USUARIO.apellido,
+            USUARIO.foto_perfil,
+            USUARIO.mostrar_foto_top,
+        )
         .order_by(func.sum(DONACION.monto_estimado).desc())
         .limit(limit)
         .all()
@@ -141,7 +163,9 @@ def get_top_donors():
             "id_usuario": donor.id_donante,
             "nombre": donor.nombre,
             "apellido": donor.apellido,
-            "foto_perfil": donor.foto_perfil,
+            "foto_perfil": donor.foto_perfil
+            if donor.mostrar_foto_top is not False
+            else None,
             "total_donado": float(donor.total_donado or 0),
             "donaciones_count": int(donor.donaciones_count or 0),
         }

@@ -71,6 +71,22 @@ class AuthRemoteDataSource {
         .toList();
   }
 
+  Future<UserModel> updatePreferences({required bool mostrarFotoTop}) async {
+    final response = await _dio.put(
+      ApiConstants.me,
+      data: {'mostrar_foto_top': mostrarFotoTop},
+    );
+    return UserModel.fromJson(_safeData(response.data));
+  }
+
+  Future<UserModel> changeRole(String rol) async {
+    final response = await _dio.put(
+      ApiConstants.changeRole,
+      data: {'rol': rol},
+    );
+    return UserModel.fromJson(_safeData(response.data));
+  }
+
   Future<UserModel> updateProfile({
     required String nombre,
     required String apellido,

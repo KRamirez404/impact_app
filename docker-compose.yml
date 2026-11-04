@@ -2,12 +2,15 @@ services:
   db:
     image: postgres:16-alpine
     container_name: impactapp_db
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-impactapp}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-impactapp}
       - POSTGRES_DB=${POSTGRES_DB:-impactapp}
     volumes:
       - pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
     networks:
       - impactapp_network
     healthcheck:
@@ -22,16 +25,20 @@ services:
       context: ./impactapp_backend
       dockerfile: Dockerfile
     container_name: impactapp_backend
+    restart: unless-stopped
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "60", "--access-logfile", "-", "--access-logformat", "%(h)s %(t)s \"%(r)s\" %(s)s %(b)s %(L)s", "app:app"]
     ports:
       - "5000:5000"
     volumes:
       - ./impactapp_backend:/app
+      - private_uploads_data:/app/private_uploads
     environment:
       - FLASK_ENV=production
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-impactapp}:${POSTGRES_PASSWORD:-impactapp}@db:5432/${POSTGRES_DB:-impactapp}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost,http://127.0.0.1}
       - WOMPI_ENV=${WOMPI_ENV:-sandbox}
+      - WOMPI_ALLOW_PRODUCTION=${WOMPI_ALLOW_PRODUCTION:-0}
       - WOMPI_PUBLIC_KEY=${WOMPI_PUBLIC_KEY:-}
       - WOMPI_PRIVATE_KEY=${WOMPI_PRIVATE_KEY:-}
       - WOMPI_INTEGRITY_SECRET=${WOMPI_INTEGRITY_SECRET:-}
@@ -39,7 +46,16 @@ services:
       - WOMPI_CHECKOUT_URL=${WOMPI_CHECKOUT_URL:-https://checkout.wompi.co/p/}
       - WOMPI_API_URL=${WOMPI_API_URL:-https://sandbox.wompi.co/v1}
       - WOMPI_MIN_AMOUNT=${WOMPI_MIN_AMOUNT:-1000}
-      - DONATION_REDIRECT_URL=${DONATION_REDIRECT_URL:-http://localhost:8080/donacion/resultado}
+      - DONATION_REDIRECT_URL=${DONATION_REDIRECT_URL:-https://transaction-redirect.wompi.co/check}
+      - TRANSFERENCIAS_ENABLED=${TRANSFERENCIAS_ENABLED:-0}
+      - FINANCIAL_ASSIGNMENTS_ENABLED=${FINANCIAL_ASSIGNMENTS_ENABLED:-0}
+      - FINANCIAL_ADMIN_USER_ID=${FINANCIAL_ADMIN_USER_ID:-}
+      - PRIVATE_STORAGE_ROOT=/app/private_uploads
+      - TRANSFER_RECEIPT_MAX_BYTES=${TRANSFER_RECEIPT_MAX_BYTES:-8388608}
+      - TRANSFER_MIN_AMOUNT=${TRANSFER_MIN_AMOUNT:-1000}
+      - BANK_ACCOUNT_ENCRYPTION_KEY=${BANK_ACCOUNT_ENCRYPTION_KEY:-}
+      - BANK_ACCOUNT_ENCRYPTION_KEY_OLD=${BANK_ACCOUNT_ENCRYPTION_KEY_OLD:-}
+      - BANK_ACCOUNT_HASH_KEY=${BANK_ACCOUNT_HASH_KEY:-}
     depends_on:
       db:
         condition: service_healthy
@@ -54,6 +70,7 @@ services:
 
 volumes:
   pg_data:
+  private_uploads_data:
 
 networks:
   impactapp_network:

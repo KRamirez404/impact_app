@@ -46,16 +46,24 @@ class CampaignRemoteDataSource {
     final query = <String, dynamic>{};
     if (ciudad != null) query['ciudad'] = ciudad;
     if (categoria != null) query['categoria'] = categoria;
-    if (tipoAyuda != null && tipoAyuda.isNotEmpty) query['tipo_ayuda'] = tipoAyuda;
+    if (tipoAyuda != null && tipoAyuda.isNotEmpty)
+      query['tipo_ayuda'] = tipoAyuda;
     if (estado != null && estado.isNotEmpty) query['estado'] = estado;
 
-    final response = await _dio.get(ApiConstants.campaigns, queryParameters: query);
-    return _safeList(response.data).map((e) => CampaignModel.fromJson(e)).toList();
+    final response = await _dio.get(
+      ApiConstants.campaigns,
+      queryParameters: query,
+    );
+    return _safeList(
+      response.data,
+    ).map((e) => CampaignModel.fromJson(e)).toList();
   }
 
   Future<List<CampaignModel>> getMyCampaigns() async {
     final response = await _dio.get(ApiConstants.myCampaigns);
-    return _safeList(response.data).map((e) => CampaignModel.fromJson(e)).toList();
+    return _safeList(
+      response.data,
+    ).map((e) => CampaignModel.fromJson(e)).toList();
   }
 
   Future<CampaignModel> getCampaignDetail(int id) async {
@@ -74,9 +82,18 @@ class CampaignRemoteDataSource {
   }
 
   Future<DonationCheckoutModel> createDonationCheckout(
-    Map<String, dynamic> payload,
-  ) async {
-    final response = await _dio.post(ApiConstants.donationCheckout, data: payload);
+    Map<String, dynamic> payload, {
+    String? idempotencyKey,
+  }) async {
+    final headers = <String, dynamic>{};
+    if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    final response = await _dio.post(
+      ApiConstants.donationCheckout,
+      data: payload,
+      options: Options(headers: headers),
+    );
     return DonationCheckoutModel.fromJson(_safeMap(response.data));
   }
 
@@ -87,7 +104,9 @@ class CampaignRemoteDataSource {
 
   Future<List<DonationWithCampaignModel>> getMyDonations() async {
     final response = await _dio.get(ApiConstants.myDonations);
-    return _safeList(response.data).map((e) => DonationWithCampaignModel.fromJson(e)).toList();
+    return _safeList(
+      response.data,
+    ).map((e) => DonationWithCampaignModel.fromJson(e)).toList();
   }
 
   Future<LikeStatusModel> toggleLike(int campaignId) async {
@@ -103,15 +122,23 @@ class CampaignRemoteDataSource {
       ApiConstants.topDonors,
       queryParameters: {'limit': limit},
     );
-    return _safeList(response.data).map((e) => TopDonorModel.fromJson(e)).toList();
+    return _safeList(
+      response.data,
+    ).map((e) => TopDonorModel.fromJson(e)).toList();
   }
 
   Future<List<DonorWithDonationModel>> getCampaignDonors(int campaignId) async {
     final response = await _dio.get(ApiConstants.campaignDonors(campaignId));
-    return _safeList(response.data).map((e) => DonorWithDonationModel.fromJson(e)).toList();
+    return _safeList(
+      response.data,
+    ).map((e) => DonorWithDonationModel.fromJson(e)).toList();
   }
 
-  Future<void> uploadSupport(int campaignId, String tipo, String filePath) async {
+  Future<void> uploadSupport(
+    int campaignId,
+    String tipo,
+    String filePath,
+  ) async {
     final formData = FormData.fromMap({
       'id_campania': campaignId.toString(),
       'tipo': tipo,

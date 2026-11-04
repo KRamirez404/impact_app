@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../../core/utils/cop_amount.dart';
 import '../../../domain/entities/donation_checkout_entity.dart';
 import 'amount_chip.dart';
 import 'payment_process_dialog.dart';
@@ -7,11 +8,15 @@ import 'payment_process_dialog.dart';
 Future<String?> showMoneyDonationDialog({
   required BuildContext context,
   required int campaignId,
-  required Future<DonationCheckoutEntity?> Function(double amount) onCheckout,
+  required Future<DonationCheckoutEntity?> Function(
+    int amountCents,
+    String idempotencyKey,
+  )
+  onCheckout,
   required Future<String> Function(int donationId) onCheckStatus,
 }) async {
   final amountController = TextEditingController(text: '50000');
-  final amount = await showDialog<double>(
+  final amountCents = await showDialog<int>(
     context: context,
     builder: (dialogContext) {
       return StatefulBuilder(
@@ -142,23 +147,18 @@ Future<String?> showMoneyDonationDialog({
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          final value =
-                              double.tryParse(
-                                amountController.text
-                                    .replaceAll('.', '')
-                                    .trim(),
-                              ) ??
-                              0;
-                          if (value <= 0) {
+                          final parsed = parseCopAmount(amountController.text);
+                          if (!parsed.isValid) {
                             Get.snackbar(
                               'Monto inválido',
-                              'Ingresa un monto válido para continuar',
+                              parsed.error ??
+                                  'Ingresa un monto válido para continuar',
                               backgroundColor: const Color(0xFFD32F2F),
                               colorText: Colors.white,
                             );
                             return;
                           }
-                          Navigator.of(dialogContext).pop(value);
+                          Navigator.of(dialogContext).pop(parsed.cents);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1976D2),
@@ -186,15 +186,13 @@ Future<String?> showMoneyDonationDialog({
       );
     },
   );
-  amountController.dispose();
-
-  if (amount == null || amount <= 0 || !context.mounted) {
+  if (amountCents == null || !context.mounted) {
     return null;
   }
 
   return showPaymentProcessDialog(
     context: context,
-    amount: amount,
+    amountCents: amountCents,
     onCheckout: onCheckout,
     onCheckStatus: onCheckStatus,
   );

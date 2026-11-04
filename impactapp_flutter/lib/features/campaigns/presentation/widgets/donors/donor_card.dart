@@ -127,7 +127,7 @@ class DonorCard extends StatelessWidget {
       );
     }
     final normalizedUrl = donor.fotoPerfil!.startsWith('/')
-        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}${donor.fotoPerfil}'
+        ? '${ApiConstants.originUrl}${donor.fotoPerfil}'
         : donor.fotoPerfil!;
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),

@@ -67,7 +67,9 @@ class AuthController extends GetxController {
   Future<void> loadUserFromStorage() async {
     final cached = storage.read<String>(StorageKeys.user);
     if (cached != null) {
-      user.value = UserModel.fromJson(jsonDecode(cached) as Map<String, dynamic>);
+      user.value = UserModel.fromJson(
+        jsonDecode(cached) as Map<String, dynamic>,
+      );
     }
   }
 
@@ -80,7 +82,9 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       user.value = await repository.me();
-      final nextRoute = user.value?.rol == 'soporte' ? AppRoutes.supportHome : AppRoutes.home;
+      final nextRoute = user.value?.rol == 'soporte'
+          ? AppRoutes.supportHome
+          : AppRoutes.home;
       Get.offAllNamed(nextRoute);
     } catch (_) {
       logout();
@@ -99,7 +103,9 @@ class AuthController extends GetxController {
       } catch (_) {
         // Si falla me(), usamos los datos guardados del login
       }
-      final nextRoute = user.value?.rol == 'soporte' ? AppRoutes.supportHome : AppRoutes.home;
+      final nextRoute = user.value?.rol == 'soporte'
+          ? AppRoutes.supportHome
+          : AppRoutes.home;
       await Get.offAllNamed(nextRoute);
       showSuccess('Bienvenido a ImpactApp');
     } catch (e) {
@@ -159,11 +165,38 @@ class AuthController extends GetxController {
   Future<void> logout() async {
     await storage.remove(StorageKeys.token);
     await storage.remove(StorageKeys.user);
+    await storage.remove(StorageKeys.pendingWompiPayment);
     user.value = null;
     Get.offAllNamed(AppRoutes.login);
   }
 
   Future<List<CityEntity>> getProfileCities() => getProfileCitiesUseCase();
+
+  Future<bool> setMostrarFotoTop(bool value) async {
+    try {
+      isUpdatingProfile.value = true;
+      user.value = await repository.updatePreferences(mostrarFotoTop: value);
+      return true;
+    } catch (e) {
+      showError(friendlyError(e));
+      return false;
+    } finally {
+      isUpdatingProfile.value = false;
+    }
+  }
+
+  Future<bool> changeRole(String rol) async {
+    try {
+      isUpdatingProfile.value = true;
+      user.value = await repository.changeRole(rol);
+      return true;
+    } catch (e) {
+      showError(friendlyError(e));
+      return false;
+    } finally {
+      isUpdatingProfile.value = false;
+    }
+  }
 
   Future<bool> updateProfile({
     required String nombre,

@@ -7,28 +7,33 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../campaigns/presentation/controllers/campaign_list_controller.dart';
 import '../controllers/home_controller.dart';
-
+import '../../../campaigns/presentation/widgets/pending_payment_card.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
-  final CampaignListController campaignCtrl = Get.find<CampaignListController>();
+  final CampaignListController campaignCtrl =
+      Get.find<CampaignListController>();
   final AuthController authCtrl = Get.find<AuthController>();
   final HomeController homeCtrl = Get.find<HomeController>();
 
   @override
   Widget build(BuildContext context) {
     if (authCtrl.user.value?.rol == 'soporte') {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Get.offAllNamed(AppRoutes.supportHome));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Get.offAllNamed(AppRoutes.supportHome),
+      );
       return const SizedBox.shrink();
     }
     return Scaffold(
       body: Column(
         children: [
           _buildTopBar(),
+          const PendingPaymentCard(),
           Expanded(
             child: Obx(() {
               final campaigns = campaignCtrl.verifiedCampaigns;
-              if (campaignCtrl.isLoading.value && campaignCtrl.campaigns.isEmpty) {
+              if (campaignCtrl.isLoading.value &&
+                  campaignCtrl.campaigns.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
               return SingleChildScrollView(
@@ -81,15 +86,20 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('ImpactApp',
-                  style: TextStyle(
-                      fontFamily: 'Audiowide',
-                      fontSize: 18,
-                      color: Colors.white)),
+              const Text(
+                'ImpactApp',
+                style: TextStyle(
+                  fontFamily: 'Audiowide',
+                  fontSize: 18,
+                  color: Colors.white,
+                ),
+              ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.notifications_outlined,
-                    color: Colors.white),
+                icon: const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
+                ),
                 onPressed: () {},
               ),
             ],
@@ -146,7 +156,9 @@ class HomePage extends StatelessWidget {
 
   Widget _buildStatsRow(List<dynamic> campaigns) {
     final activas = campaigns.where((c) => c.estado == 'activa').length;
-    final verificadas = campaigns.where((c) => c.estado == 'activa' || c.estado == 'finalizada').length;
+    final verificadas = campaigns
+        .where((c) => c.estado == 'activa' || c.estado == 'finalizada')
+        .length;
     final total = campaigns.length;
     final verificadasPorcentaje = total > 0 ? (verificadas * 100 ~/ total) : 0;
     final urgentes = campaigns.where((c) {
@@ -195,7 +207,10 @@ class HomePage extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.1),
+            width: 0.8,
+          ),
           boxShadow: const [
             BoxShadow(
               color: Color(0x1A000000),
@@ -214,9 +229,7 @@ class HomePage extends StatelessWidget {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: color),
-              ],
+              children: [Icon(icon, size: 18, color: color)],
             ),
             const SizedBox(height: 8),
             Text(
@@ -230,10 +243,7 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF717182),
-              ),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF717182)),
             ),
           ],
         ),
@@ -257,10 +267,16 @@ class HomePage extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.monetization_on_outlined, size: 24, color: Color(0xFFF0B100)),
+              const Icon(
+                Icons.monetization_on_outlined,
+                size: 24,
+                color: Color(0xFFF0B100),
+              ),
               const SizedBox(width: 8),
-              const Text('Top Donadores',
-                  style: TextStyle(fontSize: 18, color: Color(0xFF000000))),
+              const Text(
+                'Top Donadores',
+                style: TextStyle(fontSize: 18, color: Color(0xFF000000)),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -293,7 +309,9 @@ class HomePage extends StatelessWidget {
                   final color = cardColors[i % cardColors.length];
                   final name = donor.nombreCompleto;
                   final initial = name.isNotEmpty ? name[0] : '?';
-                  final cardWidth = (MediaQuery.of(ctx).size.width * 0.3).clamp(96.0, 124.0).toDouble();
+                  final cardWidth = (MediaQuery.of(ctx).size.width * 0.3)
+                      .clamp(96.0, 124.0)
+                      .toDouble();
                   return Container(
                     width: cardWidth,
                     decoration: BoxDecoration(
@@ -301,7 +319,9 @@ class HomePage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(19),
                       image: donor.fotoPerfil != null
                           ? DecorationImage(
-                              image: NetworkImage('${ApiConstants.baseUrl.replaceAll('/api', '')}${donor.fotoPerfil}'),
+                              image: NetworkImage(
+                                '${ApiConstants.originUrl}${donor.fotoPerfil}',
+                              ),
                               fit: BoxFit.cover,
                             )
                           : null,
@@ -344,7 +364,10 @@ class HomePage extends StatelessWidget {
                           ),
                           Text(
                             _formatCurrencyShort(donor.totalDonado),
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -361,7 +384,9 @@ class HomePage extends StatelessWidget {
 
   Widget _buildNearGoalSection(List<dynamic> campaigns) {
     final nearGoal = campaigns.where((c) {
-      return c.porcentajeAvance >= 50 && c.porcentajeAvance < 100 && c.estado == 'activa';
+      return c.porcentajeAvance >= 50 &&
+          c.porcentajeAvance < 100 &&
+          c.estado == 'activa';
     }).toList();
 
     if (nearGoal.isEmpty) return const SizedBox.shrink();
@@ -373,35 +398,46 @@ class HomePage extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_fire_department, size: 20, color: Color(0xFFFF6900)),
+              const Icon(
+                Icons.local_fire_department,
+                size: 20,
+                color: Color(0xFFFF6900),
+              ),
               const SizedBox(width: 8),
-              const Text('Por alcanzar la meta',
-                  style: TextStyle(fontSize: 18, color: Color(0xFF0A0A0A))),
+              const Text(
+                'Por alcanzar la meta',
+                style: TextStyle(fontSize: 18, color: Color(0xFF0A0A0A)),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          Builder(builder: (context) {
-            final imageH =
-                (MediaQuery.of(context).size.height * 0.24).clamp(170.0, 240.0).toDouble();
-            return SizedBox(
-              height: imageH + 308,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: nearGoal.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 12),
-                itemBuilder: (_, i) {
-                  return SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    child: CampaignCard(
-                      key: ValueKey(nearGoal[i].idCampania),
-                      campaign: nearGoal[i],
-                      onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${nearGoal[i].idCampania}'),
-                    ),
-                  );
-                },
-              ),
-            );
-          }),
+          Builder(
+            builder: (context) {
+              final imageH = (MediaQuery.of(context).size.height * 0.24)
+                  .clamp(170.0, 240.0)
+                  .toDouble();
+              return SizedBox(
+                height: imageH + 308,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: nearGoal.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (_, i) {
+                    return SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      child: CampaignCard(
+                        key: ValueKey(nearGoal[i].idCampania),
+                        campaign: nearGoal[i],
+                        onTap: () => Get.toNamed(
+                          '${AppRoutes.campaignDetail}/${nearGoal[i].idCampania}',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -416,30 +452,41 @@ class HomePage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Campañas Recientes',
-                  style: TextStyle(fontSize: 18, color: Color(0xFF0A0A0A))),
+              const Text(
+                'Campañas Recientes',
+                style: TextStyle(fontSize: 18, color: Color(0xFF0A0A0A)),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    width: 0.8,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${campaigns.length} campañas',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF0A0A0A)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF0A0A0A),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ...campaigns.map((c) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: CampaignCard(
-                  key: ValueKey(c.idCampania),
-                  campaign: c,
-                  onTap: () => Get.toNamed('${AppRoutes.campaignDetail}/${c.idCampania}'),
-                ),
-              )),
+          ...campaigns.map(
+            (c) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: CampaignCard(
+                key: ValueKey(c.idCampania),
+                campaign: c,
+                onTap: () =>
+                    Get.toNamed('${AppRoutes.campaignDetail}/${c.idCampania}'),
+              ),
+            ),
+          ),
         ],
       ),
     );

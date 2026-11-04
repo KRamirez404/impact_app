@@ -5,6 +5,8 @@ from flask_jwt_extended import get_jwt_identity
 
 from models import USUARIO
 
+ESTADOS_PUBLICOS_CAMPANIA = ("activa", "finalizada")
+
 
 def current_user():
     user_id = get_jwt_identity()
@@ -15,7 +17,25 @@ def current_user():
 
 def is_support():
     user = current_user()
-    return user is not None and user.rol == "soporte"
+    return (
+        user is not None
+        and user.estado == "activo"
+        and user.rol == "soporte"
+    )
+
+
+def puede_ver_campania(campaign, user=None) -> bool:
+    if campaign is None:
+        return False
+    if user is not None and user.estado != "activo":
+        user = None
+    if campaign.eliminada:
+        return user is not None and user.rol == "soporte"
+    if campaign.estado in ESTADOS_PUBLICOS_CAMPANIA:
+        return True
+    return user is not None and (
+        user.rol == "soporte" or campaign.id_creador == user.id_usuario
+    )
 
 
 def require_role(*allowed_roles: str):
@@ -28,7 +48,7 @@ def require_role(*allowed_roles: str):
             user = USUARIO.query.get(user_id)
             if user is None:
                 return jsonify({"error": "Usuario no encontrado"}), 404
-            if user.rol not in allowed:
+            if user.estado != "activo" or user.rol not in allowed:
                 roles_str = ", ".join(sorted(allowed))
                 return jsonify({"error": f"Requiere rol: {roles_str}"}), 403
             return fn(*args, **kwargs)

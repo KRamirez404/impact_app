@@ -13,3 +13,7 @@ from .tracking import SEGUIMIENTO  # noqa: E402,F401
 from .collection_point import PUNTO_RECOLECCION  # noqa: E402,F401
 from .reaction import REACCION  # noqa: E402,F401
 from .auditoria import AUDITORIA  # noqa: E402,F401
+from .payment_event import PAGO_EVENTO  # noqa: E402,F401
+from .payment_attempt import PAGO_INTENTO  # noqa: E402,F401
+from .notification import NOTIFICACION_EMAIL  # noqa: E402,F401
+from .file import ARCHIVO  # noqa: E402,F401

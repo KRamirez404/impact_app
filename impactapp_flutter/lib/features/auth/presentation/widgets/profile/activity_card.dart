@@ -503,7 +503,7 @@ class ActivityCard extends StatelessWidget {
       );
     }
     final normalizedUrl = imageUrl.startsWith('/')
-        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$imageUrl'
+        ? '${ApiConstants.originUrl}$imageUrl'
         : imageUrl;
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),

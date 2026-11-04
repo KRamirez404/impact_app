@@ -8,6 +8,7 @@ from models import CIUDAD, USUARIO, db
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ALLOWED_CLIENT_ROLES = {"donante", "organizador"}
+ROLES_ALTERNABLES = {"donante", "organizador"}
 
 PRIVACY_POLICY = {
     "titulo": "Política de Tratamiento de Datos Personales",
@@ -104,9 +105,26 @@ def update_user_profile(user: USUARIO, data: dict) -> USUARIO:
         fields["correo"] = correo
     if "id_ciudad" in data:
         fields["id_ciudad"] = validate_city_id(data["id_ciudad"])
+    if "mostrar_foto_top" in data:
+        mostrar = data["mostrar_foto_top"]
+        if not isinstance(mostrar, bool):
+            raise ValueError("mostrar_foto_top debe ser un valor booleano")
+        fields["mostrar_foto_top"] = mostrar
     for field, value in fields.items():
         setattr(user, field, value)
     db.session.commit()
+    return user
+
+
+def cambiar_rol(user: USUARIO, data: dict) -> USUARIO:
+    rol = data.get("rol")
+    if not isinstance(rol, str) or rol not in ROLES_ALTERNABLES:
+        raise ValueError("El rol debe ser 'donante' o 'organizador'")
+    if user.rol not in ROLES_ALTERNABLES:
+        raise ValueError("El rol de esta cuenta no puede cambiarse")
+    if user.rol != rol:
+        user.rol = rol
+        db.session.commit()
     return user
 
 
@@ -156,6 +174,7 @@ def anonymize_user(user: USUARIO) -> USUARIO:
     user.biografia = None
     user.foto_perfil = None
     user.estado = "bloqueado"
+    user.token_version = int(user.token_version or 0) + 1
     db.session.commit()
     return user
 
@@ -169,6 +188,7 @@ def login_user(correo: str, contrasena: str):
 
     token = create_access_token(
         identity=str(user.id_usuario),
+        additional_claims={"token_version": int(user.token_version or 0)},
         expires_delta=timedelta(hours=24),
     )
     return token, user

@@ -131,7 +131,7 @@ class CampaignCard extends StatelessWidget {
               : null,
           image: mainImageUrl != null
               ? DecorationImage(
-                  image: NetworkImage(mainImageUrl.startsWith('/') ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$mainImageUrl' : mainImageUrl),
+                  image: NetworkImage(mainImageUrl.startsWith('/') ? '${ApiConstants.originUrl}$mainImageUrl' : mainImageUrl),
                   fit: BoxFit.cover,
                 )
               : null,

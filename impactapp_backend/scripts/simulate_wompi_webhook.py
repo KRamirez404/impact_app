@@ -126,6 +126,14 @@ def main() -> None:
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
+    if args.command in ("run", "notify"):
+        raise SystemExit(
+            "Este simulador no puede aprobar pagos: el webhook exige consulta "
+            "autoritativa a Wompi y rechazará identificadores fabricados. "
+            "Usa las pruebas automatizadas o el Sandbox real con túnel HTTPS. "
+            "El comando 'create' solo crea una donación pendiente local."
+        )
+
     from app import app
     from models import db
 

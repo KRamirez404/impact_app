@@ -36,6 +36,13 @@ void main() {
       expect(restored.ciudadNombre, 'Bogotá');
       expect(UserModel.fromJson({}).idCiudad, isNull);
     });
+
+    test('preferencia de foto en el Top se conserva al serializar', () {
+      expect(UserModel.fromJson({}).mostrarFotoTop, isTrue);
+      final user = UserModel.fromJson({'mostrar_foto_top': false});
+      expect(user.mostrarFotoTop, isFalse);
+      expect(UserModel.fromJson(user.toJson()).mostrarFotoTop, isFalse);
+    });
   });
 
   group('DonationWithCampaignModel.fromJson', () {

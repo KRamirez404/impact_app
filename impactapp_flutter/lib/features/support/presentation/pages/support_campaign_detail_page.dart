@@ -246,7 +246,7 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
               itemBuilder: (_, i) {
                 final url = images[i]['url_o_ruta'] as String? ?? '';
                 final fullUrl = url.startsWith('/')
-                    ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$url'
+                    ? '${ApiConstants.originUrl}$url'
                     : url;
                 return Container(
                   width: 166,
@@ -428,14 +428,14 @@ class _SupportCampaignDetailPageState extends State<SupportCampaignDetailPage> {
               children: [
                 if (isImage || tipo == 'foto' || tipo == 'imagen')
                   Image.network(
-                    url.startsWith('/') ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$url' : url,
+                    url.startsWith('/') ? '${ApiConstants.originUrl}$url' : url,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Padding(padding: EdgeInsets.all(16), child: Text('No se pudo cargar la imagen')),
                   )
                 else
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: SelectableText('Enlace/Archivo: ${url.startsWith('/') ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$url' : url}'),
+                    child: SelectableText('Enlace/Archivo: ${url.startsWith('/') ? '${ApiConstants.originUrl}$url' : url}'),
                   ),
                 TextButton(onPressed: () => Get.back(), child: const Text('Cerrar')),
               ],

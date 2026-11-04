@@ -97,6 +97,11 @@ class SupportHomePage extends GetView<SupportController> {
               );
             }),
             const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => Get.toNamed(AppRoutes.supportTransfers),
+              icon: const Icon(Icons.account_balance, color: Colors.white),
+              label: const Text('Revisar transferencias', style: TextStyle(color: Colors.white)),
+            ),
             _buildSearchBar(),
           ],
         ),
@@ -357,7 +362,7 @@ class SupportHomePage extends GetView<SupportController> {
               ? DecorationImage(
                   image: NetworkImage(
                     mainImageUrl.startsWith('/')
-                        ? '${ApiConstants.baseUrl.replaceAll('/api', '')}$mainImageUrl'
+                        ? '${ApiConstants.originUrl}$mainImageUrl'
                         : mainImageUrl,
                   ),
                   fit: BoxFit.cover,

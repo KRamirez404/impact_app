@@ -40,6 +40,7 @@ impactapp_backend/*.sqlite*-wal
 impactapp_backend/data/
 impactapp_backend/uploads/*
 !impactapp_backend/uploads/.gitkeep
+impactapp_backend/private_uploads/
 
 # Documentos privados / académicos (no se publican)
 Plan.txt
@@ -79,3 +80,7 @@ Thumbs.db
 # Tool caches and logs
 *.log
 *.tmp
+
+# Material local de trabajo (no publicar)
+PROMPT_IMPLEMENTACIÓN.txt
+graphify-out/
