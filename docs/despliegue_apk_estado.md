@@ -255,3 +255,52 @@ flutter build apk --debug --dart-define=API_BASE_URL=https://api.TU_DOMINIO/api
 | Instalación Android | BLOQUEADO | Sin dispositivos en `adb devices`; no se autorizó emulador |
 | Nube y HTTPS | PREPARADO | Plan y bloqueos documentados; nada publicado |
 | Informe | COMPLETADO | `docs/despliegue_apk_estado.md` |
+
+## 15. Reconstrucción del APK de pruebas — 04/11/2026
+
+Se compiló un nuevo APK release sobre el árbol actual
+(`feat/etapa-2-transferencias-comprobantes`, incluye transferencias, recuperación
+de pagos pendientes y notificaciones de la fase en curso) y se reemplazó el APK
+del 21/10 en `build/app/outputs/flutter-apk/`.
+
+Verificación previa:
+
+- `flutter test`: **69 aprobadas**.
+- `flutter analyze`: 0 errores, 0 warnings, 40 informativos preexistentes.
+
+Cambios de configuración:
+
+- `pubspec.yaml`: `version: 1.0.0+1` → `1.0.2+3`.
+- `android/app/src/main/res/xml/network_security_config.xml`: nuevo; permite
+  HTTP cleartext **solo** hacia `192.168.1.10`, `10.0.2.2` y `localhost`.
+- `android/app/src/main/AndroidManifest.xml`: `android:networkSecurityConfig`
+  referenciado en `<application>` (el permitido global del manifest debug
+  permanece inalterado).
+
+Comando:
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=http://192.168.1.10:5000/api
+```
+
+Evidencia del artefacto:
+
+- Paquete: `co.impactapp.impactapp_flutter`, `versionName 1.0.2`,
+  `versionCode 3` (verificado con `aapt dump badging`).
+- `minSdk 24`, `targetSdk 36`, `compileSdk 36`.
+- URL embebida: `http://192.168.1.10:5000/api` (verificada en el snapshot Dart).
+- `network_security_config` compilado y referenciado en el manifest.
+- Tamaño: 61.992.947 bytes.
+- SHA-256: `855bc9d2a0bcf35971da1df701d6b1a5643c7213ee5636fc392d62f9cbb5ca94`.
+- SHA-1: registrado en `app-release.apk.sha1`.
+
+Archivos en `build/app/outputs/flutter-apk/` (fuera de Git):
+
+- `app-release.apk` (regenerado).
+- `ImpactApp-1.0.2-build3.apk` (copia versionada; reemplaza a
+  `ImpactApp-1.0.1-build2.apk`, eliminada).
+
+Pendiente no cubierto por esta reconstrucción: instalación y ejecución en
+dispositivo/emulador (sección 14 sigue marcando ese objetivo como BLOQUEADO
+por ausencia de `adb devices` al momento de este informe) y firma de release
+institucional (el release continúa firmado con clave debug).
