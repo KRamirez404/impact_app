@@ -12,7 +12,7 @@ def main():
         raiz = Path(temporal)
         backend = raiz / "backend"
         backend.mkdir()
-        for nombre in ("models", "routes", "services", "tests"):
+        for nombre in ("models", "routes", "services", "scripts", "tests"):
             shutil.copytree(
                 origen / nombre, backend / nombre,
                 ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache"),

@@ -137,7 +137,9 @@ def get_my_donations():
             "titulo": campaign.titulo if campaign else "",
             "estado": campaign.estado if campaign else "",
             "fecha_fin": campaign.fecha_fin.isoformat() if campaign else "",
-            "soportes": [s.to_dict() for s in campaign.soportes] if campaign else [],
+            "soportes": [
+                s.to_public_dict() for s in campaign.soportes if s.validado
+            ] if campaign else [],
             "total_avances": len(seguimientos),
             "nuevos_avances": nuevos_avances,
         }

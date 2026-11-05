@@ -290,6 +290,12 @@ def delete_campaign(campaign_id: int):
     if campaign.id_creador != user_id:
         return jsonify({"error": "Solo el creador puede eliminar la campaña"}), 403
 
+    donaciones = DONACION.query.filter(DONACION.id_campania == campaign.id_campania)
+    if donaciones.filter(DONACION.estado_pago == "aprobada").first() is not None:
+        return jsonify({"error": "No se puede eliminar una campaña con donaciones procesadas"}), 409
+    if donaciones.filter(DONACION.estado_pago == "pendiente").first() is not None:
+        return jsonify({"error": "No se puede eliminar una campaña con donaciones en proceso de pago o verificación"}), 409
+
     data = request.get_json(silent=True) or {}
     motivo = (data.get("motivo") or data.get("motivo_eliminacion") or "").strip() or None
 
