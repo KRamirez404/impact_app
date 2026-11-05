@@ -22,6 +22,9 @@ from models import NOTIFICACION_EMAIL, db
 ESTADOS = ("pendiente", "enviado", "fallido")
 
 TIPOS = (
+    "bienvenida",
+    "campania_creada",
+    "donacion_especie",
     "donacion_pendiente",
     "donacion_aprobada",
     "donacion_rechazada",
@@ -78,11 +81,18 @@ def _cuerpo(titulo, parrafos, detalle=None):
             for clave, valor in detalle
             if valor
         )
-        filas = f'<table style="margin:0 0 12px;border-collapse:collapse">{filas}</table>'
+        filas = (
+            '<table style="width:100%;table-layout:fixed;margin:0 0 12px;'
+            f'border-collapse:collapse;overflow-wrap:anywhere">{filas}</table>'
+        )
     cuerpo = (
-        '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111827">'
+        '<!doctype html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1">'
+        '<meta charset="utf-8"></head><body style="margin:0;padding:16px;background:#f3f4f6">'
+        '<div style="max-width:560px;margin:0 auto;padding:24px;background:#ffffff;'
+        'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111827;overflow-wrap:anywhere">'
+        '<div style="color:#047857;font-size:20px;font-weight:bold;margin-bottom:20px">ImpactApp</div>'
         f'<h2 style="font-size:18px;margin:0 0 16px">{html.escape(titulo)}</h2>'
-        f"{bloques}{filas}{_PIE_HTML}</div>"
+        f"{bloques}{filas}{_PIE_HTML}</div></body></html>"
     )
     return texto, cuerpo
 
@@ -107,8 +117,33 @@ def construir(tipo, contexto):
         ("Referencia", referencia),
     ]
 
-    if tipo == "donacion_pendiente":
+    if tipo == "bienvenida":
+        asunto = "Bienvenido a ImpactApp"
+        parrafos = [
+            _saludo(contexto),
+            "Tu registro en ImpactApp se completó correctamente.",
+        ]
+        detalle = []
+    elif tipo == "campania_creada":
+        asunto = "Tu campaña fue creada"
+        parrafos = [
+            _saludo(contexto),
+            "Tu campaña fue creada y está pendiente de verificación por el equipo de soporte.",
+        ]
+        detalle = [("Campaña", nombre_campania), ("Estado", "En verificación")]
+    elif tipo == "donacion_especie":
+        asunto = "Tu donación en especie fue registrada"
+        parrafos = [_saludo(contexto), "Registramos tu donación en especie para esta campaña."]
+        detalle = [
+            ("Campaña", nombre_campania),
+            ("Categoría", _texto(contexto.get("categoria"), 80)),
+            ("Descripción", _texto(contexto.get("descripcion"), 300)),
+            ("Punto de entrega", _texto(contexto.get("punto"), 150)),
+            ("Dirección", _texto(contexto.get("direccion"), 255)),
+        ]
+    elif tipo == "donacion_pendiente":
         asunto = "Recibimos tu intención de donación"
+        detalle.append(("Estado", "Pendiente"))
         parrafos = [
             _saludo(contexto),
             "Registramos tu donación y quedó pendiente de confirmación del pago.",
@@ -116,12 +151,14 @@ def construir(tipo, contexto):
         ]
     elif tipo == "donacion_aprobada":
         asunto = "¡Tu donación fue confirmada!"
+        detalle.append(("Estado", "Aprobada"))
         parrafos = [
             _saludo(contexto),
             "Confirmamos el pago de tu donación. Gracias por apoyar esta causa.",
         ]
     elif tipo == "donacion_rechazada":
         asunto = "Tu donación no pudo completarse"
+        detalle.append(("Estado", "Rechazada"))
         parrafos = [
             _saludo(contexto),
             "El pago de tu donación fue rechazado por el proveedor.",
@@ -130,6 +167,7 @@ def construir(tipo, contexto):
         detalle.append(("Motivo", motivo))
     elif tipo == "donacion_anulada":
         asunto = "Tu donación fue anulada"
+        detalle.append(("Estado", "Anulada"))
         parrafos = [
             _saludo(contexto),
             "La transacción asociada a tu donación fue anulada.",
@@ -138,6 +176,7 @@ def construir(tipo, contexto):
         detalle.append(("Motivo", motivo))
     elif tipo == "donacion_error":
         asunto = "No pudimos confirmar tu donación"
+        detalle.append(("Estado", "Error"))
         parrafos = [
             _saludo(contexto),
             "El proveedor reportó un error al procesar el pago de tu donación.",
@@ -146,6 +185,7 @@ def construir(tipo, contexto):
         detalle.append(("Detalle", motivo))
     elif tipo == "transferencia_comprobante":
         asunto = "Recibimos el comprobante de tu transferencia"
+        detalle.append(("Estado", "Registrada"))
         parrafos = [
             _saludo(contexto),
             "Tu comprobante quedó registrado y será revisado por el equipo de soporte.",
@@ -153,6 +193,7 @@ def construir(tipo, contexto):
         ]
     elif tipo == "transferencia_aprobada":
         asunto = "¡Tu transferencia fue aprobada!"
+        detalle.append(("Estado", "Aprobada"))
         parrafos = [
             _saludo(contexto),
             "Validamos tu transferencia bancaria y la donación quedó confirmada.",
@@ -160,6 +201,7 @@ def construir(tipo, contexto):
         ]
     else:  # transferencia_rechazada
         asunto = "Tu transferencia fue rechazada"
+        detalle.append(("Estado", "Rechazada"))
         parrafos = [
             _saludo(contexto),
             "Revisamos tu transferencia y no fue posible aprobarla.",
@@ -167,6 +209,10 @@ def construir(tipo, contexto):
         ]
         detalle.append(("Motivo", motivo))
 
+    fecha = contexto.get("fecha") or datetime.utcnow()
+    if isinstance(fecha, datetime):
+        fecha = fecha.strftime("%d/%m/%Y %H:%M UTC")
+    detalle.append(("Fecha", _texto(fecha, 40)))
     texto, cuerpo_html = _cuerpo(asunto, parrafos, detalle)
     return asunto, texto, cuerpo_html
 
@@ -237,21 +283,49 @@ def _enviar_smtp(notificacion, config):
 
 
 def _error_saneado(exc):
-    nombre = exc.__class__.__name__
-    detalle = _texto(str(exc), 180)
-    return _texto(f"{nombre}: {detalle}" if detalle else nombre, 255)
+    if isinstance(exc, ValueError):
+        return "ConfiguracionSMTPInvalida"
+    if isinstance(exc, smtplib.SMTPAuthenticationError):
+        return "SMTPAuthenticationError"
+    if isinstance(exc, smtplib.SMTPServerDisconnected):
+        return "SMTPServerDisconnected"
+    if isinstance(exc, smtplib.SMTPException):
+        return "SMTPException"
+    if isinstance(exc, OSError):
+        return "ConexionSMTPFallida"
+    return "ErrorSMTPInesperado"
 
 
-def intentar_envio(notificacion, config=None):
-    """Intenta enviar una notificación. Nunca propaga errores de SMTP."""
-    config = _config(config)
-    if notificacion is None or notificacion.estado == "enviado":
-        return notificacion is not None and notificacion.estado == "enviado"
+def _enviar_reclamada(id_notificacion, config):
+    """Bloquea hasta el commit; SQLite ignora SKIP LOCKED.
+
+    SMTP aceptado antes de un fallo de commit puede enviarse de nuevo.
+    """
+    try:
+        with db.session.no_autoflush:
+            notificacion = (
+                NOTIFICACION_EMAIL.query.filter_by(id_notificacion=id_notificacion)
+                .populate_existing()
+                .with_for_update(skip_locked=True)
+                .first()
+            )
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.warning("No fue posible reclamar la notificación %s", id_notificacion)
+        return None
+
+    if notificacion is None:
+        db.session.rollback()
+        return None
+    if notificacion.estado == "enviado":
+        db.session.rollback()
+        return "enviado_previo"
+    if notificacion.intentos >= int(config.get("MAIL_MAX_ATTEMPTS", 3)):
+        db.session.rollback()
+        return None
     if not config.get("MAIL_ENABLED", False):
-        return False
-    max_intentos = int(config.get("MAIL_MAX_ATTEMPTS", 3))
-    if notificacion.intentos >= max_intentos:
-        return False
+        db.session.rollback()
+        return "deshabilitado"
 
     notificacion.intentos += 1
     notificacion.actualizado_en = datetime.utcnow()
@@ -288,8 +362,17 @@ def intentar_envio(notificacion, config=None):
             "No fue posible actualizar la notificación %s",
             notificacion.id_notificacion,
         )
+        return "fallida"
+    return "enviada" if enviado else "fallida"
+
+
+def intentar_envio(notificacion, config=None):
+    """Intenta enviar una notificación. Nunca propaga errores de SMTP."""
+    if notificacion is None:
         return False
-    return enviado
+    return _enviar_reclamada(notificacion.id_notificacion, _config(config)) in (
+        "enviada", "enviado_previo"
+    )
 
 
 def enviar_pendientes(limit=50, config=None):
@@ -303,13 +386,17 @@ def enviar_pendientes(limit=50, config=None):
             NOTIFICACION_EMAIL.intentos < max_intentos,
         )
         .order_by(NOTIFICACION_EMAIL.creado_en.asc())
+        .with_entities(NOTIFICACION_EMAIL.id_notificacion)
         .limit(limite)
         .all()
     )
     resultado = {"procesadas": 0, "enviadas": 0, "fallidas": 0}
-    for notificacion in pendientes:
+    for (id_notificacion,) in pendientes:
+        estado = _enviar_reclamada(id_notificacion, config)
+        if estado not in ("enviada", "fallida", "deshabilitado"):
+            continue
         resultado["procesadas"] += 1
-        if intentar_envio(notificacion, config):
+        if estado == "enviada":
             resultado["enviadas"] += 1
         else:
             resultado["fallidas"] += 1

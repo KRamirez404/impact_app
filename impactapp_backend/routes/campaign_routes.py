@@ -13,6 +13,7 @@ from services.authorization import (
     require_role,
 )
 from services.campaign_service import contar_donantes_por_campania
+from services import notification_service
 
 campaign_bp = Blueprint("campaign_bp", __name__, url_prefix="/api")
 
@@ -154,6 +155,12 @@ def create_campaign():
         entidad="CAMPAÑA",
         id_entidad=campaign.id_campania,
         direccion_ip=request.remote_addr,
+    )
+    organizador = current_user()
+    notification_service.registrar_y_enviar(
+        "campania_creada", organizador.correo,
+        {"nombre": organizador.nombre, "campania": campaign.titulo},
+        f"campania:{campaign.id_campania}:creada",
     )
     return jsonify(campaign.to_dict(include_relations=True)), 201
 

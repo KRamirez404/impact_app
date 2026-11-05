@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from models import USUARIO, db
 from services.audit_service import registrar
+from services import notification_service
 from services.rate_limit import client_ip, enforce, too_many_requests
 from services.auth_service import (
     PRIVACY_POLICY,
@@ -48,6 +49,10 @@ def register():
             entidad="USUARIO",
             id_entidad=user.id_usuario,
             direccion_ip=request.remote_addr,
+        )
+        notification_service.registrar_y_enviar(
+            "bienvenida", user.correo, {"nombre": user.nombre},
+            f"usuario:{user.id_usuario}:bienvenida",
         )
         return jsonify({"message": "Usuario registrado", "user": user.to_dict()}), 201
     except ValueError as exc:

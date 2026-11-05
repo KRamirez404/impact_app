@@ -9,12 +9,12 @@ active explícitamente.
 
 Se usa un patrón *outbox*:
 
-1. La operación financiera (pago Wompi, comprobante o revisión de transferencia)
+1. La operación (registro, campaña, donación en especie, pago Wompi o revisión de transferencia)
    confirma su transacción.
 2. Después del commit se registra una fila en `NOTIFICACION_EMAIL` con una
    `clave_evento` única.
 3. Si el correo está habilitado, se intenta enviar de inmediato con `smtplib`.
-4. Un fallo de SMTP solo deja la fila en estado `fallido`; nunca revierte el pago.
+4. Un fallo de SMTP solo deja la fila en estado `fallido`; nunca revierte la operación.
 5. El script de reintentos procesa las filas pendientes o fallidas.
 
 La clave única garantiza idempotencia: un webhook repetido o una nueva consulta
@@ -24,6 +24,9 @@ de estado no generan correos duplicados.
 
 | Tipo | Cuándo se crea | Destinatario |
 |---|---|---|
+| `bienvenida` | Registro completado | Usuario |
+| `campania_creada` | Campaña creada, pendiente de verificación | Organizador |
+| `donacion_especie` | Donación en especie registrada | Donante |
 | `donacion_pendiente` | Checkout Wompi creado | Donante |
 | `donacion_aprobada` | Pago confirmado por Wompi | Donante |
 | `donacion_rechazada` | Pago rechazado por Wompi | Donante |
@@ -33,8 +36,8 @@ de estado no generan correos duplicados.
 | `transferencia_aprobada` | Transferencia aprobada | Donante |
 | `transferencia_rechazada` | Transferencia rechazada, con motivo | Donante |
 
-Las plantillas están en español, incluyen versión texto y HTML, y escapan el
-contenido dinámico para evitar inyección de HTML.
+Las plantillas están en español, incluyen fecha UTC, versión texto y HTML adaptable,
+y escapan el contenido dinámico para evitar inyección de HTML.
 
 ## Variables de entorno
 
@@ -52,10 +55,13 @@ MAIL_MAX_ATTEMPTS=3
 ```
 
 - `MAIL_ENABLED=1` habilita el envío; sin host y remitente válidos el intento se
-  registra como fallido con `configuracion_smtp_incompleta`.
+  registra como fallido con `ConfiguracionSMTPInvalida`.
 - `MAIL_USE_SSL=1` usa `SMTP_SSL`; en ese caso `MAIL_USE_TLS` se ignora.
 - `MAIL_MAX_ATTEMPTS` limita los reintentos por notificación.
 - La contraseña nunca se escribe en logs ni en el campo `ultimo_error`.
+- En desarrollo `docker-compose.yml` pasa `MAIL_*` desde `.env` al backend;
+  producción mantiene su propio `.env.production` mediante `docker-compose.prod.yml`.
+- `enviado` indica aceptación por SMTP, no recepción en el buzón.
 
 Procedimiento recomendado:
 
@@ -96,7 +102,7 @@ modelo define:
 - `CHECK estado IN ('pendiente', 'enviado', 'fallido')`;
 - índice por `(estado, creado_en)`.
 
-## Verificación ejecutada
+## Verificación histórica (antes de esta ampliación)
 
 - `tests/test_notifications.py`: **11 casos aprobados** en SQLite con
   transferencias habilitadas y **11 casos aprobados** en PostgreSQL aislado con

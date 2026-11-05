@@ -7,7 +7,7 @@ from flask import Blueprint, current_app, has_request_context, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from models import AUDITORIA, CAMPAÑA, DONACION, PAGO_EVENTO, PAGO_INTENTO, db
+from models import AUDITORIA, CAMPAÑA, DONACION, NOTIFICACION_EMAIL, PAGO_EVENTO, PAGO_INTENTO, db
 from services import notification_service, wompi_service
 from services.audit_service import registrar
 from services.authorization import current_user, is_support, require_role
@@ -95,7 +95,7 @@ def _checkout_response(donation, user, status):
     }), status
 
 
-def _notificar_estado_donacion(donation, campaign):
+def _notificar_estado_donacion(donation, campaign, attempt, previous_attempt_status):
     tipos = {
         "aprobada": "donacion_aprobada",
         "rechazada": "donacion_rechazada",
@@ -106,9 +106,13 @@ def _notificar_estado_donacion(donation, campaign):
     if tipo is None:
         return
     donante = donation.donante
+    if previous_attempt_status == donation.estado_pago and NOTIFICACION_EMAIL.query.filter_by(
+        clave_evento=f"donacion:{donation.id_donacion}:{donation.estado_pago}:sin_transaccion"
+    ).first() is not None:
+        return
     clave = (
         f"donacion:{donation.id_donacion}:{donation.estado_pago}:"
-        f"{donation.wompi_transaction_id or 'sin_transaccion'}"
+        f"{attempt.wompi_transaction_id}"
     )
     notification_service.registrar_y_enviar(
         tipo,
@@ -728,5 +732,6 @@ def _apply_transaction(
         evento.resultado = "aplicado" if result == "verificada" else "ignorado"
         db.session.add(evento)
     db.session.commit()
-    _notificar_estado_donacion(donation, campaign)
+    if result == "verificada":
+        _notificar_estado_donacion(donation, campaign, attempt, previous_attempt_status)
     return result

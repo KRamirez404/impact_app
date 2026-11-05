@@ -10,6 +10,7 @@ from services.authorization import (
     require_role,
 )
 from services.donation_integrity import compute_donation_checksum, donation_is_intact
+from services import notification_service
 
 donation_bp = Blueprint("donation_bp", __name__, url_prefix="/api/donations")
 
@@ -39,6 +40,7 @@ def create_donation():
     if campaign.eliminada or campaign.estado != "activa":
         return jsonify({"error": "La campaña no está disponible"}), 404
     point_id = data.get("id_punto")
+    point = None
     if point_id:
         point = PUNTO_RECOLECCION.query.get(point_id)
         if not point or point.id_campania != campaign.id_campania:
@@ -67,6 +69,18 @@ def create_donation():
         entidad="DONACION",
         id_entidad=donation.id_donacion,
         direccion_ip=request.remote_addr,
+    )
+
+    donante = db.session.get(USUARIO, donation.id_donante)
+    notification_service.registrar_y_enviar(
+        "donacion_especie", donante.correo,
+        {
+            "nombre": donante.nombre, "campania": campaign.titulo,
+            "categoria": donation.tipo, "descripcion": donation.descripcion,
+            "punto": point.nombre if point else "No seleccionado",
+            "direccion": point.direccion if point else "",
+        },
+        f"donacion:{donation.id_donacion}:especie",
     )
 
     return jsonify(donation.to_dict()), 201

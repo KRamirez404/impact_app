@@ -17,6 +17,7 @@ from test_wompi_extra import (
     _token,
     wompi_config,
 )
+from models import NOTIFICACION_EMAIL
 
 
 @pytest.fixture()
@@ -25,6 +26,131 @@ def pago(client, wompi_config):
     donation = _checkout(client, token).get_json()
     payload = _event(donation["referencia"])
     return client, token, donation, payload
+
+
+def _avisos(id_donacion, estado):
+    with app.app_context():
+        return sorted(
+            fila.clave_evento for fila in NOTIFICACION_EMAIL.query.filter_by(
+                tipo=f"donacion_{estado}"
+            ).all() if fila.clave_evento.startswith(f"donacion:{id_donacion}:")
+        )
+
+
+def test_dos_intentos_rechazados_generan_dos_avisos(pago):
+    client, _, donation, _ = pago
+    for tx in ("rechazo-1", "rechazo-2"):
+        assert client.post("/api/webhooks/wompi", json=_event(
+            donation["referencia"], tx_id=tx, status="DECLINED"
+        )).status_code == 200
+    assert _avisos(donation["id_donacion"], "rechazada") == [
+        f"donacion:{donation['id_donacion']}:rechazada:rechazo-1",
+        f"donacion:{donation['id_donacion']}:rechazada:rechazo-2",
+    ]
+
+
+def test_repetir_webhook_no_repite_aviso(pago):
+    client, _, donation, _ = pago
+    payload = _event(donation["referencia"], tx_id="repetido-1", status="DECLINED")
+    assert client.post("/api/webhooks/wompi", json=payload).status_code == 200
+    assert client.post("/api/webhooks/wompi", json=payload).status_code == 200
+    assert _avisos(donation["id_donacion"], "rechazada") == [
+        f"donacion:{donation['id_donacion']}:rechazada:repetido-1"
+    ]
+
+
+def test_webhook_y_consulta_mismo_intento_comparten_aviso(pago):
+    client, token, donation, _ = pago
+    assert client.post("/api/webhooks/wompi", json=_event(
+        donation["referencia"], tx_id="consulta-1", status="DECLINED"
+    )).status_code == 200
+    respuesta = client.get(
+        f"/api/donations/{donation['id_donacion']}/status?transaction_id=consulta-1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 200
+    assert _avisos(donation["id_donacion"], "rechazada") == [
+        f"donacion:{donation['id_donacion']}:rechazada:consulta-1"
+    ]
+
+
+def test_rechazo_seguido_de_aprobacion_conserva_ambos_avisos(pago):
+    client, _, donation, _ = pago
+    for tx, estado in (("previo-1", "DECLINED"), ("aprobado-1", "APPROVED")):
+        assert client.post("/api/webhooks/wompi", json=_event(
+            donation["referencia"], tx_id=tx, status=estado
+        )).status_code == 200
+    assert _avisos(donation["id_donacion"], "rechazada") == [
+        f"donacion:{donation['id_donacion']}:rechazada:previo-1"
+    ]
+    assert _avisos(donation["id_donacion"], "aprobada") == [
+        f"donacion:{donation['id_donacion']}:aprobada:aprobado-1"
+    ]
+    with app.app_context():
+        assert db.session.get(DONACION, donation["id_donacion"]).estado_pago == "aprobada"
+
+
+def test_rechazo_antiguo_tras_aprobar_no_avisa(pago):
+    client, _, donation, _ = pago
+    for tx, estado in (("aprobado-2", "APPROVED"), ("antiguo-2", "DECLINED")):
+        assert client.post("/api/webhooks/wompi", json=_event(
+            donation["referencia"], tx_id=tx, status=estado
+        )).status_code == 200
+    assert _avisos(donation["id_donacion"], "rechazada") == []
+    assert _avisos(donation["id_donacion"], "aprobada") == [
+        f"donacion:{donation['id_donacion']}:aprobada:aprobado-2"
+    ]
+
+
+def test_dos_intentos_en_error_generan_dos_avisos(pago):
+    client, _, donation, _ = pago
+    for tx in ("error-1", "error-2"):
+        assert client.post("/api/webhooks/wompi", json=_event(
+            donation["referencia"], tx_id=tx, status="ERROR"
+        )).status_code == 200
+    assert _avisos(donation["id_donacion"], "error") == [
+        f"donacion:{donation['id_donacion']}:error:error-1",
+        f"donacion:{donation['id_donacion']}:error:error-2",
+    ]
+
+
+def test_anulacion_desde_pendiente_y_tras_aprobacion(pago):
+    client, token, donation, _ = pago
+    assert client.post("/api/webhooks/wompi", json=_event(
+        donation["referencia"], tx_id="anulada-pendiente", status="VOIDED"
+    )).status_code == 200
+    assert _avisos(donation["id_donacion"], "anulada") == [
+        f"donacion:{donation['id_donacion']}:anulada:anulada-pendiente"
+    ]
+    otra = _checkout(client, token).get_json()
+    for estado in ("APPROVED", "VOIDED"):
+        assert client.post("/api/webhooks/wompi", json=_event(
+            otra["referencia"], tx_id="anulada-aprobada", status=estado
+        )).status_code == 200
+    assert _avisos(otra["id_donacion"], "aprobada") == [
+        f"donacion:{otra['id_donacion']}:aprobada:anulada-aprobada"
+    ]
+    assert _avisos(otra["id_donacion"], "anulada") == [
+        f"donacion:{otra['id_donacion']}:anulada:anulada-aprobada"
+    ]
+
+
+def test_historico_sin_transaccion_no_se_reasigna_ni_reenvia(pago):
+    client, _, donation, _ = pago
+    evento = _event(donation["referencia"], tx_id="historico-1", status="DECLINED")
+    assert client.post("/api/webhooks/wompi", json=evento).status_code == 200
+    with app.app_context():
+        fila = NOTIFICACION_EMAIL.query.filter_by(tipo="donacion_rechazada").one()
+        fila.clave_evento = f"donacion:{donation['id_donacion']}:rechazada:sin_transaccion"
+        db.session.commit()
+        id_historico = fila.id_notificacion
+    repetido = _event(donation["referencia"], tx_id="historico-1", status="DECLINED", timestamp=1530291412)
+    assert client.post("/api/webhooks/wompi", json=repetido).status_code == 200
+    assert _avisos(donation["id_donacion"], "rechazada") == [
+        f"donacion:{donation['id_donacion']}:rechazada:sin_transaccion"
+    ]
+    with app.app_context():
+        assert NOTIFICACION_EMAIL.query.filter_by(tipo="donacion_rechazada").one().id_notificacion == id_historico
 
 
 def _progress():
