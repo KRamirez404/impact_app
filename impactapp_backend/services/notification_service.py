@@ -1,8 +1,9 @@
 """Notificaciones por correo con patrón outbox.
 
-Los eventos financieros se registran en la tabla ``NOTIFICACION_EMAIL`` y se
-envían después del commit del pago. Un fallo de SMTP nunca revierte la
-operación financiera: solo deja la notificación en estado ``fallido`` para que
+Los eventos de negocio se registran en la tabla ``NOTIFICACION_EMAIL`` y se
+envían después del commit. El envío puede usar SMTP o un proveedor por API HTTPS
+(ver ``services/email_provider.py``). Un fallo del proveedor nunca revierte la
+operación de negocio: solo deja la notificación en estado ``fallido`` para que
 el script de reintentos la procese más tarde.
 """
 
@@ -17,7 +18,8 @@ from email.message import EmailMessage
 from flask import current_app
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from models import NOTIFICACION_EMAIL, db
+from models import NOTIFICACION_EMAIL, USUARIO, db
+from services import email_provider
 
 ESTADOS = ("pendiente", "enviado", "fallido")
 
@@ -217,12 +219,12 @@ def construir(tipo, contexto):
     return asunto, texto, cuerpo_html
 
 
-def encolar(tipo, destinatario, contexto, clave_evento):
+def encolar(tipo, destinatario, contexto, clave_evento, id_usuario=None):
     """Registra una notificación idempotente por ``clave_evento``.
 
     No confirma la transacción; el llamador decide cuándo hacer commit.
     """
-    correo = _texto(destinatario, 150)
+    correo = _texto(destinatario, 150).lower()
     clave = _texto(clave_evento, 160)
     if not correo or "@" not in correo or not clave:
         return None
@@ -230,10 +232,15 @@ def encolar(tipo, destinatario, contexto, clave_evento):
     if existente is not None:
         return existente
 
+    if id_usuario is None:
+        usuario = USUARIO.query.filter_by(correo=correo).first()
+        id_usuario = usuario.id_usuario if usuario else None
+
     asunto, texto, cuerpo_html = construir(tipo, contexto or {})
     notificacion = NOTIFICACION_EMAIL(
         clave_evento=clave,
         destinatario=correo,
+        id_usuario=id_usuario,
         tipo=tipo,
         asunto=asunto[:200],
         cuerpo_texto=texto,
@@ -282,7 +289,17 @@ def _enviar_smtp(notificacion, config):
         cliente.send_message(mensaje)
 
 
+def _enviar(notificacion, config):
+    proveedor = _texto(config.get("MAIL_PROVIDER"), 20).lower() or "smtp"
+    if proveedor == "smtp":
+        _enviar_smtp(notificacion, config)
+        return
+    email_provider.enviar(notificacion, config)
+
+
 def _error_saneado(exc):
+    if isinstance(exc, email_provider.ErrorProveedor):
+        return exc.codigo
     if isinstance(exc, ValueError):
         return "ConfiguracionSMTPInvalida"
     if isinstance(exc, smtplib.SMTPAuthenticationError):
@@ -320,17 +337,50 @@ def _enviar_reclamada(id_notificacion, config):
     if notificacion.estado == "enviado":
         db.session.rollback()
         return "enviado_previo"
-    if notificacion.intentos >= int(config.get("MAIL_MAX_ATTEMPTS", 3)):
+    max_intentos = max(1, int(config.get("MAIL_MAX_ATTEMPTS", 3)))
+    if notificacion.intentos >= max_intentos:
         db.session.rollback()
         return None
     if not config.get("MAIL_ENABLED", False):
         db.session.rollback()
         return "deshabilitado"
 
+    if notificacion.id_usuario is not None:
+        usuario = db.session.get(USUARIO, notificacion.id_usuario)
+        if usuario is None or usuario.estado != "activo":
+            notificacion.estado = "fallido"
+            notificacion.intentos = max_intentos
+            notificacion.ultimo_error = "DestinatarioNoDisponible"
+            notificacion.actualizado_en = datetime.utcnow()
+            try:
+                db.session.commit()
+            except SQLAlchemyError:
+                db.session.rollback()
+            current_app.logger.warning(
+                "Notificación %s no enviada: destinatario no disponible",
+                notificacion.id_notificacion,
+            )
+            return "fallida"
+        correo_actual = _texto(usuario.correo, 150).lower()
+        if correo_actual:
+            notificacion.destinatario = correo_actual
+
     notificacion.intentos += 1
     notificacion.actualizado_en = datetime.utcnow()
     try:
-        _enviar_smtp(notificacion, config)
+        _enviar(notificacion, config)
+    except email_provider.ErrorProveedor as exc:
+        notificacion.estado = "fallido"
+        notificacion.ultimo_error = exc.codigo
+        if not exc.reintentable:
+            notificacion.intentos = max_intentos
+        current_app.logger.warning(
+            "Notificación %s falló (intento %s): %s",
+            notificacion.id_notificacion,
+            notificacion.intentos,
+            notificacion.ultimo_error,
+        )
+        enviado = False
     except (smtplib.SMTPException, OSError, ValueError) as exc:
         notificacion.estado = "fallido"
         notificacion.ultimo_error = _error_saneado(exc)
@@ -375,17 +425,27 @@ def intentar_envio(notificacion, config=None):
     )
 
 
-def enviar_pendientes(limit=50, config=None):
+def enviar_pendientes(limit=50, config=None, exclude_ids=None):
     """Procesa notificaciones no enviadas que aún tienen intentos disponibles."""
     config = _config(config)
+    if not config.get("MAIL_ENABLED", False):
+        return {"procesadas": 0, "enviadas": 0, "fallidas": 0}
     limite = max(1, min(int(limit), 500))
-    max_intentos = int(config.get("MAIL_MAX_ATTEMPTS", 3))
+    max_intentos = max(1, int(config.get("MAIL_MAX_ATTEMPTS", 3)))
+    excluidas = []
+    for valor in exclude_ids or ():
+        try:
+            excluidas.append(int(valor))
+        except (TypeError, ValueError):
+            continue
+    query = NOTIFICACION_EMAIL.query.filter(
+        NOTIFICACION_EMAIL.estado != "enviado",
+        NOTIFICACION_EMAIL.intentos < max_intentos,
+    )
+    if excluidas:
+        query = query.filter(NOTIFICACION_EMAIL.id_notificacion.notin_(excluidas))
     pendientes = (
-        NOTIFICACION_EMAIL.query.filter(
-            NOTIFICACION_EMAIL.estado != "enviado",
-            NOTIFICACION_EMAIL.intentos < max_intentos,
-        )
-        .order_by(NOTIFICACION_EMAIL.creado_en.asc())
+        query.order_by(NOTIFICACION_EMAIL.creado_en.asc())
         .with_entities(NOTIFICACION_EMAIL.id_notificacion)
         .limit(limite)
         .all()
@@ -403,7 +463,9 @@ def enviar_pendientes(limit=50, config=None):
     return resultado
 
 
-def registrar_y_enviar(tipo, destinatario, contexto, clave_evento, config=None):
+def registrar_y_enviar(
+    tipo, destinatario, contexto, clave_evento, config=None, id_usuario=None
+):
     """Registra y, si está habilitado, envía sin afectar la transacción de negocio.
 
     Debe invocarse después del commit financiero.
@@ -415,7 +477,9 @@ def registrar_y_enviar(tipo, destinatario, contexto, clave_evento, config=None):
         ).first()
         if existente is not None:
             return existente
-        notificacion = encolar(tipo, destinatario, contexto, clave_evento)
+        notificacion = encolar(
+            tipo, destinatario, contexto, clave_evento, id_usuario=id_usuario
+        )
         if notificacion is None:
             return None
         db.session.commit()

@@ -100,7 +100,7 @@ class HomePage extends StatelessWidget {
                   Icons.notifications_outlined,
                   color: Colors.white,
                 ),
-                onPressed: () {},
+                onPressed: () => Get.toNamed(AppRoutes.notifications),
               ),
             ],
           ),

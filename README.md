@@ -120,18 +120,22 @@ nuevos todavía requieren prueba de integración PostgreSQL/Android. La matriz
 vigente usa los códigos del PDF: [`docs/trazabilidad_requisitos.md`](docs/trazabilidad_requisitos.md).
 Decisiones de pagos pendientes: [`docs/decisiones_cierre.md`](docs/decisiones_cierre.md).
 
-Verificación de cierre del 29/10/2026: la suite completa aprobó **333 casos en
-SQLite** (29 omitidos) y **337 casos en PostgreSQL aislado** (25 omitidos), además
-de **67 pruebas Flutter**. Las transferencias y las notificaciones tienen pruebas
-propias; las notificaciones permanecen deshabilitadas por defecto. Detalle en
+Verificación del sistema de notificaciones (06/11/2026): **44 casos en SQLite**
+(4 omitidos); la suite de notificaciones en PostgreSQL aislado se verificó en
+**45 casos** (2 omitidos) antes de añadir la última prueba de formato del
+remitente, que no depende del motor. Suite completa SQLite **385 aprobadas /
+38 omitidas** y **72 pruebas Flutter** aprobadas. El envío real contra un
+proveedor externo queda pendiente de configurar credenciales. Detalle en
 [`docs/notificaciones_email.md`](docs/notificaciones_email.md).
 
 ### Notificaciones por correo
 
-El envío SMTP está desactivado por defecto y no es requisito para operar:
+El envío está desactivado por defecto y no es requisito para operar. Se soporta
+SMTP y un proveedor por API HTTPS (Brevo), configurable por variables de entorno:
 
 ```dotenv
 MAIL_ENABLED=0
+MAIL_PROVIDER=smtp
 MAIL_HOST=
 MAIL_PORT=587
 MAIL_USE_TLS=1
@@ -139,14 +143,22 @@ MAIL_USE_SSL=0
 MAIL_USERNAME=
 MAIL_PASSWORD=
 MAIL_FROM=
+MAIL_FROM_NAME=ImpactApp
 MAIL_TIMEOUT=10
+MAIL_API_KEY=
+MAIL_API_URL=
+MAIL_API_TIMEOUT=10
 MAIL_MAX_ATTEMPTS=3
 ```
 
-Los eventos de pago y transferencia se registran en `NOTIFICACION_EMAIL`; si el
-correo está activo se envían con `smtplib`. Los reintentos se ejecutan con
-`python scripts/send_pending_emails.py` y soporte consulta la cola en
-`GET /api/support/notifications`. Una falla de correo nunca revierte un pago.
+Los eventos de registro, campaña, donaciones y transferencias se registran en
+`NOTIFICACION_EMAIL`; si el correo está activo se envían con `smtplib` o con la API
+del proveedor. Los reintentos se ejecutan con
+`python scripts/send_pending_emails.py` (admite `--loop`, `--interval` y
+`--exclude-id`). El usuario consulta su bandeja en `GET /api/notifications` y
+soporte revisa la cola en `GET /api/support/notifications`. Una falla de correo
+nunca revierte un pago. Detalle en
+[`docs/notificaciones_email.md`](docs/notificaciones_email.md).
 
 ---
 
@@ -279,6 +291,9 @@ flutter build linux --dart-define=API_BASE_URL=http://localhost:5000/api
 | `GET` | `/api/donations/top` | — | Top donadores |
 | `GET` | `/api/supports/campaign/:id` | — | Soportes de campaña |
 | `POST` | `/api/supports` | JWT | Subir soporte (solo creador de la campaña) |
+| `GET` | `/api/notifications` | JWT | Bandeja de notificaciones del usuario autenticado |
+| `POST` | `/api/notifications/:id/read` | JWT | Marcar una notificación propia como leída |
+| `POST` | `/api/notifications/read-all` | JWT | Marcar todas las notificaciones propias como leídas |
 | `GET` | `/api/support/summary` | JWT* | Resumen panel soporte (*rol `soporte`) |
 | `GET` | `/api/support/notifications` | JWT* | Cola de notificaciones con filtro `estado` y `limit` (*rol `soporte`) |
 | `POST` | `/api/support/campaigns/:id/approve` | JWT* | Aprobar campaña (*rol `soporte`) |

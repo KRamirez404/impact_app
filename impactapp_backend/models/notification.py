@@ -12,11 +12,13 @@ class NOTIFICACION_EMAIL(db.Model):
             name="ck_notificacion_estado",
         ),
         db.Index("ix_notificacion_estado_fecha", "estado", "creado_en"),
+        db.Index("ix_notificacion_usuario_fecha", "id_usuario", "creado_en"),
     )
 
     id_notificacion = db.Column(db.Integer, primary_key=True)
     clave_evento = db.Column(db.String(160), nullable=False)
     destinatario = db.Column(db.String(150), nullable=False)
+    id_usuario = db.Column(db.Integer, nullable=True)
     tipo = db.Column(db.String(40), nullable=False)
     asunto = db.Column(db.String(200), nullable=False)
     cuerpo_texto = db.Column(db.Text, nullable=False)
@@ -32,12 +34,14 @@ class NOTIFICACION_EMAIL(db.Model):
         nullable=False,
     )
     enviado_en = db.Column(db.DateTime, nullable=True)
+    leida_en = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self):
         return {
             "id_notificacion": self.id_notificacion,
             "clave_evento": self.clave_evento,
             "destinatario": self.destinatario,
+            "id_usuario": self.id_usuario,
             "tipo": self.tipo,
             "asunto": self.asunto,
             "estado": self.estado,
@@ -47,5 +51,17 @@ class NOTIFICACION_EMAIL(db.Model):
             "actualizado_en": self.actualizado_en.isoformat()
             if self.actualizado_en
             else None,
+            "enviado_en": self.enviado_en.isoformat() if self.enviado_en else None,
+            "leida_en": self.leida_en.isoformat() if self.leida_en else None,
+        }
+
+    def to_user_dict(self):
+        return {
+            "id_notificacion": self.id_notificacion,
+            "tipo": self.tipo,
+            "asunto": self.asunto,
+            "estado": self.estado,
+            "leida": self.leida_en is not None,
+            "creado_en": self.creado_en.isoformat(),
             "enviado_en": self.enviado_en.isoformat() if self.enviado_en else None,
         }

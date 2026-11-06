@@ -255,6 +255,23 @@ def ensure_payment_attempt_schema():
 
 def ensure_notification_schema():
     NOTIFICACION_EMAIL.__table__.create(bind=db.engine, checkfirst=True)
+    inspector = inspect(db.engine)
+    columns = {column["name"] for column in inspector.get_columns("NOTIFICACION_EMAIL")}
+    if "id_usuario" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "NOTIFICACION_EMAIL" ADD COLUMN id_usuario INTEGER')
+        )
+    if "leida_en" not in columns:
+        db.session.execute(
+            text('ALTER TABLE "NOTIFICACION_EMAIL" ADD COLUMN leida_en TIMESTAMP')
+        )
+    db.session.execute(
+        text(
+            'CREATE INDEX IF NOT EXISTS ix_notificacion_usuario_fecha '
+            'ON "NOTIFICACION_EMAIL" (id_usuario, creado_en)'
+        )
+    )
+    db.session.commit()
 
 
 def create_app():

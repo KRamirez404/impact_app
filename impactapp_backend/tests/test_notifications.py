@@ -2,6 +2,7 @@ import threading
 import os
 import smtplib
 import time
+import urllib.error
 import uuid
 from datetime import datetime
 
@@ -11,8 +12,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app import app
 from conftest import get_support_token, get_token, register_user
-from models import NOTIFICACION_EMAIL, PUNTO_RECOLECCION, db
-from services import notification_service
+from models import NOTIFICACION_EMAIL, PUNTO_RECOLECCION, USUARIO, db
+from services import email_provider, notification_service
 
 # Se reutilizan los helpers y fixtures de los flujos ya probados.
 from test_transfers import transfer_context  # noqa: F401
@@ -72,6 +73,44 @@ def mail_config(monkeypatch):
     }.items():
         monkeypatch.setitem(app.config, clave, valor)
     return FakeSMTP
+
+
+class FakeApi:
+    def __init__(self):
+        self.llamadas = []
+        self.respuesta = (201, b'{"messageId":"mensaje-1"}')
+        self.excepcion = None
+
+    def __call__(self, url, payload, headers, timeout):
+        self.llamadas.append(
+            {
+                "url": url,
+                "payload": payload,
+                "headers": dict(headers),
+                "timeout": timeout,
+            }
+        )
+        if self.excepcion is not None:
+            raise self.excepcion
+        return self.respuesta
+
+
+@pytest.fixture()
+def api_config(monkeypatch):
+    fake = FakeApi()
+    monkeypatch.setattr(email_provider, "_post_json", fake)
+    for clave, valor in {
+        "MAIL_ENABLED": True,
+        "MAIL_PROVIDER": "brevo",
+        "MAIL_API_KEY": "clave-api-secreta",
+        "MAIL_API_URL": "https://api.brevo.test/v3/smtp/email",
+        "MAIL_API_TIMEOUT": 2,
+        "MAIL_FROM": "no-reply@impactapp.test",
+        "MAIL_FROM_NAME": "ImpactApp",
+        "MAIL_MAX_ATTEMPTS": 2,
+    }.items():
+        monkeypatch.setitem(app.config, clave, valor)
+    return fake
 
 
 def _contexto(**extra):
@@ -659,3 +698,326 @@ def test_flujo_de_transferencia_notifica_al_donante(
         assert all(fila.destinatario == "donor_transfer@test.co" for fila in filas)
 
     assert len(mail_config.mensajes) == 2
+
+
+def test_envio_api_exitoso_actualiza_estado_y_payload(client, api_config):
+    id_notificacion = _notificacion(clave="api-exitoso")
+    with app.app_context():
+        fila = db.session.get(NOTIFICACION_EMAIL, id_notificacion)
+        assert notification_service.intentar_envio(fila) is True
+        db.session.refresh(fila)
+        assert fila.estado == "enviado"
+        assert fila.intentos == 1
+        assert fila.enviado_en is not None
+        assert fila.ultimo_error is None
+
+    assert len(api_config.llamadas) == 1
+    llamada = api_config.llamadas[0]
+    assert llamada["url"] == "https://api.brevo.test/v3/smtp/email"
+    assert llamada["headers"]["api-key"] == "clave-api-secreta"
+    assert llamada["payload"]["to"] == [{"email": "ana@test.co"}]
+    assert llamada["payload"]["sender"]["email"] == "no-reply@impactapp.test"
+    assert "confirmada" in llamada["payload"]["subject"]
+    assert llamada["payload"]["textContent"]
+    assert llamada["payload"]["htmlContent"]
+
+
+def test_envio_api_acepta_remitente_con_nombre(client, api_config, monkeypatch):
+    monkeypatch.setitem(
+        app.config, "MAIL_FROM", "ImpactApp <no-reply@impactapp.test>"
+    )
+    monkeypatch.setitem(app.config, "MAIL_FROM_NAME", "")
+    id_notificacion = _notificacion(clave="api-remitente-nombre")
+    with app.app_context():
+        fila = db.session.get(NOTIFICACION_EMAIL, id_notificacion)
+        assert notification_service.intentar_envio(fila) is True
+
+    remitente = api_config.llamadas[-1]["payload"]["sender"]
+    assert remitente == {"email": "no-reply@impactapp.test", "name": "ImpactApp"}
+
+
+def test_envio_api_autenticacion_fallida_no_reintenta(client, api_config, caplog):
+    api_config.respuesta = (401, b'{"message":"clave-api-secreta"}')
+    id_notificacion = _notificacion(clave="api-auth")
+    with app.app_context():
+        fila = db.session.get(NOTIFICACION_EMAIL, id_notificacion)
+        assert notification_service.intentar_envio(fila) is False
+        db.session.refresh(fila)
+        assert fila.estado == "fallido"
+        assert fila.intentos == 2
+        assert fila.ultimo_error == "ProveedorAutenticacionFallida"
+        assert "clave-api-secreta" not in fila.ultimo_error
+    assert "clave-api-secreta" not in caplog.text
+
+
+def test_envio_api_conexion_fallida_reintenta(client, api_config):
+    api_config.excepcion = urllib.error.URLError("sin conexion")
+    id_notificacion = _notificacion(clave="api-conexion")
+    with app.app_context():
+        fila = db.session.get(NOTIFICACION_EMAIL, id_notificacion)
+        assert notification_service.intentar_envio(fila) is False
+        db.session.refresh(fila)
+        assert fila.estado == "fallido"
+        assert fila.intentos == 1
+        assert fila.ultimo_error == "ConexionProveedorFallida"
+
+        api_config.excepcion = None
+        assert notification_service.enviar_pendientes()["enviadas"] == 1
+        db.session.refresh(fila)
+        assert fila.estado == "enviado"
+        assert fila.intentos == 2
+
+
+@pytest.mark.parametrize(
+    "estado,error",
+    [(429, "ProveedorLimiteAlcanzado"), (503, "ProveedorNoDisponible")],
+)
+def test_envio_api_errores_temporales_reintentan(client, api_config, estado, error):
+    api_config.respuesta = (estado, b"{}")
+    id_notificacion = _notificacion(clave=f"api-temporal-{estado}")
+    with app.app_context():
+        fila = db.session.get(NOTIFICACION_EMAIL, id_notificacion)
+        assert notification_service.intentar_envio(fila) is False
+        db.session.refresh(fila)
+        assert (fila.estado, fila.intentos, fila.ultimo_error) == ("fallido", 1, error)
+
+        api_config.respuesta = (201, b'{"messageId":"ok"}')
+        assert notification_service.enviar_pendientes()["enviadas"] == 1
+        db.session.refresh(fila)
+        assert (fila.estado, fila.intentos) == ("enviado", 2)
+
+
+def test_envio_api_rechazo_permanente_agota_intentos(client, api_config):
+    api_config.respuesta = (400, b'{"message":"remitente invalido"}')
+    id_notificacion = _notificacion(clave="api-rechazo")
+    with app.app_context():
+        fila = db.session.get(NOTIFICACION_EMAIL, id_notificacion)
+        assert notification_service.intentar_envio(fila) is False
+        db.session.refresh(fila)
+        assert fila.estado == "fallido"
+        assert fila.intentos == 2
+        assert fila.ultimo_error == "ProveedorRechazoSolicitud"
+        assert notification_service.enviar_pendientes() == {
+            "procesadas": 0, "enviadas": 0, "fallidas": 0,
+        }
+
+
+def test_envio_usa_correo_actual_del_usuario(client, api_config):
+    correo = f"actual_{uuid.uuid4().hex[:8]}@test.co"
+    nuevo = f"nuevo_{uuid.uuid4().hex[:8]}@test.co"
+    register_user(client, correo=correo)
+    with app.app_context():
+        usuario = USUARIO.query.filter_by(correo=correo).one()
+        notification_service.encolar(
+            "donacion_aprobada",
+            correo,
+            _contexto(),
+            "correo-actual",
+            id_usuario=usuario.id_usuario,
+        )
+        db.session.commit()
+        usuario.correo = nuevo
+        db.session.commit()
+
+        assert notification_service.enviar_pendientes()["enviadas"] == 1
+        fila = NOTIFICACION_EMAIL.query.filter_by(clave_evento="correo-actual").one()
+        assert fila.destinatario == nuevo
+        assert fila.id_usuario == usuario.id_usuario
+
+    assert api_config.llamadas[-1]["payload"]["to"] == [{"email": nuevo}]
+
+
+def test_envio_se_omite_si_el_usuario_no_esta_activo(client, api_config):
+    correo = f"bloqueado_{uuid.uuid4().hex[:8]}@test.co"
+    register_user(client, correo=correo)
+    with app.app_context():
+        usuario = USUARIO.query.filter_by(correo=correo).one()
+        usuario.estado = "bloqueado"
+        db.session.commit()
+        notification_service.encolar(
+            "donacion_aprobada",
+            correo,
+            _contexto(),
+            "usuario-bloqueado",
+            id_usuario=usuario.id_usuario,
+        )
+        db.session.commit()
+        llamadas_antes = len(api_config.llamadas)
+
+        assert notification_service.enviar_pendientes()["fallidas"] == 1
+        fila = NOTIFICACION_EMAIL.query.filter_by(clave_evento="usuario-bloqueado").one()
+        assert fila.estado == "fallido"
+        assert fila.intentos == 2
+        assert fila.ultimo_error == "DestinatarioNoDisponible"
+        assert len(api_config.llamadas) == llamadas_antes
+
+
+def test_worker_excluye_ids_indicados(client, api_config):
+    with app.app_context():
+        excluida = _notificacion(clave="excluir-1")
+        procesada = _notificacion(clave="excluir-2")
+        resultado = notification_service.enviar_pendientes(exclude_ids=[excluida])
+        assert resultado == {"procesadas": 1, "enviadas": 1, "fallidas": 0}
+        assert db.session.get(NOTIFICACION_EMAIL, excluida).estado == "pendiente"
+        assert db.session.get(NOTIFICACION_EMAIL, procesada).estado == "enviado"
+
+
+def test_bandeja_aisla_notificaciones_entre_usuarios(client):
+    correo_a = f"inbox_a_{uuid.uuid4().hex[:8]}@test.co"
+    correo_b = f"inbox_b_{uuid.uuid4().hex[:8]}@test.co"
+    register_user(client, correo=correo_a)
+    register_user(client, correo=correo_b)
+    token_a = get_token(client, correo_a)
+    token_b = get_token(client, correo_b)
+    with app.app_context():
+        usuario_a = USUARIO.query.filter_by(correo=correo_a).one()
+        usuario_b = USUARIO.query.filter_by(correo=correo_b).one()
+        propia = notification_service.encolar(
+            "donacion_aprobada", correo_a, _contexto(), "inbox-a",
+            id_usuario=usuario_a.id_usuario,
+        )
+        ajena = notification_service.encolar(
+            "donacion_aprobada", correo_b, _contexto(), "inbox-b",
+            id_usuario=usuario_b.id_usuario,
+        )
+        legacy = NOTIFICACION_EMAIL(
+            clave_evento="inbox-legacy",
+            destinatario=correo_a,
+            id_usuario=None,
+            tipo="donacion_pendiente",
+            asunto="Notificación histórica",
+            cuerpo_texto="Texto",
+            estado="pendiente",
+        )
+        db.session.add(legacy)
+        db.session.commit()
+        id_propia = propia.id_notificacion
+        id_ajena = ajena.id_notificacion
+
+    assert client.get("/api/notifications").status_code == 401
+    respuesta = client.get(
+        "/api/notifications", headers={"Authorization": f"Bearer {token_a}"}
+    )
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.get_json()
+    ids = {item["id_notificacion"] for item in cuerpo["items"]}
+    assert id_propia in ids
+    assert id_ajena not in ids
+    assert "inbox-legacy" not in str(ids)
+    assert any(item["asunto"] == "Notificación histórica" for item in cuerpo["items"])
+    assert cuerpo["no_leidas"] == 3
+
+    ajeno = client.post(
+        f"/api/notifications/{id_ajena}/read",
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    assert ajeno.status_code == 404
+
+    propio = client.post(
+        f"/api/notifications/{id_propia}/read",
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    assert propio.status_code == 200
+    assert propio.get_json()["leida"] is True
+
+    respuesta_b = client.get(
+        "/api/notifications", headers={"Authorization": f"Bearer {token_b}"}
+    )
+    cuerpo_b = respuesta_b.get_json()
+    assert all(item["id_notificacion"] != id_propia for item in cuerpo_b["items"])
+    assert cuerpo_b["no_leidas"] >= 1
+
+
+def test_bandeja_marca_todas_las_leidas(client):
+    correo = f"inbox_all_{uuid.uuid4().hex[:8]}@test.co"
+    register_user(client, correo=correo)
+    token = get_token(client, correo)
+    with app.app_context():
+        usuario = USUARIO.query.filter_by(correo=correo).one()
+        notification_service.encolar(
+            "donacion_aprobada", correo, _contexto(), "inbox-all-1",
+            id_usuario=usuario.id_usuario,
+        )
+        notification_service.encolar(
+            "donacion_aprobada", correo, _contexto(), "inbox-all-2",
+            id_usuario=usuario.id_usuario,
+        )
+        db.session.commit()
+
+    respuesta = client.post(
+        "/api/notifications/read-all",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert respuesta.status_code == 200
+    assert respuesta.get_json()["marcadas"] >= 1
+
+    listado = client.get(
+        "/api/notifications", headers={"Authorization": f"Bearer {token}"}
+    ).get_json()
+    assert listado["no_leidas"] == 0
+
+
+@pytest.mark.parametrize(
+    "status,tipo",
+    [
+        ("DECLINED", "donacion_rechazada"),
+        ("VOIDED", "donacion_anulada"),
+        ("ERROR", "donacion_error"),
+    ],
+)
+def test_eventos_wompi_generan_notificacion_al_donante(
+    client, wompi_config, mail_config, status, tipo
+):
+    token = _donante_token(client)
+    donacion = _checkout(client, token, amount=50000).get_json()
+    webhook = client.post(
+        "/api/webhooks/wompi",
+        json=_event(donacion["referencia"], status=status),
+    )
+    assert webhook.status_code == 200
+    with app.app_context():
+        from models import DONACION
+
+        donante = db.session.get(DONACION, donacion["id_donacion"]).donante
+        fila = NOTIFICACION_EMAIL.query.filter_by(tipo=tipo).one()
+        assert fila.destinatario == donante.correo
+        assert fila.id_usuario == donante.id_usuario
+        assert fila.estado == "enviado"
+
+
+@transferencias_habilitadas
+def test_transferencia_rechazada_notifica_al_donante(
+    client, transfer_context, mail_config
+):
+    from test_transfers import (
+        _claim,
+        _create_account,
+        _create_transfer,
+        _headers,
+        _upload,
+    )
+
+    cuenta = _create_account(client, transfer_context)
+    transferencia = _create_transfer(client, transfer_context, cuenta, key="transfer-reject")
+    assert (
+        _upload(client, transfer_context, transferencia["id_transferencia"]).status_code
+        == 201
+    )
+    assert (
+        _claim(client, transfer_context, transferencia["id_transferencia"]).status_code
+        == 200
+    )
+    rechazo = client.post(
+        f"/api/support/transfers/{transferencia['id_transferencia']}/reject",
+        json={"motivo": "Datos bancarios incorrectos"},
+        headers=_headers(transfer_context["reviewer_token"], "reject-notif"),
+    )
+    assert rechazo.status_code == 200, rechazo.get_json()
+
+    with app.app_context():
+        fila = NOTIFICACION_EMAIL.query.filter_by(
+            tipo="transferencia_rechazada"
+        ).one()
+        assert fila.destinatario == "donor_transfer@test.co"
+        assert fila.estado == "enviado"
+        assert "Datos bancarios incorrectos" in fila.cuerpo_texto

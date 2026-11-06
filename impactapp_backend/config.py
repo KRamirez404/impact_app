@@ -74,6 +74,7 @@ class Config:
     )
 
     MAIL_ENABLED = os.getenv("MAIL_ENABLED", "0") == "1"
+    MAIL_PROVIDER = os.getenv("MAIL_PROVIDER", "smtp").strip().lower()
     MAIL_HOST = os.getenv("MAIL_HOST", "")
     MAIL_PORT = _int_env("MAIL_PORT", 587)
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "1") == "1"
@@ -81,5 +82,9 @@ class Config:
     MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     MAIL_FROM = os.getenv("MAIL_FROM", "")
+    MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "ImpactApp")
     MAIL_TIMEOUT = _int_env("MAIL_TIMEOUT", 10)
+    MAIL_API_KEY = os.getenv("MAIL_API_KEY", "")
+    MAIL_API_URL = os.getenv("MAIL_API_URL", "")
+    MAIL_API_TIMEOUT = _int_env("MAIL_API_TIMEOUT", 10)
     MAIL_MAX_ATTEMPTS = _int_env("MAIL_MAX_ATTEMPTS", 3)

@@ -16,6 +16,8 @@ import '../../features/campaigns/presentation/pages/donors_page.dart';
 import '../../features/campaigns/presentation/pages/explore_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/bindings/home_binding.dart';
+import '../../features/notifications/presentation/bindings/notification_binding.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/campaigns/presentation/pages/create_campaign_page.dart';
 import '../../features/campaigns/presentation/pages/donate_page.dart';
 import '../../features/collection_points/presentation/bindings/collection_point_binding.dart';
@@ -118,6 +120,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.privacyPolicy,
       page: () => const PrivacyPolicyPage(),
+    ),
+    GetPage(
+      name: AppRoutes.notifications,
+      page: () => NotificationsPage(),
+      bindings: [AuthBinding(), NotificationBinding()],
     ),
     GetPage(
       name: AppRoutes.donors,

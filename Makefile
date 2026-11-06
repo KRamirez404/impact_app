@@ -1,4 +1,4 @@
-.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test prod-up prod-down prod-logs prod-ps test-postgres wompi-check wompi-reconcile
+.PHONY: up dev down build logs backend-shell reset-db flutter-clean run-linux test prod-up prod-down prod-logs prod-ps test-postgres wompi-check wompi-reconcile mail-send
 
 up:
 	docker compose up --build
@@ -40,3 +40,5 @@ wompi-check:
 	docker compose exec backend python scripts/check_wompi_config.py
 wompi-reconcile:
 	docker compose exec backend python scripts/reconcile_wompi.py
+mail-send:
+	docker compose exec -T backend python scripts/send_pending_emails.py --limit 50

@@ -15,6 +15,7 @@ abstract class AppRoutes {
   static const settings = '/settings';
   static const privacyPolicy = '/privacy-policy';
   static const donors = '/donors';
+  static const notifications = '/notifications';
   static const supportHome = '/support';
   static const supportCampaignDetail = '/support/campaign';
   static const createTransfer = '/transfers/create';

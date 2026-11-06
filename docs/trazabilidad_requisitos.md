@@ -45,15 +45,17 @@ El alcance adicional procede de `anteproyecto.txt`; no modifica silenciosamente 
   (`test_security.py`, `test_roles.py`, `test_campaign_visibility.py`), suite
   completa **333 passed / 29 skipped** en SQLite y **337 passed / 25 skipped** en
   PostgreSQL aislado.
-- **Notificaciones por correo:** patrón outbox en `NOTIFICACION_EMAIL`, envío SMTP
-  deshabilitado por defecto, reintentos manuales y consulta para soporte. Un fallo
-  de correo no revierte pagos. Pruebas: 11 casos en SQLite y 11 en PostgreSQL,
-  incluidos Wompi y transferencias; detalle en `docs/notificaciones_email.md`.
-- **Flutter:** 67 pruebas aprobadas; `flutter analyze` sin errores (40 avisos
-  informativos preexistentes).
+- **Notificaciones por correo:** patrón outbox en `NOTIFICACION_EMAIL`, envío por
+  SMTP o API HTTPS (Brevo), reintentos con worker programable, bandeja por usuario
+  con lectura y consulta para soporte. Un fallo de correo no revierte pagos.
+  Pruebas: 44 casos en SQLite (4 omitidos); 45 en PostgreSQL aislado (2 omitidos)
+  antes de añadir la última prueba de remitente, independiente del motor. Incluyen
+  Wompi, transferencias, concurrencia y aislamiento entre usuarios; detalle en
+  `docs/notificaciones_email.md`.
+- **Flutter:** 72 pruebas aprobadas; `flutter analyze` sin errores.
 - **Sigue pendiente:** APK release, pruebas en dispositivos, SUS con participantes,
-  envío real contra un proveedor SMTP y pagos reales. No se modificaron los
-  indicadores de Wompi ni de transferencias.
+  envío real contra un proveedor de correo configurado y pagos reales. No se
+  modificaron los indicadores de Wompi ni de transferencias.
 
 ## Requisitos del PDF y escenarios de aceptación
 
@@ -104,7 +106,7 @@ Rutas desde la raíz del proyecto:
 | Donaciones/trazabilidad | `impactapp_backend/routes/donation_routes.py`, `wompi_routes.py` | `impactapp_flutter/lib/features/campaigns/`, `features/auth/presentation/widgets/profile/` | `test_wompi.py`, `test_wompi_extra.py`; Flutter: `money_donation_flow_test.dart`, `payment_status_dialog_test.dart`, `activity_card_test.dart` |
 | Archivos/avances | `impactapp_backend/services/file_service.py`, `routes/upload_routes.py`, `support_routes.py`, `tracking_routes.py` | `impactapp_flutter/lib/features/verification/`, `features/campaigns/presentation/widgets/tabs/` | `impactapp_backend/tests/test_uploads.py` (31 casos); no acredita publicación integral |
 | Auditoría/integridad | `impactapp_backend/models/auditoria.py`, `services/audit_service.py`, `donation_integrity.py` | Estados e historial de aportes | `test_f2_f3.py`; inmutabilidad pendiente |
-| Notificaciones | `impactapp_backend/models/notification.py`, `services/notification_service.py`, `routes/support_panel_routes.py`, `scripts/send_pending_emails.py` | — | `test_notifications.py` (11 casos SQLite/PostgreSQL); SMTP simulado |
+| Notificaciones | `impactapp_backend/models/notification.py`, `services/notification_service.py`, `services/email_provider.py`, `routes/notification_routes.py`, `routes/support_panel_routes.py`, `scripts/send_pending_emails.py` | `impactapp_flutter/lib/features/notifications/` | `test_notifications.py` (44 SQLite / 45 PostgreSQL antes de la última prueba); proveedor simulado; Flutter: `notification_flow_test.dart` |
 | Android | `docker-compose.yml`, API Flask | `impactapp_flutter/android/` | Pendiente instalación y ejecución en dispositivo/emulador |
 
 ## Alcance adicional del anteproyecto
