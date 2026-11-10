@@ -142,6 +142,13 @@ def ensure_user_schema():
     if "biografia" not in columns:
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN biografia TEXT'))
         db.session.commit()
+    for column in ("instagram_url", "facebook_url", "tiktok_url"):
+        if column not in columns:
+            db.session.execute(text(f'ALTER TABLE "USUARIO" ADD COLUMN {column} VARCHAR(255)'))
+            db.session.commit()
+    if "redes_sociales" not in columns:
+        db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN redes_sociales JSON'))
+        db.session.commit()
     if "rol" not in columns:
         db.session.execute(text('ALTER TABLE "USUARIO" ADD COLUMN rol TEXT'))
         db.session.execute(text("UPDATE \"USUARIO\" SET rol = 'usuario' WHERE rol IS NULL"))

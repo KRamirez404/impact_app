@@ -95,6 +95,9 @@ def update_user_profile(user: USUARIO, data: dict) -> USUARIO:
         ("telefono", "Teléfono", 30, False),
         ("biografia", "Biografía", 500, False),
         ("foto_perfil", "Foto de perfil", 255, False),
+        ("instagram_url", "Enlace de Instagram", 255, False),
+        ("facebook_url", "Enlace de Facebook", 255, False),
+        ("tiktok_url", "Enlace de TikTok", 255, False),
     ):
         if field in data:
             fields[field] = validate_text(data[field], label, length, required=required)
@@ -110,6 +113,20 @@ def update_user_profile(user: USUARIO, data: dict) -> USUARIO:
         if not isinstance(mostrar, bool):
             raise ValueError("mostrar_foto_top debe ser un valor booleano")
         fields["mostrar_foto_top"] = mostrar
+    if "redes_sociales" in data:
+        links = data["redes_sociales"]
+        if not isinstance(links, dict):
+            raise ValueError("redes_sociales debe ser un objeto")
+        from urllib.parse import urlparse
+        clean = {}
+        for name, value in links.items():
+            if not isinstance(name, str) or not isinstance(value, str) or not value.strip():
+                continue
+            parsed = urlparse(value.strip())
+            if parsed.scheme not in ("http", "https") or not parsed.netloc:
+                raise ValueError("Los enlaces sociales deben usar http o https")
+            clean[name] = value.strip()[:255]
+        fields["redes_sociales"] = clean
     for field, value in fields.items():
         setattr(user, field, value)
     db.session.commit()

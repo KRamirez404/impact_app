@@ -15,6 +15,10 @@ class USUARIO(db.Model):
     id_ciudad = db.Column(db.Integer, db.ForeignKey("CIUDAD.id_ciudad"), nullable=True)
     ciudad = db.relationship("CIUDAD")
     biografia = db.Column(db.String(500), nullable=True)
+    instagram_url = db.Column(db.String(255), nullable=True)
+    facebook_url = db.Column(db.String(255), nullable=True)
+    tiktok_url = db.Column(db.String(255), nullable=True)
+    redes_sociales = db.Column(db.JSON, nullable=True, default=dict)
     rol = db.Column(
         db.Enum(
             "donante",
@@ -60,6 +64,10 @@ class USUARIO(db.Model):
             "ciudad": self.ciudad.to_dict() if self.ciudad else None,
             "biografia": self.biografia,
             "foto_perfil": self.foto_perfil,
+            "instagram_url": self.instagram_url,
+            "facebook_url": self.facebook_url,
+            "tiktok_url": self.tiktok_url,
+            "redes_sociales": self.redes_sociales or {},
             "mostrar_foto_top": self.mostrar_foto_top,
             "rol": self.rol,
             "fecha_registro": self.fecha_registro.isoformat(),
@@ -72,4 +80,8 @@ class USUARIO(db.Model):
             "nombre": self.nombre,
             "apellido": self.apellido,
             "foto_perfil": self.foto_perfil,
+            "instagram_url": self.instagram_url,
+            "facebook_url": self.facebook_url,
+            "tiktok_url": self.tiktok_url,
+            "redes_sociales": self.redes_sociales or {},
         }

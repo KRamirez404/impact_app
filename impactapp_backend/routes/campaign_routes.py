@@ -173,6 +173,8 @@ def get_campaign(campaign_id: int):
         return jsonify({"error": "Campaña no encontrada"}), 404
     current_user_id = get_jwt_identity()
     payload = campaign.to_public_dict()
+    if current_user_id and int(current_user_id) == campaign.id_creador:
+        payload["cuenta_recaudo"] = campaign.cuenta_recaudo
     payload["valoraciones"] = [r.to_dict() for r in campaign.valoraciones if r.visible]
     payload["soportes"] = [
         support.to_public_dict()
