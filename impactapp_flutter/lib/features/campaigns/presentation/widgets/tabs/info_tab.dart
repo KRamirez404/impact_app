@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class InfoTab extends StatelessWidget {
   final dynamic campaign;
@@ -19,7 +20,11 @@ class InfoTab extends StatelessWidget {
           title: 'Descripción',
           child: Text(
             campaign.descripcion,
-            style: const TextStyle(fontSize: 16, height: 1.6, color: Color(0xFF717182)),
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.6,
+              color: Color(0xFF717182),
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -30,13 +35,33 @@ class InfoTab extends StatelessWidget {
             children: [
               Text(
                 organizer.isNotEmpty ? organizer : 'Sin datos',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (campaign.creadorCorreo.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
                   campaign.creadorCorreo,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF717182)),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF717182),
+                  ),
+                ),
+              ],
+              if (campaign.creadorRedesSociales.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Redes sociales',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                ...campaign.creadorRedesSociales.entries.map<Widget>(
+                  (entry) => _SocialLink(
+                    label: entry.key,
+                    url: entry.value?.toString(),
+                  ),
                 ),
               ],
             ],
@@ -46,7 +71,10 @@ class InfoTab extends StatelessWidget {
         _SectionBlock(
           title: 'Puntos de Recolección',
           child: campaign.puntosRecoleccion.isEmpty
-              ? const Text('No hay puntos registrados', style: TextStyle(color: Color(0xFF717182)))
+              ? const Text(
+                  'No hay puntos registrados',
+                  style: TextStyle(color: Color(0xFF717182)),
+                )
               : Column(
                   children: campaign.puntosRecoleccion.map<Widget>((point) {
                     final horario = point['horario'] ?? '';
@@ -58,27 +86,40 @@ class InfoTab extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.black.withValues(alpha: 0.1), width: 0.8),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          width: 0.8,
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             (point['nombre'] ?? '').toString(),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           _InfoRow(
                             icon: Icons.location_on_outlined,
-                            text: '$direccion ${ciudad.toString().isEmpty ? '' : '- $ciudad'}',
+                            text:
+                                '$direccion ${ciudad.toString().isEmpty ? '' : '- $ciudad'}',
                           ),
                           if (horario.toString().isNotEmpty) ...[
                             const SizedBox(height: 6),
-                            _InfoRow(icon: Icons.schedule, text: horario.toString()),
+                            _InfoRow(
+                              icon: Icons.schedule,
+                              text: horario.toString(),
+                            ),
                           ],
                           if (contacto.toString().isNotEmpty) ...[
                             const SizedBox(height: 6),
-                            _InfoRow(icon: Icons.phone_outlined, text: contacto.toString()),
+                            _InfoRow(
+                              icon: Icons.phone_outlined,
+                              text: contacto.toString(),
+                            ),
                           ],
                         ],
                       ),
@@ -102,7 +143,10 @@ class _SectionBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 8),
         child,
       ],
@@ -124,9 +168,39 @@ class _InfoRow extends StatelessWidget {
         Icon(icon, size: 16, color: const Color(0xFF717182)),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(text, style: const TextStyle(fontSize: 14, color: Color(0xFF717182))),
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 14, color: Color(0xFF717182)),
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _SocialLink extends StatelessWidget {
+  const _SocialLink({required this.label, required this.url});
+
+  final String label;
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url == null || url!.trim().isEmpty) return const SizedBox.shrink();
+    final uri = Uri.tryParse(url!.trim());
+    if (uri == null ||
+        !uri.hasScheme ||
+        (uri.scheme != 'http' && uri.scheme != 'https')) {
+      return const SizedBox.shrink();
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication),
+        icon: const Icon(Icons.open_in_new, size: 16),
+        label: Text(label),
+        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+      ),
     );
   }
 }

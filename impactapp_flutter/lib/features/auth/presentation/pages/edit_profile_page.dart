@@ -115,7 +115,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   label: 'Nombres',
                                   hint: 'María Elena',
                                   icon: Icons.person_outline,
-                                  validator: (value) => Validators.requiredField(value, 'Nombres', maxLength: 100),
+                                  validator: (value) =>
+                                      Validators.requiredField(
+                                        value,
+                                        'Nombres',
+                                        maxLength: 100,
+                                      ),
                                   isRequired: true,
                                   textInputAction: TextInputAction.next,
                                 ),
@@ -125,7 +130,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   label: 'Apellidos',
                                   hint: 'González Ramírez',
                                   icon: Icons.person_outline,
-                                  validator: (value) => Validators.requiredField(value, 'Apellidos', maxLength: 100),
+                                  validator: (value) =>
+                                      Validators.requiredField(
+                                        value,
+                                        'Apellidos',
+                                        maxLength: 100,
+                                      ),
                                   isRequired: true,
                                   textInputAction: TextInputAction.next,
                                 ),
@@ -155,7 +165,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   hint: '+57 300 123 4567',
                                   icon: Icons.phone_outlined,
                                   keyboardType: TextInputType.phone,
-                                  validator: (value) => Validators.optionalText(value, 'Teléfono', 30),
+                                  validator: (value) => Validators.optionalText(
+                                    value,
+                                    'Teléfono',
+                                    30,
+                                  ),
                                   textInputAction: TextInputAction.next,
                                 ),
                                 const SizedBox(height: 16),
@@ -172,7 +186,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   alignment: Alignment.centerRight,
                                   child: Text(
                                     '${_bioCtrl.text.length}/500 caracteres',
-                                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -216,7 +233,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
         children: [
           GestureDetector(
             onTap: () => Get.back(),
-            child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 16),
+            child: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 12),
           const Text(
@@ -256,27 +277,42 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   height: 112,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 4),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 4,
+                    ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(100),
                     child: _selectedImage != null
-                        ? Image.file(File(_selectedImage!.path), fit: BoxFit.cover)
+                        ? Image.file(
+                            File(_selectedImage!.path),
+                            fit: BoxFit.cover,
+                          )
                         : (_controller.user.value?.fotoPerfil != null
-                            ? Image.network('${ApiConstants.originUrl}${_controller.user.value!.fotoPerfil}', fit: BoxFit.cover)
-                            : CircleAvatar(
-                                backgroundColor: Colors.white.withValues(alpha: 0.15),
-                                child: Text(
-                                  _nombreCtrl.text.trim().isNotEmpty
-                                      ? _nombreCtrl.text.trim().characters.first.toUpperCase()
-                                      : 'I',
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
+                              ? Image.network(
+                                  '${ApiConstants.originUrl}${_controller.user.value!.fotoPerfil}',
+                                  fit: BoxFit.cover,
+                                )
+                              : CircleAvatar(
+                                  backgroundColor: Colors.white.withValues(
+                                    alpha: 0.15,
                                   ),
-                                ),
-                              )),
+                                  child: Text(
+                                    _nombreCtrl.text.trim().isNotEmpty
+                                        ? _nombreCtrl.text
+                                              .trim()
+                                              .characters
+                                              .first
+                                              .toUpperCase()
+                                        : 'I',
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                )),
                   ),
                 ),
                 Container(
@@ -293,7 +329,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.camera_alt_outlined, size: 16, color: AppColors.primary),
+                  child: const Icon(
+                    Icons.camera_alt_outlined,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
                 ),
               ],
             ),
@@ -301,7 +341,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
           const SizedBox(height: 12),
           Text(
             'Toca para cambiar foto',
-            style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ),
@@ -342,9 +385,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
       children: [
         Row(
           children: [
-            Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             if (isRequired)
-              const Text(' *', style: TextStyle(fontSize: 14, color: Color(0xFFD4183D))),
+              const Text(
+                ' *',
+                style: TextStyle(fontSize: 14, color: Color(0xFFD4183D)),
+              ),
           ],
         ),
         const SizedBox(height: 6),
@@ -360,7 +413,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             isDense: true,
             hintText: hint,
             hintStyle: const TextStyle(color: AppColors.textSecondary),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             prefixIcon: Icon(icon, size: 18, color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -388,8 +444,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_citiesError!, style: const TextStyle(color: AppColors.textSecondary)),
-          TextButton(onPressed: _loadCities, child: const Text('Reintentar ciudades')),
+          Text(
+            _citiesError!,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+          TextButton(
+            onPressed: _loadCities,
+            child: const Text('Reintentar ciudades'),
+          ),
         ],
       );
     }
@@ -404,12 +466,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
       items: [
         const DropdownMenuItem(value: 0, child: Text('Sin ciudad')),
-        ..._cities.map((city) => DropdownMenuItem(
-          value: city.idCiudad,
-          child: Text(city.nombre),
-        )),
+        ..._cities.map(
+          (city) =>
+              DropdownMenuItem(value: city.idCiudad, child: Text(city.nombre)),
+        ),
       ],
-      onChanged: (value) => setState(() => _selectedCityId = value == 0 ? null : value),
+      onChanged: (value) =>
+          setState(() => _selectedCityId = value == 0 ? null : value),
     );
   }
 
@@ -419,22 +482,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
       children: [
         const Text(
           'Biografía (opcional)',
-          style: TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 14,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: _bioCtrl,
           maxLines: 4,
           maxLength: 500,
-          style: const TextStyle(fontSize: 16, color: AppColors.textPrimary, height: 1.5),
+          style: const TextStyle(
+            fontSize: 16,
+            color: AppColors.textPrimary,
+            height: 1.5,
+          ),
           decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.inputBg,
             isDense: true,
             counterText: '',
-            hintText: 'Cuéntanos un poco sobre ti, tus intereses o cómo te gusta ayudar...',
+            hintText:
+                'Cuéntanos un poco sobre ti, tus intereses o cómo te gusta ayudar...',
             hintStyle: const TextStyle(color: AppColors.textSecondary),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
@@ -466,12 +541,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
         children: const [
           Text(
             '💡 Consejo',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
           ),
           SizedBox(height: 4),
           Text(
             'Un perfil completo genera más confianza en la comunidad.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -490,7 +573,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
         children: [
           const Text(
             'Información de cuenta',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -499,14 +586,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
               const Expanded(
                 child: Text(
                   'Miembro desde',
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
               Flexible(
                 child: Text(
                   _formatMemberSince(fechaRegistro),
                   textAlign: TextAlign.end,
-                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -524,14 +618,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
             width: double.infinity,
             height: 40,
             child: ElevatedButton.icon(
-              onPressed: _controller.isUpdatingProfile.value ? null : _saveChanges,
+              onPressed: _controller.isUpdatingProfile.value
+                  ? null
+                  : _saveChanges,
               icon: const Icon(Icons.save_outlined, size: 16),
-              label: Text(_controller.isUpdatingProfile.value ? 'Guardando...' : 'Guardar cambios'),
+              label: Text(
+                _controller.isUpdatingProfile.value
+                    ? 'Guardando...'
+                    : 'Guardar cambios',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
@@ -544,9 +649,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
             onPressed: () => Get.back(),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0x1A000000)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               foregroundColor: AppColors.textPrimary,
-              textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             child: const Text('Cancelar'),
           ),
@@ -557,7 +667,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (picked != null) {
       final ext = picked.name.split('.').last.toLowerCase();
       if (ext == 'avif' || ext == 'heic' || ext == 'heif') {
@@ -566,7 +679,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (decoded != null) {
           final jpegBytes = img.encodeJpg(decoded, quality: 90);
           final tempDir = Directory.systemTemp;
-          final tempFile = File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+          final tempFile = File(
+            '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
           await tempFile.writeAsBytes(jpegBytes);
           setState(() => _selectedImage = XFile(tempFile.path));
           return;
@@ -585,7 +700,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (_selectedImage != null) {
       _controller.isUpdatingProfile.value = true;
       try {
-        fotoPerfilUrl = await DioClient.instance.uploadFile(_selectedImage!.path);
+        fotoPerfilUrl = await DioClient.instance.uploadFile(
+          _selectedImage!.path,
+        );
       } catch (e) {
         _controller.isUpdatingProfile.value = false;
         _controller.showError('Error al subir imagen: $e');

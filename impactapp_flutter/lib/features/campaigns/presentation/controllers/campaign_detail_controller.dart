@@ -9,6 +9,7 @@ import '../../domain/usecases/get_donation_status_usecase.dart';
 import '../../domain/usecases/toggle_like_usecase.dart';
 import '../../domain/usecases/donate_usecase.dart';
 import '../../domain/usecases/get_campaign_detail_usecase.dart';
+import '../../domain/usecases/update_campaign_usecase.dart';
 import 'campaign_list_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
@@ -19,6 +20,7 @@ class CampaignDetailController extends GetxController {
     required this.toggleLikeUseCase,
     required this.createDonationCheckoutUseCase,
     required this.getDonationStatusUseCase,
+    required this.updateCampaignUseCase,
   });
 
   final GetCampaignDetailUseCase getCampaignDetailUseCase;
@@ -26,10 +28,14 @@ class CampaignDetailController extends GetxController {
   final ToggleLikeUseCase toggleLikeUseCase;
   final CreateDonationCheckoutUseCase createDonationCheckoutUseCase;
   final GetDonationStatusUseCase getDonationStatusUseCase;
+  final UpdateCampaignUseCase updateCampaignUseCase;
 
   final isLoading = false.obs;
   final isLiking = false.obs;
   final campaign = Rxn<CampaignEntity>();
+
+  List<Map<String, dynamic>> get collectionPoints =>
+      campaign.value?.puntosRecoleccion ?? const [];
 
   void _ok(String msg) => Get.snackbar(
     'Éxito',
@@ -132,6 +138,25 @@ class CampaignDetailController extends GetxController {
       _err(friendlyError(e));
     } finally {
       isLiking.value = false;
+    }
+  }
+
+  Future<CampaignEntity?> editCampaign(
+    int campaignId,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      isLoading.value = true;
+      final updatedCampaign = await updateCampaignUseCase(campaignId, payload);
+      campaign.value = updatedCampaign;
+      _syncCampaignLists(updatedCampaign);
+      _ok('Campaña actualizada');
+      return updatedCampaign;
+    } catch (e) {
+      _err(friendlyError(e));
+      return null;
+    } finally {
+      isLoading.value = false;
     }
   }
 }

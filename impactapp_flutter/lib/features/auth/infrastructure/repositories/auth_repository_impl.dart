@@ -10,10 +10,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource dataSource;
   final GetStorage storage;
 
-  AuthRepositoryImpl({
-    required this.dataSource,
-    required this.storage,
-  });
+  AuthRepositoryImpl({required this.dataSource, required this.storage});
 
   @override
   Future<String> login(String correo, String contrasena) async {

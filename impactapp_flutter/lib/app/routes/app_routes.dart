@@ -6,6 +6,7 @@ abstract class AppRoutes {
   static const explore = '/explore';
   static const campaignDetail = '/campaign';
   static const createCampaign = '/create-campaign';
+  static const editCampaign = '/edit-campaign';
   static const donate = '/donate';
   static const uploadSupport = '/upload-support';
   static const collectionPoints = '/collection-points';

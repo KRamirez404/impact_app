@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import '../controllers/campaign_list_controller.dart';
 
 class ExploreFiltersSheet extends StatefulWidget {
-  const ExploreFiltersSheet({
-    super.key,
-    required this.controller,
-  });
+  const ExploreFiltersSheet({super.key, required this.controller});
 
   final CampaignListController controller;
 
@@ -26,12 +23,14 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
 
   late final List<String> _selectedCategories;
   String? _selectedCity;
+  String? _selectedHelpType;
 
   @override
   void initState() {
     super.initState();
     _selectedCategories = widget.controller.selectedCategoryLabels.toList();
     _selectedCity = widget.controller.selectedCityLabel.value;
+    _selectedHelpType = widget.controller.selectedHelpType.value;
   }
 
   @override
@@ -41,10 +40,23 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
       height: 631,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 0.8)),
+        border: Border(
+          top: BorderSide(
+            color: Colors.black.withValues(alpha: 0.1),
+            width: 0.8,
+          ),
+        ),
         boxShadow: const [
-          BoxShadow(color: Color(0x1A000000), blurRadius: 15, offset: Offset(0, 10)),
-          BoxShadow(color: Color(0x0A000000), blurRadius: 6, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 15,
+            offset: Offset(0, 10),
+          ),
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 6,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: SafeArea(
@@ -110,10 +122,55 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          _sectionTitle('Tipo de Ayuda'),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String?>(
+                            initialValue: _selectedHelpType,
+                            isExpanded: true,
+                            items: const [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('Todas'),
+                              ),
+                              DropdownMenuItem<String?>(
+                                value: 'economica',
+                                child: Text('Económica'),
+                              ),
+                              DropdownMenuItem<String?>(
+                                value: 'especie',
+                                child: Text('En especie'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedHelpType = value;
+                              });
+                            },
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.volunteer_activism_outlined,
+                                color: Color(0xFF1976D2),
+                                size: 20,
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 15),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           _sectionTitle('Ubicación'),
                           const SizedBox(height: 18),
                           DropdownButtonFormField<String?>(
-                            value: _selectedCity,
+                            initialValue: _selectedCity,
                             isExpanded: true,
                             items: [
                               const DropdownMenuItem<String?>(
@@ -131,21 +188,21 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
                                 ),
                               ),
                               ...widget.controller.cities.map(
-                                    (city) => DropdownMenuItem<String?>(
-                                      value: city,
-                                      child: Text(
-                                        city,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          height: 1.43,
-                                          color: Color(0xFF0A0A0A),
-                                        ),
-                                      ),
+                                (city) => DropdownMenuItem<String?>(
+                                  value: city,
+                                  child: Text(
+                                    city,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.43,
+                                      color: Color(0xFF0A0A0A),
                                     ),
                                   ),
+                                ),
+                              ),
                             ],
                             onChanged: (value) {
                               setState(() {
@@ -153,17 +210,33 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
                               });
                             },
                             decoration: InputDecoration(
-                              prefixIcon: const Icon(Icons.location_on_outlined, color: Color(0xFF1976D2), size: 20),
+                              prefixIcon: const Icon(
+                                Icons.location_on_outlined,
+                                color: Color(0xFF1976D2),
+                                size: 20,
+                              ),
                               filled: false,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 14,
+                              ),
                               border: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.9), width: 0.8),
+                                borderSide: BorderSide(
+                                  color: Colors.black.withValues(alpha: 0.9),
+                                  width: 0.8,
+                                ),
                               ),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.9), width: 0.8),
+                                borderSide: BorderSide(
+                                  color: Colors.black.withValues(alpha: 0.9),
+                                  width: 0.8,
+                                ),
                               ),
                               focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: Color(0xFF1976D2), width: 0.8),
+                                borderSide: BorderSide(
+                                  color: Color(0xFF1976D2),
+                                  width: 0.8,
+                                ),
                               ),
                             ),
                           ),
@@ -187,6 +260,7 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
                         widget.controller.setFilters(
                           categoryLabels: _selectedCategories,
                           cityLabel: _selectedCity,
+                          helpType: _selectedHelpType,
                         );
                         Navigator.of(context).pop();
                       },
@@ -195,7 +269,9 @@ class _ExploreFiltersSheetState extends State<ExploreFiltersSheet> {
                         foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(36),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                       child: const Text(
                         'Ver resultados',
@@ -280,7 +356,10 @@ class _CheckboxRow extends StatelessWidget {
                 height: 20,
                 decoration: BoxDecoration(
                   color: selected ? const Color(0xFF008236) : Colors.white,
-                  border: Border.all(color: const Color(0xFF008236), width: 1.2),
+                  border: Border.all(
+                    color: const Color(0xFF008236),
+                    width: 1.2,
+                  ),
                 ),
                 child: selected
                     ? const Icon(Icons.check, size: 14, color: Colors.white)

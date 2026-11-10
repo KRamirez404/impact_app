@@ -11,12 +11,17 @@ class CampaignEntity {
   final String fechaFin;
   final String estado;
   final double porcentajeAvance;
+  final String? cuentaRecaudo;
   final String ciudadNombre;
   final String categoriaNombre;
   final String creadorNombre;
   final String creadorApellido;
   final String creadorCorreo;
   final String? creadorTelefono;
+  final String? instagramUrl;
+  final String? facebookUrl;
+  final String? tiktokUrl;
+  final Map<String, dynamic> creadorRedesSociales;
   final String? notaRevision;
   final String? fechaRevision;
   final String? auditorNombre;
@@ -48,12 +53,17 @@ class CampaignEntity {
     required this.fechaFin,
     required this.estado,
     required this.porcentajeAvance,
+    this.cuentaRecaudo,
     this.ciudadNombre = '',
     this.categoriaNombre = '',
     this.creadorNombre = '',
     this.creadorApellido = '',
     this.creadorCorreo = '',
     this.creadorTelefono,
+    this.instagramUrl,
+    this.facebookUrl,
+    this.tiktokUrl,
+    this.creadorRedesSociales = const {},
     this.notaRevision,
     this.fechaRevision,
     this.auditorNombre,
@@ -86,12 +96,17 @@ class CampaignEntity {
     String? fechaFin,
     String? estado,
     double? porcentajeAvance,
+    String? cuentaRecaudo,
     String? ciudadNombre,
     String? categoriaNombre,
     String? creadorNombre,
     String? creadorApellido,
     String? creadorCorreo,
     String? creadorTelefono,
+    String? instagramUrl,
+    String? facebookUrl,
+    String? tiktokUrl,
+    Map<String, dynamic>? creadorRedesSociales,
     String? notaRevision,
     String? fechaRevision,
     String? auditorNombre,
@@ -123,12 +138,17 @@ class CampaignEntity {
       fechaFin: fechaFin ?? this.fechaFin,
       estado: estado ?? this.estado,
       porcentajeAvance: porcentajeAvance ?? this.porcentajeAvance,
+      cuentaRecaudo: cuentaRecaudo ?? this.cuentaRecaudo,
       ciudadNombre: ciudadNombre ?? this.ciudadNombre,
       categoriaNombre: categoriaNombre ?? this.categoriaNombre,
       creadorNombre: creadorNombre ?? this.creadorNombre,
       creadorApellido: creadorApellido ?? this.creadorApellido,
       creadorCorreo: creadorCorreo ?? this.creadorCorreo,
       creadorTelefono: creadorTelefono ?? this.creadorTelefono,
+      instagramUrl: instagramUrl ?? this.instagramUrl,
+      facebookUrl: facebookUrl ?? this.facebookUrl,
+      tiktokUrl: tiktokUrl ?? this.tiktokUrl,
+      creadorRedesSociales: creadorRedesSociales ?? this.creadorRedesSociales,
       notaRevision: notaRevision ?? this.notaRevision,
       fechaRevision: fechaRevision ?? this.fechaRevision,
       auditorNombre: auditorNombre ?? this.auditorNombre,

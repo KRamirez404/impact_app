@@ -9,6 +9,7 @@ import '../../domain/usecases/get_campaigns_usecase.dart';
 import '../../domain/usecases/get_my_campaigns_usecase.dart';
 import '../../domain/usecases/get_my_donations_usecase.dart';
 import '../../domain/usecases/toggle_like_usecase.dart';
+import '../../domain/usecases/update_campaign_usecase.dart';
 import '../../infrastructure/datasources/campaign_remote_datasource.dart';
 import '../../infrastructure/repositories/campaign_repository_impl.dart';
 import '../controllers/campaign_detail_controller.dart';
@@ -46,6 +47,9 @@ class CampaignBinding extends Bindings {
     Get.lazyPut<ToggleLikeUseCase>(
       () => ToggleLikeUseCase(Get.find<CampaignRepository>()),
     );
+    Get.lazyPut<UpdateCampaignUseCase>(
+      () => UpdateCampaignUseCase(Get.find<CampaignRepository>()),
+    );
 
     Get.lazyPut<CampaignListController>(
       () => CampaignListController(
@@ -61,6 +65,7 @@ class CampaignBinding extends Bindings {
         toggleLikeUseCase: Get.find<ToggleLikeUseCase>(),
         createDonationCheckoutUseCase: Get.find<CreateDonationCheckoutUseCase>(),
         getDonationStatusUseCase: Get.find<GetDonationStatusUseCase>(),
+        updateCampaignUseCase: Get.find<UpdateCampaignUseCase>(),
       ),
       fenix: true,
     );

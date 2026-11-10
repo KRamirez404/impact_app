@@ -180,6 +180,7 @@ class HomePage extends StatelessWidget {
             'Activas',
             '$activas',
             const Color(0xFF1976D2),
+            onTap: () => _openCampaigns(CampaignListFilter.active),
           ),
           const SizedBox(width: 12),
           _statCard(
@@ -187,6 +188,7 @@ class HomePage extends StatelessWidget {
             'Verificadas',
             '$verificadasPorcentaje%',
             const Color(0xFF43A047),
+            onTap: () => _openCampaigns(CampaignListFilter.verified),
           ),
           const SizedBox(width: 12),
           _statCard(
@@ -194,15 +196,23 @@ class HomePage extends StatelessWidget {
             'Urgentes',
             '$urgentes',
             const Color(0xFFFF6900),
+            onTap: () => _openCampaigns(CampaignListFilter.urgent),
           ),
         ],
       ),
     );
   }
 
-  Widget _statCard(IconData icon, String label, String value, Color color) {
+  void _openCampaigns(CampaignListFilter filter) {
+    campaignCtrl.setCampaignFilter(filter);
+    Get.toNamed(AppRoutes.explore, arguments: filter);
+  }
+
+  Widget _statCard(IconData icon, String label, String value, Color color, {required VoidCallback onTap}) {
     return Expanded(
-      child: Container(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -247,6 +257,7 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

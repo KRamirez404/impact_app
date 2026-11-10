@@ -180,6 +180,7 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
             ? Get.find<AuthController>().user.value
             : null;
         final canDonate = authUser == null || authUser.rol == 'donante';
+        final canEdit = authUser != null && authUser.idUsuario == campaign.idCreador;
         final badges = <Widget>[
           CategoryBadge(label: campaign.categoriaNombre),
           if (isVerified) const VerifiedBadge(),
@@ -230,6 +231,21 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                       ),
                     ],
                   ),
+                  if (canEdit) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Get.toNamed('${AppRoutes.editCampaign}/${campaign.idCampania}'),
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('Editar campaña'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF1976D2),
+                          side: const BorderSide(color: Color(0xFF1976D2)),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   ProgressSection(
                     collected: collected,

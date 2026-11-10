@@ -76,6 +76,14 @@ class CampaignRemoteDataSource {
     return CampaignModel.fromJson(_safeMap(response.data));
   }
 
+  Future<CampaignModel> updateCampaign(
+    int id,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await _dio.put('${ApiConstants.campaigns}/$id', data: payload);
+    return CampaignModel.fromJson(_safeMap(response.data));
+  }
+
   Future<DonationModel> donate(Map<String, dynamic> payload) async {
     final response = await _dio.post(ApiConstants.donations, data: payload);
     return DonationModel.fromJson(_safeMap(response.data));

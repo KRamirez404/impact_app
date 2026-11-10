@@ -13,6 +13,7 @@ import '../../features/campaigns/presentation/bindings/campaign_binding.dart';
 import '../../features/campaigns/presentation/bindings/donors_binding.dart';
 import '../../features/campaigns/presentation/pages/campaign_detail_page.dart';
 import '../../features/campaigns/presentation/pages/donors_page.dart';
+import '../../features/campaigns/presentation/pages/edit_campaign_page.dart';
 import '../../features/campaigns/presentation/pages/explore_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/bindings/home_binding.dart';
@@ -76,6 +77,11 @@ class AppPages {
       name: AppRoutes.createCampaign,
       page: () => CreateCampaignPage(),
       bindings: [CampaignBinding(), CollectionPointBinding()],
+    ),
+    GetPage(
+      name: '${AppRoutes.editCampaign}/:id',
+      page: () => EditCampaignPage(),
+      bindings: [AuthBinding(), CampaignBinding()],
     ),
     GetPage(
       name: '${AppRoutes.donate}/:id',

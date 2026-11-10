@@ -16,6 +16,7 @@ abstract class CampaignRepository {
   Future<List<CampaignEntity>> getMyCampaigns();
   Future<CampaignEntity> getCampaignDetail(int id);
   Future<CampaignEntity> createCampaign(Map<String, dynamic> payload);
+  Future<CampaignEntity> updateCampaign(int id, Map<String, dynamic> payload);
   Future<DonationEntity> donate(Map<String, dynamic> payload);
   Future<DonationCheckoutEntity> createDonationCheckout(
     Map<String, dynamic> payload, {

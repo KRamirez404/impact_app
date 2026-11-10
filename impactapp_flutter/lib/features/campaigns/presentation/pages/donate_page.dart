@@ -6,13 +6,34 @@ import '../../../../shared/widgets/custom_text_field.dart';
 import '../controllers/campaign_detail_controller.dart';
 import '../widgets/campaign_detail/money_donation_dialog.dart';
 
-class DonatePage extends StatelessWidget {
-  DonatePage({super.key});
+class DonatePage extends StatefulWidget {
+  const DonatePage({super.key});
+
+  @override
+  State<DonatePage> createState() => _DonatePageState();
+}
+
+class _DonatePageState extends State<DonatePage> {
   final _tipo = 'economica'.obs;
   final _montoCtrl = TextEditingController(text: '50000');
   final _descripcionCtrl = TextEditingController();
   final CampaignDetailController controller =
       Get.find<CampaignDetailController>();
+  int? _selectedPointId;
+
+  @override
+  void initState() {
+    super.initState();
+    final id = int.parse(Get.parameters['id'] ?? '0');
+    Future.microtask(() => controller.loadCampaign(id));
+  }
+
+  @override
+  void dispose() {
+    _montoCtrl.dispose();
+    _descripcionCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _showMoneyDonation(BuildContext context, int campaignId) async {
     final status = await showMoneyDonationDialog(
@@ -45,8 +66,18 @@ class DonatePage extends StatelessWidget {
       );
       return;
     }
+    if (_selectedPointId == null) {
+      Get.snackbar(
+        'Punto requerido',
+        'Selecciona un punto de recolección',
+        backgroundColor: const Color(0xFFD32F2F),
+        colorText: Colors.white,
+      );
+      return;
+    }
     await controller.donate({
       'id_campania': campaignId,
+      'id_punto': _selectedPointId,
       'tipo': _tipo.value,
       'monto_estimado': parsed.cents! / 100,
       'descripcion': _descripcionCtrl.text.trim(),
@@ -111,6 +142,39 @@ class DonatePage extends StatelessWidget {
                     )
                   : Column(
                       children: [
+                        const SizedBox(height: 12),
+                        Obx(() {
+                          final points = controller.collectionPoints;
+                          if (_selectedPointId == null && points.isNotEmpty) {
+                            _selectedPointId = points.first['id_punto'] as int?;
+                          }
+                          return DropdownButtonFormField<int>(
+                            value:
+                                points.any(
+                                  (point) =>
+                                      point['id_punto'] == _selectedPointId,
+                                )
+                                ? _selectedPointId
+                                : null,
+                            decoration: const InputDecoration(
+                              labelText: 'Punto de recolección',
+                            ),
+                            items: points
+                                .map(
+                                  (point) => DropdownMenuItem<int>(
+                                    value: point['id_punto'] as int?,
+                                    child: Text(
+                                      (point['nombre'] ?? '').toString(),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: points.isEmpty
+                                ? null
+                                : (value) =>
+                                      setState(() => _selectedPointId = value),
+                          );
+                        }),
                         const SizedBox(height: 12),
                         CustomTextField(
                           controller: _montoCtrl,

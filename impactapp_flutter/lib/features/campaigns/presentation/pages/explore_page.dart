@@ -25,6 +25,15 @@ class _ExplorePageState extends State<ExplorePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    final argument = Get.arguments;
+    if (argument is CampaignListFilter) {
+      controller.setCampaignFilter(argument);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),

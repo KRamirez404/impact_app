@@ -18,6 +18,11 @@ class CampaignRepositoryImpl implements CampaignRepository {
   }
 
   @override
+  Future<CampaignEntity> updateCampaign(int id, Map<String, dynamic> payload) {
+    return dataSource.updateCampaign(id, payload);
+  }
+
+  @override
   Future<DonationEntity> donate(Map<String, dynamic> payload) {
     return dataSource.donate(payload);
   }

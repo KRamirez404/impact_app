@@ -8,6 +8,10 @@ class UserEntity {
   final String? ciudadNombre;
   final String? biografia;
   final String? fotoPerfil;
+  final String? instagramUrl;
+  final String? facebookUrl;
+  final String? tiktokUrl;
+  final Map<String, dynamic> redesSociales;
   final bool mostrarFotoTop;
   final String? fechaRegistro;
   final String rol;
@@ -23,6 +27,10 @@ class UserEntity {
     this.ciudadNombre,
     this.biografia,
     this.fotoPerfil,
+    this.instagramUrl,
+    this.facebookUrl,
+    this.tiktokUrl,
+    this.redesSociales = const {},
     this.mostrarFotoTop = true,
     this.fechaRegistro,
     required this.rol,
