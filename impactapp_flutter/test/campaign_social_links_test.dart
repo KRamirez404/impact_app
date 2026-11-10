@@ -72,12 +72,14 @@ void main() {
       ),
     );
 
-    expect(find.text('Redes sociales'), findsOneWidget);
+    expect(find.text('Redes sociales de seguimiento'), findsOneWidget);
     expect(find.text('instagram'), findsOneWidget);
     expect(find.text('sitio_web'), findsOneWidget);
+    expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.language), findsOneWidget);
   });
 
-  testWidgets('InfoTab no muestra seccion de redes si creadorRedesSociales esta vacio', (tester) async {
+  testWidgets('InfoTab muestra mensaje informativo si creadorRedesSociales esta vacio', (tester) async {
     final campaign = _makeCampaign(redes: {});
 
     await tester.pumpWidget(
@@ -88,6 +90,30 @@ void main() {
       ),
     );
 
-    expect(find.text('Redes sociales'), findsNothing);
+    expect(find.text('Redes sociales de seguimiento'), findsOneWidget);
+    expect(
+      find.text('El organizador no ha registrado redes sociales externas para seguimiento.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('InfoTab no renderiza enlaces con schemes invalidos o inseguros', (tester) async {
+    final campaign = _makeCampaign(
+      redes: {
+        'inseguro': 'javascript:alert(1)',
+        'valido': 'https://valido.org',
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: InfoTab(campaign: campaign),
+        ),
+      ),
+    );
+
+    expect(find.text('valido'), findsOneWidget);
+    expect(find.text('inseguro'), findsNothing);
   });
 }

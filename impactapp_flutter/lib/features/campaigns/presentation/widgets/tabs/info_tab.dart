@@ -50,20 +50,28 @@ class InfoTab extends StatelessWidget {
                   ),
                 ),
               ],
-              if (campaign.creadorRedesSociales.isNotEmpty) ...[
-                const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              const Text(
+                'Redes sociales de seguimiento',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              if (campaign.creadorRedesSociales.isEmpty)
                 const Text(
-                  'Redes sociales',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
+                  'El organizador no ha registrado redes sociales externas para seguimiento.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF717182),
+                    fontStyle: FontStyle.italic,
+                  ),
+                )
+              else
                 ...campaign.creadorRedesSociales.entries.map<Widget>(
                   (entry) => _SocialLink(
                     label: entry.key,
                     url: entry.value?.toString(),
                   ),
                 ),
-              ],
             ],
           ),
         ),
@@ -184,6 +192,15 @@ class _SocialLink extends StatelessWidget {
   final String label;
   final String? url;
 
+  IconData _getSocialIcon(String name) {
+    final l = name.toLowerCase();
+    if (l.contains('instagram')) return Icons.camera_alt_outlined;
+    if (l.contains('facebook')) return Icons.facebook;
+    if (l.contains('tiktok')) return Icons.music_note_outlined;
+    if (l.contains('twitter') || l.contains('x')) return Icons.alternate_email;
+    return Icons.language;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (url == null || url!.trim().isEmpty) return const SizedBox.shrink();
@@ -197,7 +214,7 @@ class _SocialLink extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
         onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication),
-        icon: const Icon(Icons.open_in_new, size: 16),
+        icon: Icon(_getSocialIcon(label), size: 16),
         label: Text(label),
         style: TextButton.styleFrom(padding: EdgeInsets.zero),
       ),
