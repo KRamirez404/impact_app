@@ -41,6 +41,55 @@ def support_summary():
     )
 
 
+@support_panel_bp.get("/users")
+@jwt_required()
+def list_support_users():
+    _, error = _require_support_user()
+    if error:
+        return error
+    users = USUARIO.query.order_by(USUARIO.fecha_registro.desc()).all()
+    return jsonify([user.to_dict() for user in users]), 200
+
+
+def _set_user_status(user_id: int, estado: str):
+    support_user, error = _require_support_user()
+    if error:
+        return error
+    user = USUARIO.query.get_or_404(user_id)
+    if user.id_usuario == support_user.id_usuario or user.rol == "soporte":
+        return jsonify({"error": "No se puede bloquear o desbloquear una cuenta de soporte"}), 400
+    if user.estado == estado:
+        return jsonify({"error": "La cuenta ya tiene ese estado"}), 400
+    user.estado = estado
+    user.token_version = (user.token_version or 0) + 1
+    db.session.commit()
+    data = request.get_json(silent=True) or {}
+    motivo = (data.get("motivo") or "").strip()
+    detalle_motivo = f": {motivo}" if motivo else ""
+    accion = "USUARIO_BLOQUEADO" if estado == "bloqueado" else "USUARIO_DESBLOQUEADO"
+    registrar(
+        id_usuario=support_user.id_usuario,
+        accion=accion,
+        descripcion=f"Usuario {user.correo} {estado} por soporte{detalle_motivo}",
+        entidad="USUARIO",
+        id_entidad=user.id_usuario,
+        direccion_ip=request.remote_addr,
+    )
+    return jsonify(user.to_dict()), 200
+
+
+@support_panel_bp.post("/users/<int:user_id>/block")
+@jwt_required()
+def block_user(user_id: int):
+    return _set_user_status(user_id, "bloqueado")
+
+
+@support_panel_bp.post("/users/<int:user_id>/unblock")
+@jwt_required()
+def unblock_user(user_id: int):
+    return _set_user_status(user_id, "activo")
+
+
 @support_panel_bp.get("/campaigns")
 @jwt_required()
 def list_support_campaigns():
