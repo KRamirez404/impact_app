@@ -10,6 +10,7 @@ import '../../domain/usecases/get_my_campaigns_usecase.dart';
 import '../../domain/usecases/get_my_donations_usecase.dart';
 import '../../domain/usecases/toggle_like_usecase.dart';
 import '../../domain/usecases/update_campaign_usecase.dart';
+import '../../domain/usecases/upload_financial_report_usecase.dart';
 import '../../infrastructure/datasources/campaign_remote_datasource.dart';
 import '../../infrastructure/repositories/campaign_repository_impl.dart';
 import '../controllers/campaign_detail_controller.dart';
@@ -50,6 +51,9 @@ class CampaignBinding extends Bindings {
     Get.lazyPut<UpdateCampaignUseCase>(
       () => UpdateCampaignUseCase(Get.find<CampaignRepository>()),
     );
+    Get.lazyPut<UploadFinancialReportUseCase>(
+      () => UploadFinancialReportUseCase(Get.find<CampaignRepository>()),
+    );
 
     Get.lazyPut<CampaignListController>(
       () => CampaignListController(
@@ -66,6 +70,7 @@ class CampaignBinding extends Bindings {
         createDonationCheckoutUseCase: Get.find<CreateDonationCheckoutUseCase>(),
         getDonationStatusUseCase: Get.find<GetDonationStatusUseCase>(),
         updateCampaignUseCase: Get.find<UpdateCampaignUseCase>(),
+        uploadFinancialReportUseCase: Get.find<UploadFinancialReportUseCase>(),
       ),
       fenix: true,
     );

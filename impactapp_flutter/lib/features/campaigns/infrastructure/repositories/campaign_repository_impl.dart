@@ -102,4 +102,13 @@ class CampaignRepositoryImpl implements CampaignRepository {
   Future<void> uploadSupport(int campaignId, String tipo, String filePath) {
     return dataSource.uploadSupport(campaignId, tipo, filePath);
   }
+
+  @override
+  Future<Map<String, dynamic>> uploadFinancialReport(
+    int campaignId,
+    String filePath,
+    String fileName,
+  ) {
+    return dataSource.uploadFinancialReport(campaignId, filePath, fileName);
+  }
 }

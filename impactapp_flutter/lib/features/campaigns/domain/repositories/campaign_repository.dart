@@ -30,4 +30,9 @@ abstract class CampaignRepository {
   Future<List<Map<String, dynamic>>> getCities();
   Future<List<Map<String, dynamic>>> getCategories();
   Future<void> uploadSupport(int campaignId, String tipo, String filePath);
+  Future<Map<String, dynamic>> uploadFinancialReport(
+    int campaignId,
+    String filePath,
+    String fileName,
+  );
 }

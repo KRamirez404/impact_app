@@ -64,6 +64,8 @@ class ApiConstants {
   static String campaignDonors(int campaignId) =>
       '$baseUrl/campaigns/$campaignId/donors';
   static String get supports => '$baseUrl/supports';
+  static String campaignFinancialReport(int campaignId) =>
+      '$baseUrl/campaigns/$campaignId/financial-report';
   static String get notifications => '$baseUrl/notifications';
   static String notificationRead(int idNotificacion) =>
       '$notifications/$idNotificacion/read';

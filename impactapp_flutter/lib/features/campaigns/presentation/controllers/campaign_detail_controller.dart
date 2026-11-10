@@ -10,6 +10,7 @@ import '../../domain/usecases/toggle_like_usecase.dart';
 import '../../domain/usecases/donate_usecase.dart';
 import '../../domain/usecases/get_campaign_detail_usecase.dart';
 import '../../domain/usecases/update_campaign_usecase.dart';
+import '../../domain/usecases/upload_financial_report_usecase.dart';
 import 'campaign_list_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
@@ -21,6 +22,7 @@ class CampaignDetailController extends GetxController {
     required this.createDonationCheckoutUseCase,
     required this.getDonationStatusUseCase,
     required this.updateCampaignUseCase,
+    this.uploadFinancialReportUseCase,
   });
 
   final GetCampaignDetailUseCase getCampaignDetailUseCase;
@@ -29,6 +31,7 @@ class CampaignDetailController extends GetxController {
   final CreateDonationCheckoutUseCase createDonationCheckoutUseCase;
   final GetDonationStatusUseCase getDonationStatusUseCase;
   final UpdateCampaignUseCase updateCampaignUseCase;
+  final UploadFinancialReportUseCase? uploadFinancialReportUseCase;
 
   final isLoading = false.obs;
   final isLiking = false.obs;
@@ -155,6 +158,31 @@ class CampaignDetailController extends GetxController {
     } catch (e) {
       _err(friendlyError(e));
       return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> uploadFinancialReport(
+    int campaignId,
+    String filePath,
+    String fileName,
+  ) async {
+    if (uploadFinancialReportUseCase == null) {
+      _err('Funcionalidad de informe financiero no disponible');
+      return false;
+    }
+    try {
+      isLoading.value = true;
+      await uploadFinancialReportUseCase!(campaignId, filePath, fileName);
+      final updatedCampaign = await getCampaignDetailUseCase(campaignId);
+      campaign.value = updatedCampaign;
+      _syncCampaignLists(updatedCampaign);
+      _ok('Informe financiero publicado y donantes notificados');
+      return true;
+    } catch (e) {
+      _err(friendlyError(e));
+      return false;
     } finally {
       isLoading.value = false;
     }

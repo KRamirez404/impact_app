@@ -2,8 +2,17 @@ import 'package:flutter/material.dart';
 
 class DocsTab extends StatelessWidget {
   final List<Map<String, dynamic>> supports;
+  final Map<String, dynamic>? financialReport;
+  final VoidCallback? onUploadFinancialReport;
+  final bool canUploadFinancialReport;
 
-  const DocsTab({super.key, required this.supports});
+  const DocsTab({
+    super.key,
+    required this.supports,
+    this.financialReport,
+    this.onUploadFinancialReport,
+    this.canUploadFinancialReport = false,
+  });
 
   String _typeLabel(String rawType) {
     switch (rawType.toLowerCase()) {
@@ -36,40 +45,171 @@ class DocsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (supports.isEmpty) {
+    final hasFinancial = financialReport != null;
+    final isEmpty = supports.isEmpty && !hasFinancial;
+
+    if (isEmpty) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.insert_drive_file_outlined, size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            const Text(
-              'Sin documentos',
-              style: TextStyle(fontSize: 16, color: Color(0xFF717182)),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.insert_drive_file_outlined, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              const Text(
+                'Sin documentos ni informe financiero',
+                style: TextStyle(fontSize: 16, color: Color(0xFF717182)),
+              ),
+              if (canUploadFinancialReport && onUploadFinancialReport != null) ...[
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: onUploadFinancialReport,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Cargar informe financiero'),
+                ),
+              ],
+            ],
+          ),
         ),
       );
     }
-    return ListView.separated(
+
+    return ListView(
       padding: EdgeInsets.zero,
-      itemCount: supports.length,
-      separatorBuilder: (_, index) => const SizedBox(height: 12),
-      itemBuilder: (_, index) {
-        final support = supports[index];
-        final tipo = (support['tipo'] ?? '').toString();
-        final descripcion = (support['descripcion'] ?? '').toString();
-        final url = (support['url_o_ruta'] ?? '').toString();
-        final validado = support['validado'] == true;
-        final title =
-            descripcion.isNotEmpty ? descripcion : (url.isNotEmpty ? url : 'Documento');
-        return _SupportCard(
-          icon: _typeIcon(tipo),
-          title: title,
-          subtitle: _typeLabel(tipo),
-          isVerified: validado,
-        );
-      },
+      children: [
+        if (canUploadFinancialReport && onUploadFinancialReport != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: OutlinedButton.icon(
+              onPressed: onUploadFinancialReport,
+              icon: const Icon(Icons.upload_file),
+              label: Text(
+                hasFinancial
+                    ? 'Actualizar informe financiero'
+                    : 'Cargar informe financiero (PDF / DOCX)',
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+        ],
+        if (hasFinancial) ...[
+          _FinancialReportCard(report: financialReport!),
+          if (supports.isNotEmpty) const SizedBox(height: 12),
+        ],
+        ...supports.map((support) {
+          final tipo = (support['tipo'] ?? '').toString();
+          final descripcion = (support['descripcion'] ?? '').toString();
+          final url = (support['url_o_ruta'] ?? '').toString();
+          final validado = support['validado'] == true;
+          final title =
+              descripcion.isNotEmpty ? descripcion : (url.isNotEmpty ? url : 'Documento');
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _SupportCard(
+              icon: _typeIcon(tipo),
+              title: title,
+              subtitle: _typeLabel(tipo),
+              isVerified: validado,
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _FinancialReportCard extends StatelessWidget {
+  const _FinancialReportCard({required this.report});
+
+  final Map<String, dynamic> report;
+
+  @override
+  Widget build(BuildContext context) {
+    final fileName = (report['nombre_archivo'] ?? 'Informe financiero').toString();
+    final mime = (report['mime_type'] ?? 'Documento').toString();
+    final isPdf = mime.contains('pdf') || fileName.toLowerCase().endsWith('.pdf');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.3), width: 1.2),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    isPdf ? Icons.picture_as_pdf_outlined : Icons.description_outlined,
+                    size: 24,
+                    color: const Color(0xFF1D4ED8),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Informe Financiero de Campaña',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        fileName,
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDCFCE7),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, size: 12, color: Color(0xFF008236)),
+                SizedBox(width: 4),
+                Text(
+                  'Disponible',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF008236),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

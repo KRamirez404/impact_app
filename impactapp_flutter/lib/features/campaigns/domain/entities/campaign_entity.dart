@@ -39,6 +39,7 @@ class CampaignEntity {
   final List<Map<String, dynamic>> soportes;
   final List<Map<String, dynamic>> puntosRecoleccion;
   final List<Map<String, dynamic>> seguimientos;
+  final Map<String, dynamic>? informeFinanciero;
 
   const CampaignEntity({
     required this.idCampania,
@@ -81,6 +82,7 @@ class CampaignEntity {
     this.soportes = const [],
     this.puntosRecoleccion = const [],
     this.seguimientos = const [],
+    this.informeFinanciero,
   });
 
   CampaignEntity copyWith({
@@ -166,6 +168,7 @@ class CampaignEntity {
       soportes: soportes ?? this.soportes,
       puntosRecoleccion: puntosRecoleccion ?? this.puntosRecoleccion,
       seguimientos: seguimientos ?? this.seguimientos,
+      informeFinanciero: informeFinanciero ?? this.informeFinanciero,
     );
   }
 }

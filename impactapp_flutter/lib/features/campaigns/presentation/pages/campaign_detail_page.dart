@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -163,6 +164,34 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
         comentario: data['comentario'] as String? ?? '',
       ),
     );
+  }
+
+  Future<void> _pickAndUploadFinancialReport(int campaignId) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf', 'docx'],
+      );
+      final file = result?.files.single;
+      if (file == null) return;
+      if (file.path == null) {
+        Get.snackbar(
+          'Error',
+          'No se pudo acceder al archivo seleccionado',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+      await controller.uploadFinancialReport(campaignId, file.path!, file.name);
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Error al seleccionar el informe: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   @override
@@ -434,7 +463,13 @@ class _CampaignDetailPageState extends State<CampaignDetailPage>
                           tracking: campaign.seguimientos,
                           formatDate: _formatDate,
                         ),
-                        DocsTab(supports: campaign.soportes),
+                        DocsTab(
+                          supports: campaign.soportes,
+                          financialReport: campaign.informeFinanciero,
+                          canUploadFinancialReport: canEdit,
+                          onUploadFinancialReport: () =>
+                              _pickAndUploadFinancialReport(id),
+                        ),
                       ],
                     ),
                   ),

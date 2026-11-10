@@ -154,4 +154,19 @@ class CampaignRemoteDataSource {
     });
     await _dio.post(ApiConstants.supports, data: formData);
   }
+
+  Future<Map<String, dynamic>> uploadFinancialReport(
+    int campaignId,
+    String filePath,
+    String fileName,
+  ) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: fileName),
+    });
+    final response = await _dio.post(
+      ApiConstants.campaignFinancialReport(campaignId),
+      data: formData,
+    );
+    return _safeMap(response.data);
+  }
 }

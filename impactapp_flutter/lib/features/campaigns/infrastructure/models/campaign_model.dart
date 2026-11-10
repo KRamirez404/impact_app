@@ -42,6 +42,7 @@ class CampaignModel extends CampaignEntity {
     super.soportes = const [],
     super.puntosRecoleccion = const [],
     super.seguimientos = const [],
+    super.informeFinanciero,
   });
 
   factory CampaignModel.fromJson(Map<String, dynamic> json) {
@@ -102,6 +103,7 @@ class CampaignModel extends CampaignEntity {
       seguimientos: (json['seguimientos'] as List<dynamic>? ?? [])
           .map((e) => (e as Map<String, dynamic>))
           .toList(),
+      informeFinanciero: json['informe_financiero'] as Map<String, dynamic>?,
     );
   }
 }
