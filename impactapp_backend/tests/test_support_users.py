@@ -100,4 +100,3 @@ def test_blocked_user_cannot_login_or_access_protected_endpoints(client):
     # Intento sin token da 401
     resp_anon = client.get("/api/support/users")
     assert resp_anon.status_code == 401
-
