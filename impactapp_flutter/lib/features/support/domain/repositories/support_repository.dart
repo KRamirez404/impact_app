@@ -1,5 +1,6 @@
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../entities/support_summary_entity.dart';
+import '../entities/support_user_entity.dart';
 
 abstract class SupportRepository {
   Future<SupportSummaryEntity> getSummary();
@@ -9,4 +10,7 @@ abstract class SupportRepository {
   Future<void> invalidate(int campaignId, String motivo);
   Future<void> delete(int campaignId, String motivo);
   Future<void> restore(int campaignId);
+  Future<List<SupportUserEntity>> getUsers();
+  Future<void> blockUser(int userId);
+  Future<void> unblockUser(int userId);
 }

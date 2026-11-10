@@ -8,6 +8,8 @@ import '../../domain/usecases/delete_campaign_usecase.dart';
 import '../../domain/usecases/restore_campaign_usecase.dart';
 import '../../domain/usecases/get_support_summary_usecase.dart';
 import '../../domain/usecases/get_support_campaigns_usecase.dart';
+import '../../domain/usecases/get_support_users_usecase.dart';
+import '../../domain/usecases/manage_support_user_usecase.dart';
 import '../../infrastructure/datasources/support_remote_datasource.dart';
 import '../../infrastructure/repositories/support_repository_impl.dart';
 import '../controllers/support_controller.dart';
@@ -40,6 +42,12 @@ class SupportBinding extends Bindings {
     Get.lazyPut<RestoreCampaignUseCase>(
       () => RestoreCampaignUseCase(Get.find<SupportRepository>()),
     );
+    Get.lazyPut<GetSupportUsersUseCase>(
+      () => GetSupportUsersUseCase(Get.find<SupportRepository>()),
+    );
+    Get.lazyPut<ManageSupportUserUseCase>(
+      () => ManageSupportUserUseCase(Get.find<SupportRepository>()),
+    );
     Get.lazyPut<SupportController>(
       () => SupportController(
         Get.find<GetCampaignDetailUseCase>(),
@@ -50,6 +58,8 @@ class SupportBinding extends Bindings {
         Get.find<InvalidateCampaignUseCase>(),
         Get.find<DeleteCampaignUseCase>(),
         Get.find<RestoreCampaignUseCase>(),
+        Get.find<GetSupportUsersUseCase>(),
+        Get.find<ManageSupportUserUseCase>(),
       ),
       fenix: true,
     );

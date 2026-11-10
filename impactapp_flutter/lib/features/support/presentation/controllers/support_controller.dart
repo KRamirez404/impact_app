@@ -13,6 +13,9 @@ import '../../domain/usecases/delete_campaign_usecase.dart';
 import '../../domain/usecases/restore_campaign_usecase.dart';
 import '../../domain/usecases/get_support_summary_usecase.dart';
 import '../../domain/usecases/get_support_campaigns_usecase.dart';
+import '../../domain/usecases/get_support_users_usecase.dart';
+import '../../domain/usecases/manage_support_user_usecase.dart';
+import '../../domain/entities/support_user_entity.dart';
 
 class SupportController extends GetxController with WidgetsBindingObserver {
   final GetCampaignDetailUseCase getCampaignDetailUseCase;
@@ -23,6 +26,8 @@ class SupportController extends GetxController with WidgetsBindingObserver {
   final InvalidateCampaignUseCase invalidateCampaignUseCase;
   final DeleteCampaignUseCase deleteCampaignUseCase;
   final RestoreCampaignUseCase restoreCampaignUseCase;
+  final GetSupportUsersUseCase getSupportUsersUseCase;
+  final ManageSupportUserUseCase manageSupportUserUseCase;
 
   SupportController(
     this.getCampaignDetailUseCase,
@@ -33,6 +38,8 @@ class SupportController extends GetxController with WidgetsBindingObserver {
     this.invalidateCampaignUseCase,
     this.deleteCampaignUseCase,
     this.restoreCampaignUseCase,
+    this.getSupportUsersUseCase,
+    this.manageSupportUserUseCase,
   );
 
   final allCampaigns = <CampaignEntity>[].obs;
@@ -47,6 +54,8 @@ class SupportController extends GetxController with WidgetsBindingObserver {
 
   final selectedTab = 0.obs;
   final searchQuery = ''.obs;
+  final supportUsers = <SupportUserEntity>[].obs;
+  final isLoadingUsers = false.obs;
 
   static const _pollInterval = Duration(seconds: 15);
   Timer? _pollTimer;
@@ -81,12 +90,15 @@ class SupportController extends GetxController with WidgetsBindingObserver {
 
     final query = searchQuery.value.trim().toLowerCase();
     if (query.isNotEmpty) {
-      result = result.where((c) =>
-        c.titulo.toLowerCase().contains(query) ||
-        c.descripcion.toLowerCase().contains(query) ||
-        c.ciudadNombre.toLowerCase().contains(query) ||
-        c.creadorNombre.toLowerCase().contains(query)
-      ).toList();
+      result = result
+          .where(
+            (c) =>
+                c.titulo.toLowerCase().contains(query) ||
+                c.descripcion.toLowerCase().contains(query) ||
+                c.ciudadNombre.toLowerCase().contains(query) ||
+                c.creadorNombre.toLowerCase().contains(query),
+          )
+          .toList();
     }
 
     return result;
@@ -130,6 +142,34 @@ class SupportController extends GetxController with WidgetsBindingObserver {
 
   Future<void> loadData() async {
     await Future.wait([loadCampaigns(), loadSummary()]);
+  }
+
+  Future<void> loadUsers() async {
+    try {
+      isLoadingUsers.value = true;
+      supportUsers.assignAll(await getSupportUsersUseCase());
+    } catch (e) {
+      _showError(e);
+    } finally {
+      isLoadingUsers.value = false;
+    }
+  }
+
+  Future<void> toggleUser(SupportUserEntity user) async {
+    try {
+      if (user.estado == 'activo') {
+        await manageSupportUserUseCase.block(user.idUsuario);
+      } else {
+        await manageSupportUserUseCase.unblock(user.idUsuario);
+      }
+      await loadUsers();
+      Get.snackbar(
+        'Éxito',
+        user.estado == 'activo' ? 'Usuario bloqueado' : 'Usuario desbloqueado',
+      );
+    } catch (e) {
+      _showError(e);
+    }
   }
 
   Future<void> refreshData() async {

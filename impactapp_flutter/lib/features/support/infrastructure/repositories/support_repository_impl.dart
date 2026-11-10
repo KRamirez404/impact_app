@@ -1,5 +1,6 @@
 import '../../../campaigns/domain/entities/campaign_entity.dart';
 import '../../domain/entities/support_summary_entity.dart';
+import '../../domain/entities/support_user_entity.dart';
 import '../../domain/repositories/support_repository.dart';
 import '../datasources/support_remote_datasource.dart';
 
@@ -41,4 +42,13 @@ class SupportRepositoryImpl implements SupportRepository {
   Future<void> restore(int campaignId) {
     return dataSource.restore(campaignId);
   }
+
+  @override
+  Future<List<SupportUserEntity>> getUsers() => dataSource.getUsers();
+
+  @override
+  Future<void> blockUser(int userId) => dataSource.blockUser(userId);
+
+  @override
+  Future<void> unblockUser(int userId) => dataSource.unblockUser(userId);
 }

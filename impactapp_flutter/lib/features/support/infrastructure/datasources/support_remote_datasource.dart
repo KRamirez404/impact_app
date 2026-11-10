@@ -4,6 +4,7 @@ import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/support_summary_model.dart';
 import '../../../campaigns/infrastructure/models/campaign_model.dart';
+import '../models/support_user_model.dart';
 
 class SupportRemoteDataSource {
   final Dio _dio = DioClient.instance.dio;
@@ -19,7 +20,9 @@ class SupportRemoteDataSource {
     if (data == null || data is! List) {
       throw ServerException('Respuesta inválida del servidor');
     }
-    return data.map((e) => CampaignModel.fromJson(e as Map<String, dynamic>)).toList();
+    return data
+        .map((e) => CampaignModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<SupportSummaryModel> getSummary() async {
@@ -60,4 +63,19 @@ class SupportRemoteDataSource {
   Future<void> restore(int campaignId) async {
     await _dio.post(ApiConstants.supportRestore(campaignId));
   }
+
+  Future<List<SupportUserModel>> getUsers() async {
+    final response = await _dio.get(ApiConstants.supportUsers);
+    if (response.data is! List) {
+      throw ServerException('Respuesta inválida del servidor');
+    }
+    return (response.data as List)
+        .map((e) => SupportUserModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> blockUser(int userId) async =>
+      _dio.post(ApiConstants.supportBlockUser(userId));
+  Future<void> unblockUser(int userId) async =>
+      _dio.post(ApiConstants.supportUnblockUser(userId));
 }

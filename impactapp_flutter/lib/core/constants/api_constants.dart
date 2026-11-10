@@ -70,6 +70,10 @@ class ApiConstants {
   static String get notificationsReadAll => '$notifications/read-all';
   static String get supportSummary => '$baseUrl/support/summary';
   static String get supportCampaigns => '$baseUrl/support/campaigns';
+  static String get supportUsers => '$baseUrl/support/users';
+  static String supportBlockUser(int userId) => '$supportUsers/$userId/block';
+  static String supportUnblockUser(int userId) =>
+      '$supportUsers/$userId/unblock';
   static String supportApprove(int campaignId) =>
       '$baseUrl/support/campaigns/$campaignId/approve';
   static String supportReject(int campaignId) =>

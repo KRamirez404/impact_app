@@ -80,7 +80,12 @@ class SupportHomePage extends GetView<SupportController> {
                   controller.pendientesCount.value == 0) {
                 return const SizedBox(
                   height: 43,
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
                 );
               }
               return SizedBox(
@@ -89,9 +94,18 @@ class SupportHomePage extends GetView<SupportController> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    _buildStatCard('${controller.pendientesCount.value}', 'Pendientes'),
-                    _buildStatCard('${controller.aprobadasCount.value}', 'Aprobadas'),
-                    _buildStatCard('${controller.rechazadasCount.value}', 'Rechazadas'),
+                    _buildStatCard(
+                      '${controller.pendientesCount.value}',
+                      'Pendientes',
+                    ),
+                    _buildStatCard(
+                      '${controller.aprobadasCount.value}',
+                      'Aprobadas',
+                    ),
+                    _buildStatCard(
+                      '${controller.rechazadasCount.value}',
+                      'Rechazadas',
+                    ),
                   ],
                 ),
               );
@@ -100,9 +114,66 @@ class SupportHomePage extends GetView<SupportController> {
             OutlinedButton.icon(
               onPressed: () => Get.toNamed(AppRoutes.supportTransfers),
               icon: const Icon(Icons.account_balance, color: Colors.white),
-              label: const Text('Revisar transferencias', style: TextStyle(color: Colors.white)),
+              label: const Text(
+                'Revisar transferencias',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _showUsers,
+              icon: const Icon(Icons.people, color: Colors.white),
+              label: const Text(
+                'Gestionar usuarios',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             _buildSearchBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUsers() {
+    controller.loadUsers();
+    Get.dialog(
+      Obx(
+        () => AlertDialog(
+          title: const Text('Usuarios'),
+          content: SizedBox(
+            width: 420,
+            height: 420,
+            child: controller.isLoadingUsers.value
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    itemCount: controller.supportUsers.length,
+                    itemBuilder: (_, index) {
+                      final user = controller.supportUsers[index];
+                      return ListTile(
+                        title: Text('${user.nombre} ${user.apellido}'),
+                        subtitle: Text(
+                          '${user.correo}\n${user.rol} · ${user.estado}',
+                        ),
+                        isThreeLine: true,
+                        trailing: user.rol == 'soporte'
+                            ? null
+                            : IconButton(
+                                tooltip: user.estado == 'activo'
+                                    ? 'Bloquear'
+                                    : 'Desbloquear',
+                                icon: Icon(
+                                  user.estado == 'activo'
+                                      ? Icons.lock
+                                      : Icons.lock_open,
+                                ),
+                                onPressed: () => controller.toggleUser(user),
+                              ),
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(onPressed: Get.back, child: const Text('Cerrar')),
           ],
         ),
       ),
@@ -166,9 +237,7 @@ class SupportHomePage extends GetView<SupportController> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0x1A000000), width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0x1A000000), width: 1)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -177,7 +246,8 @@ class SupportHomePage extends GetView<SupportController> {
             Obx(
               () => _buildSegmentedControl(
                 labels: const ['Pendientes', 'Rechazadas', 'Aprobadas'],
-                selectedIndex: controller.selectedTab.value >= 0 &&
+                selectedIndex:
+                    controller.selectedTab.value >= 0 &&
                         controller.selectedTab.value <= 2
                     ? controller.selectedTab.value
                     : -1,
@@ -258,9 +328,7 @@ class SupportHomePage extends GetView<SupportController> {
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.white
-              : const Color(0xFFECECF0),
+          color: isSelected ? Colors.white : const Color(0xFFECECF0),
           borderRadius: BorderRadius.circular(14),
           border: isSelected
               ? Border.all(color: const Color(0xFFECECF0))
@@ -316,29 +384,20 @@ class SupportHomePage extends GetView<SupportController> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0x1A000000),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0x1A000000), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardImage(campaign),
-          _buildCardContent(campaign),
-        ],
+        children: [_buildCardImage(campaign), _buildCardContent(campaign)],
       ),
     );
   }
 
   Widget _buildCardImage(CampaignEntity campaign) {
-    final mainImageSoporte = campaign.soportes.firstWhere(
-      (s) {
-        final tipo = (s['tipo'] ?? '').toString().toLowerCase().trim();
-        return tipo == 'foto' || tipo == 'imagen';
-      },
-      orElse: () => <String, dynamic>{},
-    );
+    final mainImageSoporte = campaign.soportes.firstWhere((s) {
+      final tipo = (s['tipo'] ?? '').toString().toLowerCase().trim();
+      return tipo == 'foto' || tipo == 'imagen';
+    }, orElse: () => <String, dynamic>{});
     final mainImageUrl = mainImageSoporte['url_o_ruta'] as String?;
 
     return ClipRRect(
@@ -351,7 +410,9 @@ class SupportHomePage extends GetView<SupportController> {
           gradient: mainImageUrl == null
               ? LinearGradient(
                   colors: [
-                    _categoryColor(campaign.categoriaNombre).withValues(alpha: 0.7),
+                    _categoryColor(
+                      campaign.categoriaNombre,
+                    ).withValues(alpha: 0.7),
                     _categoryColor(campaign.categoriaNombre),
                   ],
                   begin: Alignment.topLeft,
@@ -371,11 +432,7 @@ class SupportHomePage extends GetView<SupportController> {
         ),
         child: Stack(
           children: [
-            Positioned(
-              top: 14,
-              left: 16,
-              child: _buildStatusBadge(campaign),
-            ),
+            Positioned(top: 14, left: 16, child: _buildStatusBadge(campaign)),
             Positioned(
               top: 14,
               right: 16,
@@ -461,14 +518,20 @@ class SupportHomePage extends GetView<SupportController> {
             children: [
               _buildCategoryBadge(campaign.categoriaNombre),
               const SizedBox(width: 8),
-              const Icon(Icons.location_on_outlined,
-                  size: 12, color: Color(0xFF4A5565)),
+              const Icon(
+                Icons.location_on_outlined,
+                size: 12,
+                color: Color(0xFF4A5565),
+              ),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   campaign.ciudadNombre,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF4A5565),
+                  ),
                 ),
               ),
             ],
@@ -497,7 +560,8 @@ class SupportHomePage extends GetView<SupportController> {
           ),
           const SizedBox(height: 12),
           _buildMetadataSection(campaign),
-          if (campaign.estado == 'pausada' && campaign.notaRevision != null) ...[
+          if (campaign.estado == 'pausada' &&
+              campaign.notaRevision != null) ...[
             const SizedBox(height: 12),
             _buildRejectionNote(campaign),
           ],
@@ -548,8 +612,8 @@ class SupportHomePage extends GetView<SupportController> {
   }
 
   Widget _buildMetadataSection(CampaignEntity campaign) {
-    final organizador =
-        '${campaign.creadorNombre} ${campaign.creadorApellido}'.trim();
+    final organizador = '${campaign.creadorNombre} ${campaign.creadorApellido}'
+        .trim();
     final fechaCreada = _formatDate(campaign.fechaInicio);
     final evidenciasCount = campaign.soportes.length;
 
@@ -557,11 +621,16 @@ class SupportHomePage extends GetView<SupportController> {
       width: double.infinity,
       child: Column(
         children: [
-          _buildMetadataRow('Organizador:',
-              organizador.isNotEmpty ? organizador : 'Desconocido'),
+          _buildMetadataRow(
+            'Organizador:',
+            organizador.isNotEmpty ? organizador : 'Desconocido',
+          ),
           const SizedBox(height: 6),
-          _buildMetadataRow('Fecha creación:', fechaCreada,
-              showCalendarIcon: true),
+          _buildMetadataRow(
+            'Fecha creación:',
+            fechaCreada,
+            showCalendarIcon: true,
+          ),
           const SizedBox(height: 6),
           _buildMetadataRow('Evidencias:', '$evidenciasCount documentos'),
         ],
@@ -569,8 +638,11 @@ class SupportHomePage extends GetView<SupportController> {
     );
   }
 
-  Widget _buildMetadataRow(String label, String value,
-      {bool showCalendarIcon = false}) {
+  Widget _buildMetadataRow(
+    String label,
+    String value, {
+    bool showCalendarIcon = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -584,8 +656,11 @@ class SupportHomePage extends GetView<SupportController> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (showCalendarIcon) ...[
-                const Icon(Icons.calendar_today,
-                    size: 12, color: Color(0xFF0A0A0A)),
+                const Icon(
+                  Icons.calendar_today,
+                  size: 12,
+                  color: Color(0xFF0A0A0A),
+                ),
                 const SizedBox(width: 4),
               ],
               Flexible(
@@ -608,7 +683,9 @@ class SupportHomePage extends GetView<SupportController> {
   }
 
   Widget _buildRejectionNote(CampaignEntity campaign) {
-    final auditor = '${campaign.auditorNombre ?? ''} ${campaign.auditorApellido ?? ''}'.trim();
+    final auditor =
+        '${campaign.auditorNombre ?? ''} ${campaign.auditorApellido ?? ''}'
+            .trim();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(13),
@@ -620,7 +697,11 @@ class SupportHomePage extends GetView<SupportController> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFF54900)),
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: Color(0xFFF54900),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -659,17 +740,21 @@ class SupportHomePage extends GetView<SupportController> {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () => Get.toNamed(
-                '${AppRoutes.supportCampaignDetail}/${campaign.idCampania}'),
+              '${AppRoutes.supportCampaignDetail}/${campaign.idCampania}',
+            ),
             icon: const Icon(Icons.visibility_outlined, size: 16),
             label: const Text('Ver Detalles'),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF0A0A0A),
               side: const BorderSide(color: Color(0x1A000000)),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(8),
+              ),
               padding: const EdgeInsets.symmetric(vertical: 6),
               textStyle: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w500),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
@@ -697,14 +782,18 @@ class SupportHomePage extends GetView<SupportController> {
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 6),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle_outline,
-                        size: 16, color: Colors.white),
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'Evaluar',
