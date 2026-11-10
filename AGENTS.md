@@ -118,7 +118,7 @@ Prefijo `/api`. Públicas: `GET /health`, `/auth/privacy-policy`, `GET /campaign
 
 - `README.md` — stack, endpoints, estructura, troubleshooting, trabajo futuro.
 - `docs/trazabilidad_requisitos.md` — mapeo requisitos → implementación.
-- `requerimientos.pdf` — especificación RF-01..12 y RNF-01..04; los códigos históricos de Plan.txt son distintos.
+- `academico/requerimientos.pdf` versión 2 — fuente canónica y prioritaria para RF-01..12 y RNF-01..04; prevalece sobre `Plan_Cierre.txt`, `Plan.txt` y cualquier plan histórico o versión anterior.
 - `Plan_Cierre.txt` — avance de cierre; `docs/decisiones_cierre.md` — decisiones financieras pendientes.
 - `docs/informe_seguridad_usabilidad.md` — seguridad y usabilidad.
 
