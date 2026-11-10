@@ -54,6 +54,13 @@ class USUARIO(db.Model):
     )
 
     def to_dict(self):
+        socials = dict(self.redes_sociales or {})
+        if self.instagram_url and "instagram" not in socials:
+            socials["instagram"] = self.instagram_url
+        if self.facebook_url and "facebook" not in socials:
+            socials["facebook"] = self.facebook_url
+        if self.tiktok_url and "tiktok" not in socials:
+            socials["tiktok"] = self.tiktok_url
         return {
             "id_usuario": self.id_usuario,
             "nombre": self.nombre,
@@ -67,7 +74,7 @@ class USUARIO(db.Model):
             "instagram_url": self.instagram_url,
             "facebook_url": self.facebook_url,
             "tiktok_url": self.tiktok_url,
-            "redes_sociales": self.redes_sociales or {},
+            "redes_sociales": socials,
             "mostrar_foto_top": self.mostrar_foto_top,
             "rol": self.rol,
             "fecha_registro": self.fecha_registro.isoformat(),
@@ -75,6 +82,13 @@ class USUARIO(db.Model):
         }
 
     def to_public_dict(self):
+        socials = dict(self.redes_sociales or {})
+        if self.instagram_url and "instagram" not in socials:
+            socials["instagram"] = self.instagram_url
+        if self.facebook_url and "facebook" not in socials:
+            socials["facebook"] = self.facebook_url
+        if self.tiktok_url and "tiktok" not in socials:
+            socials["tiktok"] = self.tiktok_url
         return {
             "id_usuario": self.id_usuario,
             "nombre": self.nombre,
@@ -83,5 +97,5 @@ class USUARIO(db.Model):
             "instagram_url": self.instagram_url,
             "facebook_url": self.facebook_url,
             "tiktok_url": self.tiktok_url,
-            "redes_sociales": self.redes_sociales or {},
+            "redes_sociales": socials,
         }

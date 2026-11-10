@@ -101,6 +101,12 @@ def update_user_profile(user: USUARIO, data: dict) -> USUARIO:
     ):
         if field in data:
             fields[field] = validate_text(data[field], label, length, required=required)
+    from urllib.parse import urlparse
+    for url_field in ("instagram_url", "facebook_url", "tiktok_url"):
+        if url_field in fields and fields[url_field]:
+            parsed = urlparse(fields[url_field])
+            if parsed.scheme not in ("http", "https") or not parsed.netloc:
+                raise ValueError("Los enlaces sociales deben usar http o https")
     if "correo" in data:
         correo = validate_email(data["correo"])
         if correo != user.correo and USUARIO.query.filter_by(correo=correo).first():
