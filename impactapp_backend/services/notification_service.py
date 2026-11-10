@@ -35,6 +35,7 @@ TIPOS = (
     "transferencia_comprobante",
     "transferencia_aprobada",
     "transferencia_rechazada",
+    "informe_financiero",
 )
 
 _PIE_TEXTO = (
@@ -201,6 +202,10 @@ def construir(tipo, contexto):
             "Validamos tu transferencia bancaria y la donación quedó confirmada.",
             "Gracias por apoyar esta causa.",
         ]
+    elif tipo == "informe_financiero":
+        asunto = "Informe financiero disponible"
+        parrafos = [_saludo(contexto), "El informe financiero sobre el uso de recursos de la campaña ya está disponible en la app."]
+        detalle = [("Campaña", nombre_campania)]
     else:  # transferencia_rechazada
         asunto = "Tu transferencia fue rechazada"
         detalle.append(("Estado", "Rechazada"))

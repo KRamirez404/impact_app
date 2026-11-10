@@ -46,6 +46,7 @@ import pytest  # noqa: E402
 from app import (  # noqa: E402
     ensure_campaign_schema,
     ensure_donation_schema,
+    ensure_financial_report_schema,
     ensure_notification_schema,
     ensure_payment_attempt_schema,
     ensure_user_schema,
@@ -79,6 +80,7 @@ def client():
         ensure_donation_schema()
         ensure_payment_attempt_schema()
         ensure_notification_schema()
+        ensure_financial_report_schema()
         seed_database()
         support = USUARIO(
             nombre="Soporte",

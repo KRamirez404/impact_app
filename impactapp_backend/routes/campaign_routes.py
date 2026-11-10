@@ -184,6 +184,24 @@ def get_campaign(campaign_id: int):
     payload["seguimientos"] = [s.to_dict() for s in campaign.seguimientos]
     payload["puntos_recoleccion"] = [p.to_dict() for p in campaign.puntos_recoleccion]
     payload["donaciones"] = [d.to_public_dict() for d in campaign.donaciones]
+    user = current_user()
+    puede_ver_informe = False
+    if user:
+        if user.rol == "soporte" or user.id_usuario == campaign.id_creador:
+            puede_ver_informe = True
+        else:
+            puede_ver_informe = (
+                DONACION.query.filter_by(
+                    id_campania=campaign.id_campania,
+                    id_donante=user.id_usuario,
+                    estado_pago="aprobada",
+                ).first()
+                is not None
+            )
+    if puede_ver_informe and campaign.informe_financiero:
+        payload["informe_financiero"] = campaign.informe_financiero.to_dict()
+    else:
+        payload["informe_financiero"] = None
     payload["donantes_count"] = contar_donantes_por_campania(
         [campaign.id_campania]
     ).get(campaign.id_campania, 0)

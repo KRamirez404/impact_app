@@ -18,6 +18,7 @@ from models import (
     CATEGORIA,
     CIUDAD,
     NOTIFICACION_EMAIL,
+    INFORME_FINANCIERO,
     PAGO_INTENTO,
     PUNTO_RECOLECCION,
     SEGUIMIENTO,
@@ -260,6 +261,10 @@ def ensure_payment_attempt_schema():
     PAGO_INTENTO.__table__.create(bind=db.engine, checkfirst=True)
 
 
+def ensure_financial_report_schema():
+    INFORME_FINANCIERO.__table__.create(bind=db.engine, checkfirst=True)
+
+
 def ensure_notification_schema():
     NOTIFICACION_EMAIL.__table__.create(bind=db.engine, checkfirst=True)
     inspector = inspect(db.engine)
@@ -356,6 +361,8 @@ def create_app():
         ).first()
         if private_reference:
             return False
+        if INFORME_FINANCIERO.query.filter_by(ruta=file_path).first():
+            return False
         profile_user = USUARIO.query.filter_by(foto_perfil=file_path).first()
         if profile_user and _archive_is_owned_by(file_path, profile_user.id_usuario):
             return True
@@ -388,11 +395,28 @@ def create_app():
         if upload:
             return True
         supports = SOPORTE.query.filter_by(url_o_ruta=file_path).all()
-        return any(
+        if any(
             support.campania
             and support.campania.id_creador == user.id_usuario
             for support in supports
-        )
+        ):
+            return True
+        report = INFORME_FINANCIERO.query.filter_by(ruta=file_path).first()
+        if report and report.campania:
+            if report.campania.id_creador == user.id_usuario:
+                return True
+            from models import DONACION
+            has_donated = (
+                DONACION.query.filter_by(
+                    id_campania=report.id_campania,
+                    id_donante=user.id_usuario,
+                    estado_pago="aprobada",
+                ).first()
+                is not None
+            )
+            if has_donated:
+                return True
+        return False
 
     @app.get("/uploads/<path:filename>")
     @jwt_required(optional=True)
@@ -435,6 +459,7 @@ def create_app():
         ensure_donation_schema()
         ensure_payment_attempt_schema()
         ensure_notification_schema()
+        ensure_financial_report_schema()
         seed_database()
         wompi_status = wompi_service.configuration_status()
         if wompi_status["ok"]:

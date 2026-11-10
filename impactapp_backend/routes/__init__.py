@@ -9,6 +9,7 @@ from .support_routes import support_bp
 from .support_panel_routes import support_panel_bp
 from .tracking_routes import tracking_bp
 from .upload_routes import upload_bp
+from .financial_report_routes import financial_report_bp
 from .wompi_routes import wompi_bp
 
 
@@ -25,6 +26,7 @@ def register_blueprints(app):
     app.register_blueprint(collection_point_bp)
     app.register_blueprint(rating_bp)
     app.register_blueprint(upload_bp)
+    app.register_blueprint(financial_report_bp)
     if app.config.get("FINANCIAL_ASSIGNMENTS_ENABLED", False):
         from .financial_assignment_routes import financial_assignment_bp
 

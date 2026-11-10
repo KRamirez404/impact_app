@@ -61,6 +61,7 @@ def mail_config(monkeypatch):
     monkeypatch.setattr(notification_service.smtplib, "SMTP_SSL", FakeSMTP)
     for clave, valor in {
         "MAIL_ENABLED": True,
+        "MAIL_PROVIDER": "smtp",
         "MAIL_HOST": "smtp.test",
         "MAIL_PORT": 2525,
         "MAIL_USE_TLS": True,
@@ -485,6 +486,7 @@ def test_correo_deshabilitado_no_envia_ni_marca_error(client, mail_config, monke
 def _config_lote():
     return {
         "MAIL_ENABLED": True,
+        "MAIL_PROVIDER": "smtp",
         "MAIL_HOST": "smtp.test",
         "MAIL_PORT": 2525,
         "MAIL_USE_TLS": True,
